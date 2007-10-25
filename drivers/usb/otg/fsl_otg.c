@@ -20,7 +20,7 @@
 #include <linux/list.h>
 #include <linux/usb.h>
 #include <linux/platform_device.h>
-#include <linux/usb_ch9.h>
+#include <linux/usb/ch9.h>
 #include <linux/usb_gadget.h>
 #include <linux/time.h>
 
@@ -626,9 +626,10 @@ static int fsl_otg_set_power(struct otg_transceiver *otg_p, unsigned mA)
  * roles, the pin-detect interrupts are delayed, and handled
  * by this routine. 
  */
-static void fsl_otg_event(void *ptr)
+static void fsl_otg_event(struct work_struct *work)
 {
-	struct otg_fsm *fsm = &((struct fsl_otg *)ptr)->fsm;
+	struct fsl_otg *og = container_of(work, struct fsl_otg, otg_event.work);
+	struct otg_fsm *fsm = &og->fsm;
 
 	if (fsm->id) {		/* switch to gadget */
 		fsl_otg_start_host(fsm, 0);
@@ -728,7 +729,7 @@ static int fsl_otg_conf(struct platform_device *pdev)
 	DBG("set dr_mem_map to 0x%p", pdata->regs);
 	spin_lock_init(&usb_dr_regs_lock);
 
-	INIT_WORK(&fsl_otg_tc->otg_event, fsl_otg_event, fsl_otg_tc);
+	INIT_DELAYED_WORK(&fsl_otg_tc->otg_event, fsl_otg_event);
 
 	INIT_LIST_HEAD(&active_timers);
 	status = fsl_otg_init_timers(&fsl_otg_tc->fsm);
@@ -796,7 +797,8 @@ int usb_otg_start(struct platform_device *pdev)
 	}
 	p_otg->irq = res->start;
 	DBG("requesting irq %d", p_otg->irq);
-	status = request_irq(p_otg->irq, fsl_otg_isr, 0, "fsl_arc", p_otg);
+	status = request_irq(p_otg->irq, fsl_otg_isr, IRQF_SHARED, "fsl_arc",
+			     p_otg);
 	if (status) {
 		dev_dbg(p_otg->otg.dev, "can't get IRQ %d, error %d\n",
 			p_otg->irq, status);
