@@ -1,0 +1,43 @@
+#
+# PMIC device driver configuration
+#
+
+menu "MXC PMIC support"
+
+config MXC_SPI_PMIC_CORE
+	tristate "PMIC Protocol support (SPI interface)"
+	depends on ARCH_MXC && SPI_MXC
+	default n
+	---help---
+      	This is the PMIC core/protocol driver for the Freescale MXC application.
+	SPI should be providing the interface between the PMIC and the MCU.
+	You must select the SPI driver support to enable this option.
+
+config MXC_PMIC
+	boolean
+	default MXC_SPI_PMIC_CORE
+
+config MXC_PMIC_CHARDEV
+	tristate "MXC PMIC device interface"
+	depends on MXC_PMIC
+	help
+	  Say Y here to use "pmic" device files, found in the /dev directory
+	  on the system.  They make it possible to have user-space programs
+	  use or controll PMIC. Mainly its useful for notifying PMIC events
+	  to user-space programs.
+
+comment "MXC PMIC Client Drivers"
+	depends on MXC_PMIC
+
+config MXC_PMIC_MC13783
+	tristate "MC13783 Client Drivers"
+	depends on MXC_SPI_PMIC_CORE
+	default n
+	---help---
+      	This is the MXC MC13783(PMIC) client drivers support. It include
+	ADC, Audio, Battery, Connectivity, Light, Power and RTC.
+
+source "drivers/mxc/pmic/mc13783/Kconfig"
+
+endmenu
+
