@@ -310,6 +310,8 @@ config ARCH_MXC
 	bool "Freescale MXC/iMX-based"
 	select ISA
 	select ARCH_MTD_XIP
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
 	help
 	  Support for Freescale MXC/iMX-based family of processors
 

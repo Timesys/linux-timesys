@@ -33,6 +33,8 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/io.h>
+#include <linux/clocksource.h>
+#include <linux/clockchips.h>
 #include <asm/mach/time.h>
 
 #define MXC_GPT_GPTCR		(IO_ADDRESS(GPT1_BASE_ADDR + 0x00))
@@ -125,6 +127,51 @@
 
 extern unsigned long clk_early_get_timer_rate(void);
 
+static int mxc_gpt_set_next_event(unsigned long cycles,
+				    struct clock_event_device *evt)
+{
+	unsigned long now, expires;
+	u32 reg;
+	
+	now = __raw_readl(MXC_GPT_GPTCNT);
+	expires = now + cycles;
+	__raw_writel(expires, MXC_GPT_GPTOCR1);
+	__raw_writel(GPTSR_OF1, MXC_GPT_GPTSR);
+
+	/* enable interrupt */
+	reg = __raw_readl(MXC_GPT_GPTIR);
+	reg |= GPTIR_OF1IE;
+	__raw_writel(reg, MXC_GPT_GPTIR);
+	
+	return 0;
+}
+
+static void mxc_gpt_set_mode(enum clock_event_mode mode,
+			      struct clock_event_device *evt)
+{
+	switch (mode) {
+	case CLOCK_EVT_MODE_PERIODIC:
+		panic("MXC GPT: CLOCK_EVT_MODE_PERIODIC not supported\n");
+		break;
+	case CLOCK_EVT_MODE_ONESHOT:
+		break;
+	case CLOCK_EVT_MODE_UNUSED:
+	case CLOCK_EVT_MODE_SHUTDOWN:
+		/* Disable interrupts */
+		__raw_writel(0, MXC_GPT_GPTIR);
+		break;
+	}
+}
+
+static struct clock_event_device gpt_clockevent = {
+	.name		= "mxc_gpt",
+	.features	= CLOCK_EVT_FEAT_ONESHOT,
+	.rating		= 300,
+	.shift		= 32,
+	.set_next_event	= mxc_gpt_set_next_event,
+	.set_mode	= mxc_gpt_set_mode,
+};
+
 /*!
  * This is the timer interrupt service routine to do required tasks.
  * It also services the WDOG timer at the frequency of twice per WDOG
@@ -139,108 +186,113 @@ extern unsigned long clk_early_get_timer_rate(void);
  */
 static irqreturn_t mxc_timer_interrupt(int irq, void *dev_id)
 {
-	unsigned int next_match;
+	unsigned int gptsr;
+	u32 reg;
 
-	write_seqlock(&xtime_lock);
+	gptsr = __raw_readl(MXC_GPT_GPTSR) & __raw_readl(MXC_GPT_GPTIR);
+	if (gptsr & GPTSR_OF1) {
+		/* Disable interrupt */
+		reg = __raw_readl(MXC_GPT_GPTIR);
+		reg &= ~GPTIR_OF1IE;
+		__raw_writel(reg, MXC_GPT_GPTIR);
+		/* Clear interrupt */
+		__raw_writel(GPTSR_OF1, MXC_GPT_GPTSR);
 
-	if (__raw_readl(MXC_GPT_GPTSR) & GPTSR_OF1)
-		do {
-			mxc_kick_wd();
-			timer_tick();
-			next_match = __raw_readl(MXC_GPT_GPTOCR1) + LATCH;
-			__raw_writel(GPTSR_OF1, MXC_GPT_GPTSR);
-			__raw_writel(next_match, MXC_GPT_GPTOCR1);
-		} while ((signed long)(next_match -
-				       __raw_readl(MXC_GPT_GPTCNT)) <= 0);
+		gpt_clockevent.event_handler(&gpt_clockevent);
+	}
 
-	write_sequnlock(&xtime_lock);
+	mxc_kick_wd();
 
 	return IRQ_HANDLED;
 }
 
 /*!
- * This function is used to obtain the number of microseconds since the last
- * timer interrupt. Note that interrupts is disabled by do_gettimeofday().
- *
- * @return the number of microseconds since the last timer interrupt.
- */
-static unsigned long mxc_gettimeoffset(void)
-{
-	long ticks_to_match, elapsed, usec;
-
-	/* Get ticks before next timer match */
-	ticks_to_match =
-	    __raw_readl(MXC_GPT_GPTOCR1) - __raw_readl(MXC_GPT_GPTCNT);
-
-	/* We need elapsed ticks since last match */
-	elapsed = LATCH - ticks_to_match;
-
-	/* Now convert them to usec */
-	usec = (unsigned long)(elapsed * (tick_nsec / 1000)) / LATCH;
-
-	return usec;
-}
-
-/*!
- * The OS tick timer interrupt structure.
+ * The clockevents timer interrupt structure.
  */
 static struct irqaction timer_irq = {
-	.name = "MXC Timer Tick",
-	.flags = IRQF_DISABLED | IRQF_TIMER,
-	.handler = mxc_timer_interrupt
+	.name = "gpt-irq",
+	.flags = IRQF_DISABLED,
+	.handler = mxc_timer_interrupt,
+};
+
+static cycle_t mxc_gpt_read(void)
+{
+	return __raw_readl(MXC_GPT_GPTCNT);
+}
+
+static struct clocksource gpt_clocksrc = {
+	.name		= "mxc_gpt",
+	.rating		= 300,
+	.read		= mxc_gpt_read,
+	.mask		= CLOCKSOURCE_MASK(32),
+	.shift		= 24,
+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS | 
+			  CLOCK_SOURCE_VALID_FOR_HRES,
 };
 
 /*!
- * This function is used to initialize the GPT to produce an interrupt
- * every 10 msec. It is called by the start_kernel() during system startup.
+ * This function is used to initialize the GPT as a clocksource and clockevent.
+ * It is called by the start_kernel() during system startup.
  */
 void __init mxc_init_time(void)
 {
-	u32 reg, v;
-	reg = __raw_readl(MXC_GPT_GPTCR);
-	reg &= ~GPTCR_ENABLE;
-	__raw_writel(reg, MXC_GPT_GPTCR);
-	reg |= GPTCR_SWR;
-	__raw_writel(reg, MXC_GPT_GPTCR);
+	int ret;
+	unsigned long rate;
+	u32 reg, div;
 
+	/* Reset GPT */
+	__raw_writel(GPTCR_SWR, MXC_GPT_GPTCR);
 	while ((__raw_readl(MXC_GPT_GPTCR) & GPTCR_SWR) != 0)
 		mb();
 
-	reg = __raw_readl(MXC_GPT_GPTCR);
-
-	reg = 0 * GPTCR_OM3_CLEAR | GPTCR_FRR | GPTCR_CLKSRC_HIGHFREQ;
-
-	__raw_writel(reg, MXC_GPT_GPTCR);
-
 	/* Normal clk api are not yet initialized, so use early verion */
-	v = clk_early_get_timer_rate();
-
-	__raw_writel((v / CLOCK_TICK_RATE) - 1, MXC_GPT_GPTPR);
-
-	if ((v % CLOCK_TICK_RATE) != 0) {
-		pr_info("\nWARNING: Can't generate CLOCK_TICK_RATE at %d Hz\n",
-			CLOCK_TICK_RATE);
+	rate = clk_early_get_timer_rate();
+	if (rate == 0)
+		panic("MXC GPT: Can't get timer clock rate\n");
+	
+#ifdef CLOCK_TICK_RATE
+	div = rate / CLOCK_TICK_RATE;
+	WARN_ON((div * CLOCK_TICK_RATE) != rate);
+#else /* Hopefully CLOCK_TICK_RATE will go away soon */
+	div = 1;
+	while (rate > 20000000) {
+		div++;
+		rate /= div;
 	}
-	pr_info("Actual CLOCK_TICK_RATE is %d Hz\n",
-		v / ((__raw_readl(MXC_GPT_GPTPR) & 0xFFF) + 1));
+#endif
+	__raw_writel(div - 1, MXC_GPT_GPTPR);
 
-	reg = __raw_readl(MXC_GPT_GPTCNT);
-	reg += LATCH;
-	__raw_writel(reg, MXC_GPT_GPTOCR1);
-
-	setup_irq(INT_GPT, &timer_irq);
-
-	reg = __raw_readl(MXC_GPT_GPTCR);
-	reg = GPTCR_FRR | GPTCR_CLKSRC_HIGHFREQ |
-	    GPTCR_STOPEN |
+	reg = GPTCR_FRR | GPTCR_CLKSRC_HIGHFREQ | GPTCR_STOPEN |
 	    GPTCR_DOZEN | GPTCR_WAITEN | GPTCR_ENMOD | GPTCR_ENABLE;
 	__raw_writel(reg, MXC_GPT_GPTCR);
 
-	__raw_writel(GPTIR_OF1IE, MXC_GPT_GPTIR);
+	gpt_clocksrc.mult = clocksource_hz2mult(rate, gpt_clocksrc.shift);
+	ret = clocksource_register(&gpt_clocksrc);
+	if (ret < 0) {
+		goto err;
+	}
 
+	gpt_clockevent.mult = div_sc(rate, NSEC_PER_SEC, gpt_clockevent.shift);
+	gpt_clockevent.max_delta_ns =
+		clockevent_delta2ns(-1, &gpt_clockevent);
+	gpt_clockevent.min_delta_ns =
+		clockevent_delta2ns(1, &gpt_clockevent);
+
+	gpt_clockevent.cpumask = cpumask_of_cpu(0);
+	clockevents_register_device(&gpt_clockevent);
+
+	ret = setup_irq(INT_GPT, &timer_irq);
+	if (ret < 0) {
+		goto err;
+	}
+
+	pr_info("MXC GPT timer initialized, rate = %lu\n", rate);
+	return;
+err:
+	panic("Unable to initialize timer\n");
 }
 
 struct sys_timer mxc_timer = {
 	.init = mxc_init_time,
-	.offset = mxc_gettimeoffset,
 };
+
