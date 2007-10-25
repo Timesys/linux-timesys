@@ -1869,11 +1869,11 @@ config 68360_ENET
 	  the Motorola 68360 processor.
 
 config FEC
-	bool "FEC ethernet controller (of ColdFire CPUs)"
-	depends on M523x || M527x || M5272 || M528x || M520x
+	tristate "FEC ethernet controller"
+	depends on M523x || M527x || M5272 || M528x || M520x || ARCH_MX27
 	help
 	  Say Y here if you want to use the built-in 10/100 Fast ethernet
-	  controller on some Motorola ColdFire processors.
+	  controller on some Motorola/Freescale processors.
 
 config FEC2
 	bool "Second FEC ethernet controller (on some ColdFire CPUs)"
