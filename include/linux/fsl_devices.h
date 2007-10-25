@@ -71,8 +71,8 @@ struct gianfar_mdio_data {
 #define FSL_GIANFAR_DEV_HAS_PADDING		0x00000080
 
 /* Flags in gianfar_platform_data */
-#define FSL_GIANFAR_BRD_HAS_PHY_INTR	0x00000001 /* set or use a timer */
-#define FSL_GIANFAR_BRD_IS_REDUCED	0x00000002 /* Set if RGMII, RMII */
+#define FSL_GIANFAR_BRD_HAS_PHY_INTR	0x00000001	/* set or use a timer */
+#define FSL_GIANFAR_BRD_IS_REDUCED	0x00000002	/* Set if RGMII, RMII */
 
 struct fsl_i2c_platform_data {
 	/* device specific information */
@@ -100,9 +100,30 @@ enum fsl_usb2_phy_modes {
 
 struct fsl_usb2_platform_data {
 	/* board specific information */
-	enum fsl_usb2_operating_modes	operating_mode;
-	enum fsl_usb2_phy_modes		phy_mode;
-	unsigned int			port_enables;
+	enum fsl_usb2_operating_modes operating_mode;
+	enum fsl_usb2_phy_modes phy_mode;
+	unsigned int port_enables;
+
+	/* DDD this could arguably be moved to a separate
+	 * fsl usb2 device header file
+	 */
+	char *name;		/* pretty print */
+	int (*platform_init) (struct platform_device *);
+	void (*platform_uninit) (struct fsl_usb2_platform_data *);
+	int (*platform_verify) (struct platform_device *);
+	u32 xcvr_type;		/* PORTSC_PTS_* */
+	char *transceiver;	/* transceiver name */
+	// DDD combine usbmode and view into 1 register-base variable
+	u32 usbmode;		/* address of usbmode register */
+	u32 viewport;		/* address of ulpiview register */
+	u32 r_start;		/* start of MEM resource */
+	u32 r_len;		/* length of MEM resource */
+	void __iomem *regs;	/* ioremap'd register base */
+	int does_otg;
+	unsigned power_budget;	/* for hcd->power_budget */
+	struct fsl_xcvr_ops *xcvr_ops;
+	int (*gpio_usb_active) (void);
+	void (*gpio_usb_inactive) (void);
 };
 
 /* Flags in fsl_usb2_mph_platform_data */
@@ -110,14 +131,14 @@ struct fsl_usb2_platform_data {
 #define FSL_USB2_PORT1_ENABLED	0x00000002
 
 struct fsl_spi_platform_data {
-	u32 	initial_spmode;	/* initial SPMODE value */
-	u16	bus_num;
+	u32 initial_spmode;	/* initial SPMODE value */
+	u16 bus_num;
 
 	/* board specific information */
-	u16	max_chipselect;
-	void	(*activate_cs)(u8 cs, u8 polarity);
-	void	(*deactivate_cs)(u8 cs, u8 polarity);
-	u32	sysclk;
+	u16 max_chipselect;
+	void (*activate_cs) (u8 cs, u8 polarity);
+	void (*deactivate_cs) (u8 cs, u8 polarity);
+	u32 sysclk;
 };
 
 #endif /* _FSL_DEVICE_H_ */

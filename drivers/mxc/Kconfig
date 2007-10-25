@@ -1,0 +1,18 @@
+# drivers/video/mxc/Kconfig
+
+if ARCH_MXC
+
+menu "MXC support drivers"
+
+source "drivers/mxc/ipu/Kconfig"
+source "drivers/mxc/ssi/Kconfig"
+source "drivers/mxc/dam/Kconfig"
+source "drivers/mxc/pmic/Kconfig"
+source "drivers/mxc/pm/Kconfig"
+source "drivers/mxc/security/Kconfig"
+source "drivers/mxc/hmp4e/Kconfig"
+source "drivers/mxc/vpu/Kconfig"
+
+endmenu
+
+endif
