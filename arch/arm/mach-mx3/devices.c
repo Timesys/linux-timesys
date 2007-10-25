@@ -280,63 +280,6 @@ static inline void mxc_init_ipu(void)
 }
 #endif
 
-#if defined(CONFIG_MXC_FIR) || defined(CONFIG_MXC_FIR_MODULE)
-/*!
- * Resource definition for the FIR
- */
-static struct resource mxcir_resources[] = {
-	[0] = {
-	       .start = UART2_BASE_ADDR,
-	       .end = UART2_BASE_ADDR + SZ_16K - 1,
-	       .flags = IORESOURCE_MEM,
-	       },
-	[1] = {
-	       .start = INT_UART2,
-	       .end = INT_UART2,
-	       .flags = IORESOURCE_IRQ,
-	       },
-	[2] = {
-	       .start = FIRI_BASE_ADDR,
-	       .end = FIRI_BASE_ADDR + SZ_16K - 1,
-	       .flags = IORESOURCE_MEM,
-	       },
-	[3] = {
-	       .start = INT_FIRI,
-	       .end = INT_FIRI,
-	       .flags = IORESOURCE_IRQ,
-	       },
-	[4] = {
-	       .start = INT_UART2,
-	       .end = INT_UART2,
-	       .flags = IORESOURCE_IRQ,
-	       }
-};
-
-static struct mxc_ir_platform_data ir_data;
-
-/*! Device Definition for MXC FIR */
-static struct platform_device mxcir_device = {
-	.name = "mxcir",
-	.id = 0,
-	.dev = {
-		.release = mxc_nop_release,
-		.platform_data = &ir_data,
-		},
-	.num_resources = ARRAY_SIZE(mxcir_resources),
-	.resource = mxcir_resources,
-};
-
-static inline void mxc_init_ir(void)
-{
-	ir_data.uart_ir_mux = 1;
-	ir_data.uart_clk = clk_get(NULL, "uart_clk.1");;
-	(void)platform_device_register(&mxcir_device);
-}
-#else
-static inline void mxc_init_ir(void)
-{
-}
-#endif
 /*!
  * This is platform device structure for adding SCC
  */
@@ -965,7 +908,6 @@ static int __init mxc_init_devices(void)
 	mxc_init_wdt();
 	mxc_init_ipu();
 	mxc_init_mmc();
-	mxc_init_ir();
 	mxc_init_spi();
 	mxc_init_i2c();
 	mxc_init_rtc();

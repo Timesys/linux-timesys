@@ -390,6 +390,67 @@ static inline void mxc_init_fb(void)
 }
 #endif
 
+#if defined(CONFIG_MXC_FIR) || defined(CONFIG_MXC_FIR_MODULE)
+/*!
+ * Resource definition for the FIR
+ */
+static struct resource mxcir_resources[] = {
+	[0] = {
+	       .start = UART2_BASE_ADDR,
+	       .end = UART2_BASE_ADDR + SZ_16K - 1,
+	       .flags = IORESOURCE_MEM,
+	       },
+	[1] = {
+	       .start = INT_UART2,
+	       .end = INT_UART2,
+	       .flags = IORESOURCE_IRQ,
+	       },
+	[2] = {
+	       .start = FIRI_BASE_ADDR,
+	       .end = FIRI_BASE_ADDR + SZ_16K - 1,
+	       .flags = IORESOURCE_MEM,
+	       },
+	[3] = {
+	       .start = INT_FIRI,
+	       .end = INT_FIRI,
+	       .flags = IORESOURCE_IRQ,
+	       },
+	[4] = {
+	       .start = INT_UART2,
+	       .end = INT_UART2,
+	       .flags = IORESOURCE_IRQ,
+	       }
+};
+
+static struct mxc_ir_platform_data ir_data = {
+	.uart_ir_mux = 1,
+	.ir_rx_invert = MXC_IRDA_RX_INV,
+	.ir_tx_invert = MXC_IRDA_TX_INV,
+};
+
+/*! Device Definition for MXC FIR */
+static struct platform_device mxcir_device = {
+	.name = "mxcir",
+	.id = 0,
+	.dev = {
+		.release = mxc_nop_release,
+		.platform_data = &ir_data,
+		},
+	.num_resources = ARRAY_SIZE(mxcir_resources),
+	.resource = mxcir_resources,
+};
+
+static inline void mxc_init_ir(void)
+{
+	ir_data.uart_clk = clk_get(NULL, "uart_clk.1");;
+	(void)platform_device_register(&mxcir_device);
+}
+#else
+static inline void mxc_init_ir(void)
+{
+}
+#endif
+
 static void mxc_expio_irq_handler(u32 irq, struct irq_desc *desc)
 {
 	u32 imr_val;
@@ -610,6 +671,7 @@ static void __init mxc_board_init(void)
 				ARRAY_SIZE(mxc_spi_board_info));
 
 	mxc_init_fb();
+	mxc_init_ir();
 }
 
 #define PLL_PCTL_REG(pd, mfd, mfi, mfn)		\
