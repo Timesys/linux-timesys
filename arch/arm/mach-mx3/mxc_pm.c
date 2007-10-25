@@ -301,6 +301,7 @@ void mxc_pm_lowpower(int mode)
 		/* State Retention mode */
 		lpm = 2;
 		__raw_writel(INT_GPT, AVIC_INTDISNUM);
+		__raw_writel(INT_GPIO1, AVIC_INTDISNUM);
 
 		/* work-around for SR mode after camera related test */
 		mxc_clks_enable(CSI_BAUD);
@@ -339,6 +340,7 @@ void mxc_pm_lowpower(int mode)
 	mxc_clks_disable(CSI_BAUD);
 
 	__raw_writel(INT_GPT, AVIC_INTENNUM);
+	__raw_writel(INT_GPIO1, AVIC_INTENNUM);
 
 	local_irq_enable();
 }
