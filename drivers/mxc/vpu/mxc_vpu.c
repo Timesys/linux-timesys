@@ -271,6 +271,31 @@ static int vpu_ioctl(struct inode *inode, struct file *filp, u_int cmd,
 			codec_done = 0;
 			break;
 		}
+		/* set/clear LHD (Latency Hiding Disable) bit in ESDCFG0 reg. 
+		   Tends to fix MPEG4 issue on MX27 TO2 */
+	case VPU_IOC_LHD:
+		{
+			u_int disable = (u_int) arg;
+			u_int reg;
+			u_int reg_addr;
+
+			reg_addr = IO_ADDRESS(SDRAMC_BASE_ADDR + 0x10);
+			reg = __raw_readl(reg_addr);
+			pr_debug("ESDCFG0: [ 0x%08x ]\n", reg);
+
+			if (disable == 0) {
+				__raw_writel(reg & ~0x00000020, reg_addr);
+				pr_debug("Latency Hiding Disable\n");
+			} else {
+				__raw_writel(reg | 0x00000020, reg_addr);
+				pr_debug("Latency Hiding Enable\n");
+			}
+
+			pr_debug("ESDCFG0: [ 0x%08x ]\n",
+				 __raw_readl(reg_addr));
+
+			break;
+		}
 	case VPU_IOC_VL2CC_FLUSH:
 		if (cpu_is_mx32()) {
 			vl2cc_flush();
