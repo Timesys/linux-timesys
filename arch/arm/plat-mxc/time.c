@@ -35,88 +35,54 @@
 #include <linux/io.h>
 #include <linux/clocksource.h>
 #include <linux/clockchips.h>
+#include <asm/hardware.h>
 #include <asm/mach/time.h>
 
-#define MXC_GPT_GPTCR		(IO_ADDRESS(GPT1_BASE_ADDR + 0x00))
-#define MXC_GPT_GPTPR		(IO_ADDRESS(GPT1_BASE_ADDR + 0x04))
-#define MXC_GPT_GPTSR		(IO_ADDRESS(GPT1_BASE_ADDR + 0x08))
-#define MXC_GPT_GPTIR		(IO_ADDRESS(GPT1_BASE_ADDR + 0x0C))
-#define MXC_GPT_GPTOCR1		(IO_ADDRESS(GPT1_BASE_ADDR + 0x10))
-#define MXC_GPT_GPTOCR2		(IO_ADDRESS(GPT1_BASE_ADDR + 0x14))
-#define MXC_GPT_GPTOCR3		(IO_ADDRESS(GPT1_BASE_ADDR + 0x18))
-#define MXC_GPT_GPTICR1		(IO_ADDRESS(GPT1_BASE_ADDR + 0x1C))
-#define MXC_GPT_GPTICR2		(IO_ADDRESS(GPT1_BASE_ADDR + 0x20))
-#define MXC_GPT_GPTCNT		(IO_ADDRESS(GPT1_BASE_ADDR + 0x24))
+/*!
+ * GPT register address definitions
+ */
+#define GPT_BASE_ADDR		(IO_ADDRESS(GPT1_BASE_ADDR))
+#define MXC_GPT_GPTCR		(GPT_BASE_ADDR + 0x00)
+#define MXC_GPT_GPTPR		(GPT_BASE_ADDR + 0x04)
+#define MXC_GPT_GPTSR		(GPT_BASE_ADDR + 0x08)
+#define MXC_GPT_GPTIR		(GPT_BASE_ADDR + 0x0C)
+#define MXC_GPT_GPTOCR1		(GPT_BASE_ADDR + 0x10)
+#define MXC_GPT_GPTOCR2		(GPT_BASE_ADDR + 0x14)
+#define MXC_GPT_GPTOCR3		(GPT_BASE_ADDR + 0x18)
+#define MXC_GPT_GPTICR1		(GPT_BASE_ADDR + 0x1C)
+#define MXC_GPT_GPTICR2		(GPT_BASE_ADDR + 0x20)
+#define MXC_GPT_GPTCNT		(GPT_BASE_ADDR + 0x24)
 
 /*!
  * GPT Control register bit definitions
  */
-#define GPTCR_FO3			(1<<31)
-#define GPTCR_FO2			(1<<30)
-#define GPTCR_FO1			(1<<29)
+#define GPTCR_FO3			(1 << 31)
+#define GPTCR_FO2			(1 << 30)
+#define GPTCR_FO1			(1 << 29)
 
-#define GPTCR_OM3_SHIFT			26
-#define GPTCR_OM3_MASK			(7<<GPTCR_OM3_SHIFT)
-#define GPTCR_OM3_DISCONNECTED		(0<<GPTCR_OM3_SHIFT)
-#define GPTCR_OM3_TOGGLE		(1<<GPTCR_OM3_SHIFT)
-#define GPTCR_OM3_CLEAR			(2<<GPTCR_OM3_SHIFT)
-#define GPTCR_OM3_SET			(3<<GPTCR_OM3_SHIFT)
-#define GPTCR_OM3_GENERATE_LOW		(7<<GPTCR_OM3_SHIFT)
-
-#define GPTCR_OM2_SHIFT			23
-#define GPTCR_OM2_MASK			(7<<GPTCR_OM2_SHIFT)
-#define GPTCR_OM2_DISCONNECTED		(0<<GPTCR_OM2_SHIFT)
-#define GPTCR_OM2_TOGGLE		(1<<GPTCR_OM2_SHIFT)
-#define GPTCR_OM2_CLEAR			(2<<GPTCR_OM2_SHIFT)
-#define GPTCR_OM2_SET			(3<<GPTCR_OM2_SHIFT)
-#define GPTCR_OM2_GENERATE_LOW		(7<<GPTCR_OM2_SHIFT)
-
-#define GPTCR_OM1_SHIFT			20
-#define GPTCR_OM1_MASK			(7<<GPTCR_OM1_SHIFT)
-#define GPTCR_OM1_DISCONNECTED		(0<<GPTCR_OM1_SHIFT)
-#define GPTCR_OM1_TOGGLE		(1<<GPTCR_OM1_SHIFT)
-#define GPTCR_OM1_CLEAR			(2<<GPTCR_OM1_SHIFT)
-#define GPTCR_OM1_SET			(3<<GPTCR_OM1_SHIFT)
-#define GPTCR_OM1_GENERATE_LOW		(7<<GPTCR_OM1_SHIFT)
-
-#define GPTCR_IM2_SHIFT			18
-#define GPTCR_IM2_MASK			(3<<GPTCR_IM2_SHIFT)
-#define GPTCR_IM2_CAPTURE_DISABLE	(0<<GPTCR_IM2_SHIFT)
-#define GPTCR_IM2_CAPTURE_RISING	(1<<GPTCR_IM2_SHIFT)
-#define GPTCR_IM2_CAPTURE_FALLING	(2<<GPTCR_IM2_SHIFT)
-#define GPTCR_IM2_CAPTURE_BOTH		(3<<GPTCR_IM2_SHIFT)
-
-#define GPTCR_IM1_SHIFT			16
-#define GPTCR_IM1_MASK			(3<<GPTCR_IM1_SHIFT)
-#define GPTCR_IM1_CAPTURE_DISABLE	(0<<GPTCR_IM1_SHIFT)
-#define GPTCR_IM1_CAPTURE_RISING	(1<<GPTCR_IM1_SHIFT)
-#define GPTCR_IM1_CAPTURE_FALLING	(2<<GPTCR_IM1_SHIFT)
-#define GPTCR_IM1_CAPTURE_BOTH		(3<<GPTCR_IM1_SHIFT)
-
-#define GPTCR_SWR			(1<<15)
-#define GPTCR_FRR			(1<<9)
+#define GPTCR_SWR			(1 << 15)
+#define GPTCR_FRR			(1 << 9)
 
 #define GPTCR_CLKSRC_SHIFT		6
-#define GPTCR_CLKSRC_MASK		(7<<GPTCR_CLKSRC_SHIFT)
-#define GPTCR_CLKSRC_NOCLOCK		(0<<GPTCR_CLKSRC_SHIFT)
-#define GPTCR_CLKSRC_HIGHFREQ		(2<<GPTCR_CLKSRC_SHIFT)
-#define GPTCR_CLKSRC_CLKIN		(3<<GPTCR_CLKSRC_SHIFT)
-#define GPTCR_CLKSRC_CLK32K		(7<<GPTCR_CLKSRC_SHIFT)
+#define GPTCR_CLKSRC_MASK		(7 << GPTCR_CLKSRC_SHIFT)
+#define GPTCR_CLKSRC_NOCLOCK		(0 << GPTCR_CLKSRC_SHIFT)
+#define GPTCR_CLKSRC_HIGHFREQ		(2 << GPTCR_CLKSRC_SHIFT)
+#define GPTCR_CLKSRC_CLKIN		(3 << GPTCR_CLKSRC_SHIFT)
+#define GPTCR_CLKSRC_CLK32K		(4 << GPTCR_CLKSRC_SHIFT)
 
-#define GPTCR_STOPEN			(1<<5)
-#define GPTCR_DOZEN			(1<<4)
-#define GPTCR_WAITEN			(1<<3)
-#define GPTCR_DBGEN			(1<<2)
+#define GPTCR_STOPEN			(1 << 5)
+#define GPTCR_DOZEN			(1 << 4)
+#define GPTCR_WAITEN			(1 << 3)
+#define GPTCR_DBGEN			(1 << 2)
+#define GPTCR_ENMOD			(1 << 1)
+#define GPTCR_ENABLE			(1 << 0)
 
-#define GPTCR_ENMOD			(1<<1)
-#define GPTCR_ENABLE			(1<<0)
-
-#define	GPTSR_OF1			(1<<0)
-#define	GPTSR_OF2			(1<<1)
-#define	GPTSR_OF3			(1<<2)
-#define	GPTSR_IF1			(1<<3)
-#define	GPTSR_IF2			(1<<4)
-#define	GPTSR_ROV			(1<<5)
+#define	GPTSR_OF1			(1 << 0)
+#define	GPTSR_OF2			(1 << 1)
+#define	GPTSR_OF3			(1 << 2)
+#define	GPTSR_IF1			(1 << 3)
+#define	GPTSR_IF2			(1 << 4)
+#define	GPTSR_ROV			(1 << 5)
 
 #define	GPTIR_OF1IE			GPTSR_OF1
 #define	GPTIR_OF2IE			GPTSR_OF2
@@ -128,11 +94,11 @@
 extern unsigned long clk_early_get_timer_rate(void);
 
 static int mxc_gpt_set_next_event(unsigned long cycles,
-				    struct clock_event_device *evt)
+				  struct clock_event_device *evt)
 {
 	unsigned long now, expires;
 	u32 reg;
-	
+
 	now = __raw_readl(MXC_GPT_GPTCNT);
 	expires = now + cycles;
 	__raw_writel(expires, MXC_GPT_GPTOCR1);
@@ -142,13 +108,15 @@ static int mxc_gpt_set_next_event(unsigned long cycles,
 	reg = __raw_readl(MXC_GPT_GPTIR);
 	reg |= GPTIR_OF1IE;
 	__raw_writel(reg, MXC_GPT_GPTIR);
-	
+
 	return 0;
 }
 
 static void mxc_gpt_set_mode(enum clock_event_mode mode,
-			      struct clock_event_device *evt)
+			     struct clock_event_device *evt)
 {
+	u32 reg;
+
 	switch (mode) {
 	case CLOCK_EVT_MODE_PERIODIC:
 		panic("MXC GPT: CLOCK_EVT_MODE_PERIODIC not supported\n");
@@ -158,18 +126,20 @@ static void mxc_gpt_set_mode(enum clock_event_mode mode,
 	case CLOCK_EVT_MODE_UNUSED:
 	case CLOCK_EVT_MODE_SHUTDOWN:
 		/* Disable interrupts */
-		__raw_writel(0, MXC_GPT_GPTIR);
+		reg = __raw_readl(MXC_GPT_GPTIR);
+		reg &= ~GPTIR_OF1IE;
+		__raw_writel(reg, MXC_GPT_GPTIR);
 		break;
 	}
 }
 
 static struct clock_event_device gpt_clockevent = {
-	.name		= "mxc_gpt",
-	.features	= CLOCK_EVT_FEAT_ONESHOT,
-	.rating		= 300,
-	.shift		= 32,
-	.set_next_event	= mxc_gpt_set_next_event,
-	.set_mode	= mxc_gpt_set_mode,
+	.name = "mxc_gpt",
+	.features = CLOCK_EVT_FEAT_ONESHOT,
+	.rating = 300,
+	.shift = 32,
+	.set_next_event = mxc_gpt_set_next_event,
+	.set_mode = mxc_gpt_set_mode,
 };
 
 /*!
@@ -189,7 +159,7 @@ static irqreturn_t mxc_timer_interrupt(int irq, void *dev_id)
 	unsigned int gptsr;
 	u32 reg;
 
-	gptsr = __raw_readl(MXC_GPT_GPTSR) & __raw_readl(MXC_GPT_GPTIR);
+	gptsr = __raw_readl(MXC_GPT_GPTSR);
 	if (gptsr & GPTSR_OF1) {
 		/* Disable interrupt */
 		reg = __raw_readl(MXC_GPT_GPTIR);
@@ -221,13 +191,12 @@ static cycle_t mxc_gpt_read(void)
 }
 
 static struct clocksource gpt_clocksrc = {
-	.name		= "mxc_gpt",
-	.rating		= 300,
-	.read		= mxc_gpt_read,
-	.mask		= CLOCKSOURCE_MASK(32),
-	.shift		= 24,
-	.flags		= CLOCK_SOURCE_IS_CONTINUOUS | 
-			  CLOCK_SOURCE_VALID_FOR_HRES,
+	.name = "mxc_gpt",
+	.rating = 300,
+	.read = mxc_gpt_read,
+	.mask = CLOCKSOURCE_MASK(32),
+	.shift = 24,
+	.flags = CLOCK_SOURCE_IS_CONTINUOUS | CLOCK_SOURCE_VALID_FOR_HRES,
 };
 
 /*!
@@ -249,18 +218,17 @@ void __init mxc_init_time(void)
 	rate = clk_early_get_timer_rate();
 	if (rate == 0)
 		panic("MXC GPT: Can't get timer clock rate\n");
-	
+
 #ifdef CLOCK_TICK_RATE
 	div = rate / CLOCK_TICK_RATE;
 	WARN_ON((div * CLOCK_TICK_RATE) != rate);
-	rate /= div;
-#else /* Hopefully CLOCK_TICK_RATE will go away soon */
+#else				/* Hopefully CLOCK_TICK_RATE will go away soon */
 	div = 1;
-	while (rate > 20000000) {
+	while ((rate / div) > 20000000) {
 		div++;
-		rate /= div;
 	}
 #endif
+	rate /= div;
 	__raw_writel(div - 1, MXC_GPT_GPTPR);
 
 	reg = GPTCR_FRR | GPTCR_CLKSRC_HIGHFREQ | GPTCR_STOPEN |
@@ -274,10 +242,8 @@ void __init mxc_init_time(void)
 	}
 
 	gpt_clockevent.mult = div_sc(rate, NSEC_PER_SEC, gpt_clockevent.shift);
-	gpt_clockevent.max_delta_ns =
-		clockevent_delta2ns(-1, &gpt_clockevent);
-	gpt_clockevent.min_delta_ns =
-		clockevent_delta2ns(1, &gpt_clockevent);
+	gpt_clockevent.max_delta_ns = clockevent_delta2ns(-1, &gpt_clockevent);
+	gpt_clockevent.min_delta_ns = clockevent_delta2ns(1, &gpt_clockevent);
 
 	gpt_clockevent.cpumask = cpumask_of_cpu(0);
 	clockevents_register_device(&gpt_clockevent);
@@ -289,11 +255,10 @@ void __init mxc_init_time(void)
 
 	pr_info("MXC GPT timer initialized, rate = %lu\n", rate);
 	return;
-err:
+      err:
 	panic("Unable to initialize timer\n");
 }
 
 struct sys_timer mxc_timer = {
 	.init = mxc_init_time,
 };
-
