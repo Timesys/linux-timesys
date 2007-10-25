@@ -56,7 +56,10 @@ static int fsl_check_usbclk(void)
 	unsigned long freq;
 
 	usb_ahb_clk = clk_get(NULL, "usb_ahb_clk");
-	clk_enable(usb_ahb_clk);
+	if (clk_enable(usb_ahb_clk)) {
+		printk(KERN_ERR "clk_enable(usb_ahb_clk) failed\n");
+		return -EINVAL;
+	}
 	clk_put(usb_ahb_clk);
 
 	usb_clk = clk_get(NULL, "usb_clk");
@@ -314,6 +317,7 @@ static void usbh1_set_serial_xcvr(void)
 
 static void usbh2_set_ulpi_xcvr(void)
 {
+	pr_debug("%s\n", __FUNCTION__);
 	USBCTRL &= ~(UCTRL_H2SIC_MASK | UCTRL_BPE);	/* disable bypass mode */
 	USBCTRL |= UCTRL_H2WIE |	/* wakeup intr enable */
 	    UCTRL_H2UIE |	/* ULPI intr enable */
@@ -349,17 +353,20 @@ int fsl_usb_host_init(struct platform_device *pdev)
 	if (fsl_check_usbclk() != 0)
 		return -EINVAL;
 
-	pr_debug("%s: grab pins\n", __FUNCTION__);
-	if (pdata->gpio_usb_active())
-		return -EINVAL;
-
 	/* request_mem_region and ioremap registers */
 	if ((rc = fsl_usb_mem_init(pdev))) {
 		pdata->gpio_usb_inactive();	/* release our pins */
 		return rc;
 	}
 
-	clk_enable(usb_clk);
+	pr_debug("%s: grab pins\n", __FUNCTION__);
+	if (pdata->gpio_usb_active())
+		return -EINVAL;
+
+	if (clk_enable(usb_clk)) {
+		printk(KERN_ERR "clk_enable(usb_clk) failed\n");
+		return -EINVAL;
+	}
 
 	if (xops->init)
 		xops->init(xops);
@@ -400,6 +407,7 @@ static void otg_set_serial_xcvr(void)
 {
 	u32 tmp;
 
+	pr_debug("%s\n", __FUNCTION__);
 	tmp = UOG_PORTSC1 & ~PORTSC_PTS_MASK;
 	tmp |= PORTSC_PTS_SERIAL;
 	UOG_PORTSC1 = tmp;
@@ -407,6 +415,7 @@ static void otg_set_serial_xcvr(void)
 
 void otg_set_serial_host(void)
 {
+	pr_debug("%s\n", __FUNCTION__);
 	/* set USBCTRL for host operation
 	 * disable: bypass mode,
 	 * set: single-ended/unidir/6 wire, OTG wakeup intr enable,
@@ -463,6 +472,7 @@ static void otg_set_ulpi_xcvr(void)
 {
 	u32 tmp;
 
+	pr_debug("%s\n", __FUNCTION__);
 	USBCTRL &= ~UCTRL_OSIC_MASK;
 #if defined(CONFIG_ARCH_MX27) || defined(CONFIG_ARCH_MX3)
 	USBCTRL &= ~UCTRL_BPE;
@@ -518,7 +528,10 @@ int usbotg_init(struct platform_device *pdev)
 		if (pdata->gpio_usb_active())
 			return -EINVAL;
 
-		clk_enable(usb_clk);
+		if (clk_enable(usb_clk)) {
+			printk(KERN_ERR "clk_enable(usb_clk) failed\n");
+			return -EINVAL;
+		}
 
 		/* request_mem_region and ioremap registers */
 		if ((rc = fsl_usb_mem_init(pdev))) {
