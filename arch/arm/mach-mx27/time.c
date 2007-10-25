@@ -192,6 +192,7 @@ void __init mxc_init_time(void)
 #ifdef CLOCK_TICK_RATE
 	div = rate / CLOCK_TICK_RATE;
 	WARN_ON((div * CLOCK_TICK_RATE) != rate);
+	rate /= div;
 #else /* Hopefully CLOCK_TICK_RATE will go away soon */
 	div = 1;
 	while (rate > 20000000) {
