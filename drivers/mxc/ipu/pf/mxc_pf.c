@@ -96,6 +96,11 @@ static int mxc_pf_init(pf_init_params * pf_init)
 	u32 qp_size = 0;
 	u32 qp_stride;
 
+	if ((pf_init->pf_mode > 4) || (pf_init->width > 1024) ||
+	    (pf_init->height > 1024) || (pf_init->stride < pf_init->width)) {
+		return -EINVAL;
+	}
+
 	pf_data.mode = pf_init->pf_mode;
 	w = pf_data.width = pf_init->width;
 	h = pf_data.height = pf_init->height;
