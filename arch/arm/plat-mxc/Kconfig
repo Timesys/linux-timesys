@@ -11,6 +11,7 @@ config ARCH_MX3
 	select CPU_V6
 	select CACHE_L2X0
 	select USB_ARCH_HAS_EHCI
+	select ARCH_HAS_EVTMON
 	help
 	  This enables support for systems based on Freescale i.MX31
 
@@ -29,6 +30,10 @@ source "arch/arm/mach-mx27/Kconfig"
 source "arch/arm/mach-mx3/Kconfig"
 
 endmenu
+
+config ARCH_HAS_EVTMON
+	bool
+	depends on ARCH_MXC
 
 config MXC_EMMA
 	bool
