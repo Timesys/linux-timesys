@@ -183,7 +183,7 @@ typedef struct {
  * This defines maximum device name length passed during mxc_request_dma().
  */
 #define MAX_DEVNAME_LENGTH 32
-#define MAX_BD_SIZE	32
+#define MAX_BD_SIZE	64
 
 /*!
  * Structure containing dma channel parameters.
