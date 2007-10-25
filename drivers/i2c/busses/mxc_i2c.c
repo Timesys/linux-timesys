@@ -123,10 +123,24 @@ extern void gpio_i2c_inactive(int i2c_num);
 static void mxc_i2c_stop(mxc_i2c_device * dev)
 {
 	volatile unsigned int cr;
+	int retry = 16;
 
 	cr = readw(dev->membase + MXC_I2CR);
 	cr &= ~(MXC_I2CR_MSTA | MXC_I2CR_MTX);
 	writew(cr, dev->membase + MXC_I2CR);
+
+	/*
+	 * Make sure STOP meets setup requirement.
+	 */
+	for (;;) {
+		unsigned int sr = readw(dev->membase + MXC_I2SR);
+		if ((sr & MXC_I2SR_IBB) == 0) break;
+		if (retry-- <= 0) {
+			printk(KERN_DEBUG "Bus busy\n");
+			break;
+		}
+		udelay(3);
+	}
 }
 
 /*!
