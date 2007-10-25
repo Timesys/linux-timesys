@@ -44,10 +44,52 @@ static int video_nr = -1;
 cam_data *g_cam;
 EXPORT_SYMBOL(g_cam);
 
-static int dq_intr_cnt=0;
-static int dq_timeout_cnt=0;
-static int empty_wq_cnt=0;
+static int dq_intr_cnt = 0;
+static int dq_timeout_cnt = 0;
+static int empty_wq_cnt = 0;
+struct workqueue_struct *v4l2_work;
 
+static void prp_reset(struct work_struct *unused)
+{
+	struct mxc_v4l_frame *done_frame, *ready_frame, *temp_frame;
+
+	g_cam->ping_pong_csi = 0;
+	g_cam->enc_enable(g_cam);
+	if (!list_empty(&g_cam->working_q)) {
+		done_frame =
+		    list_entry(g_cam->working_q.next, struct mxc_v4l_frame,
+			       queue);
+		list_del(g_cam->working_q.next);
+		if (!list_empty(&g_cam->working_q)) {
+			temp_frame =
+			    list_entry(g_cam->working_q.next,
+				       struct mxc_v4l_frame, queue);
+			list_del(g_cam->working_q.next);
+			list_add_tail(&temp_frame->queue, &g_cam->working_q);
+			g_cam->enc_update_eba(temp_frame->paddress,
+					      &g_cam->ping_pong_csi);
+		}
+		list_add_tail(&done_frame->queue, &g_cam->working_q);
+		g_cam->enc_update_eba(done_frame->paddress,
+				      &g_cam->ping_pong_csi);
+		pr_debug("prp_reset - working_q\n");
+	} else if (list_empty(&g_cam->ready_q)) {
+		prphw_disable(PRP_CHANNEL_2);
+		g_cam->skip_frame++;
+	} else {
+		ready_frame =
+		    list_entry(g_cam->ready_q.next, struct mxc_v4l_frame,
+			       queue);
+		list_del(g_cam->ready_q.next);
+		list_add_tail(&ready_frame->queue, &g_cam->working_q);
+		g_cam->enc_update_eba(ready_frame->paddress,
+				      &g_cam->ping_pong_csi);
+	}
+	g_cam->overflow = 0;
+	wake_up_interruptible(&g_cam->overflow_queue);
+}
+
+DECLARE_WORK(prp_reset_work, prp_reset);
 /*!
  * Free frame buffers
  *
@@ -184,6 +226,7 @@ static int mxc_streamon(cam_data * cam)
 	}
 
 	cam->ping_pong_csi = 0;
+	cam->overflow = 0;
 	if (cam->enc_update_eba) {
 		frame =
 		    list_entry(cam->ready_q.next, struct mxc_v4l_frame, queue);
@@ -684,65 +727,22 @@ static int mxc_v4l_dqueue(cam_data * cam, struct v4l2_buffer *buf)
 	int retval = 0;
 	struct mxc_v4l_frame *frame;
 
-    cont:
 	if (!wait_event_interruptible_timeout(cam->enc_queue,
 					      cam->enc_counter != 0, 10 * HZ)) {
- 		if( (dq_timeout_cnt & 0x1f) == 0)
-			printk(KERN_ERR "mxc_v4l_dqueue timeout enc_counter %x\n",
+		if ((dq_timeout_cnt & 0x1f) == 0)
+			printk(KERN_ERR
+			       "mxc_v4l_dqueue timeout enc_counter %x\n",
 			       cam->enc_counter);
 		dq_timeout_cnt++;
-		if (cam->overflow == 1) {
-			cam->enc_enable(cam);
-		    cam->overflow = 0;
-		    if (!list_empty(&cam->ready_q)) {
-			    frame =
-			        list_entry(cam->ready_q.next,
-				           struct mxc_v4l_frame, queue);
-			    list_del(cam->ready_q.next);
-			    list_add_tail(&frame->queue, &cam->working_q);
-			    cam->enc_update_eba(frame->paddress,
-			    		    &cam->ping_pong_csi);
-		    }
-		    goto cont;
-		}
 		return -ETIME;
 	} else if (signal_pending(current)) {
- 		if(dq_intr_cnt == 0)
-			printk(KERN_ERR "mxc_v4l_dqueue() interrupt received %d\n",dq_intr_cnt);
- 		dq_intr_cnt++;
-		if (cam->overflow == 1) {
-			cam->enc_enable(cam);
-			cam->overflow = 0;
-			if (!list_empty(&cam->ready_q)) {
-				frame =
-				    list_entry(cam->ready_q.next,
-					       struct mxc_v4l_frame, queue);
-				list_del(cam->ready_q.next);
-				list_add_tail(&frame->queue, &cam->working_q);
-				cam->enc_update_eba(frame->paddress,
-						    &cam->ping_pong_csi);
-			}
-			goto cont;
-		}
+		if (dq_intr_cnt == 0)
+			printk(KERN_ERR
+			       "mxc_v4l_dqueue() interrupt received %d\n",
+			       dq_intr_cnt);
+		dq_intr_cnt++;
 		return -ERESTARTSYS;
 	}
-
-	if (cam->overflow == 1) {
-		cam->enc_enable(cam);
-		cam->overflow = 0;
-		if (!list_empty(&cam->ready_q)) {
-			frame =
-			    list_entry(cam->ready_q.next, struct mxc_v4l_frame,
-				       queue);
-			list_del(cam->ready_q.next);
-			list_add_tail(&frame->queue, &cam->working_q);
-			cam->enc_update_eba(frame->paddress,
-					    &cam->ping_pong_csi);
-		}
-		printk(KERN_INFO "mxc_v4l_dqueue - overflow\n");
-
-	}
-
 
 	cam->enc_counter--;
 
@@ -801,9 +801,9 @@ static int mxc_v4l_open(struct inode *inode, struct file *file)
 	cam_data *cam = dev->priv;
 	int err = 0;
 
-	dq_intr_cnt    = 0;
+	dq_intr_cnt = 0;
 	dq_timeout_cnt = 0;
-	empty_wq_cnt   = 0;
+	empty_wq_cnt = 0;
 	if (!cam) {
 		pr_info("Internal error, cam_data not found!\n");
 		return -ENODEV;
@@ -890,6 +890,7 @@ static int mxc_v4l_close(struct inode *inode, struct file *file)
 		err |= mxc_streamoff(cam);
 		cam->capture_on = false;
 		wake_up_interruptible(&cam->enc_queue);
+		wake_up_interruptible(&cam->overflow_queue);
 	}
 
 	if (--cam->open_count == 0) {
@@ -904,6 +905,7 @@ static int mxc_v4l_close(struct inode *inode, struct file *file)
 
 		/* capture off */
 		wake_up_interruptible(&cam->enc_queue);
+		wake_up_interruptible(&cam->overflow_queue);
 		mxc_free_frames(cam);
 		cam->enc_counter++;
 		prp_exit(cam);
@@ -1440,22 +1442,17 @@ mxc_v4l_do_ioctl(struct inode *inode, struct file *file,
 	case VIDIOC_QBUF:{
 			struct v4l2_buffer *buf = arg;
 			int index = buf->index;
-			int overflow = 0;
 
 			pr_debug("VIDIOC_QBUF: %d\n", buf->index);
-			if (cam->overflow == 1) {
-				cam->enc_enable(cam);
-				cam->overflow = 0;
-				overflow = 1;
-				printk(KERN_INFO "VIDIOC_QBUF - overflow\n");
-			}
-
+			wait_event_interruptible(cam->overflow_queue,
+						 cam->overflow == 0);
 			spin_lock_irqsave(&cam->int_lock, lock_flags);
 			if ((cam->frame[index].buffer.flags & 0x7) ==
 			    V4L2_BUF_FLAG_MAPPED) {
 				cam->frame[index].buffer.flags |=
 				    V4L2_BUF_FLAG_QUEUED;
-				if ((cam->skip_frame > 0) || (overflow == 1)) {
+				if (cam->skip_frame > 0) {
+					prphw_enable(PRP_CHANNEL_2);
 					list_add_tail(&cam->frame[index].queue,
 						      &cam->working_q);
 					retval =
@@ -1913,15 +1910,22 @@ static void camera_callback(u32 mask, void *dev)
 		return;
 
 	if (mask == 1) {
-		cam->overflow = 1;
+		if (cam->overflow == 0) {
+			cam->overflow = 1;
+			queue_work(v4l2_work, &prp_reset_work);
+		}
+		return;
 	}
 
 	if (list_empty(&cam->working_q)) {
 		if (empty_wq_cnt == 0) {
-			printk(KERN_ERR "camera_callback: working queue empty %d\n",empty_wq_cnt);
+			printk(KERN_ERR
+			       "camera_callback: working queue empty %d\n",
+			       empty_wq_cnt);
 		}
 		empty_wq_cnt++;
-	    if (list_empty(&cam->ready_q)) {
+		if (list_empty(&cam->ready_q)) {
+			prphw_disable(PRP_CHANNEL_2);
 			cam->skip_frame++;
 		} else {
 			ready_frame =
@@ -1941,7 +1945,10 @@ static void camera_callback(u32 mask, void *dev)
 		done_frame->buffer.flags |= V4L2_BUF_FLAG_DONE;
 		done_frame->buffer.flags &= ~V4L2_BUF_FLAG_QUEUED;
 
+		list_del(cam->working_q.next);
 		if (list_empty(&cam->ready_q)) {
+			if (list_empty(&cam->working_q))
+				prphw_disable(PRP_CHANNEL_2);
 			cam->skip_frame++;
 		} else {
 			ready_frame =
@@ -1954,7 +1961,6 @@ static void camera_callback(u32 mask, void *dev)
 		}
 
 		/* Added to the done queue */
-		list_del(cam->working_q.next);
 		list_add_tail(&done_frame->queue, &cam->done_q);
 
 		/* Wake up the queue */
@@ -2000,6 +2006,8 @@ static void init_camera_struct(cam_data * cam)
 
 	init_waitqueue_head(&cam->enc_queue);
 	init_waitqueue_head(&cam->still_queue);
+	init_waitqueue_head(&cam->overflow_queue);
+	cam->overflow = 0;
 
 	/* setup cropping */
 	cam->crop_bounds.left = 0;
@@ -2158,6 +2166,8 @@ static __init int camera_init(void)
 
 	init_camera_struct(cam);
 
+	v4l2_work = create_singlethread_workqueue("v4l2_emma");
+
 	/* Register the I2C device */
 	err = platform_device_register(&mxc_v4l2_devices);
 	if (err != 0) {
@@ -2200,6 +2210,9 @@ static __init int camera_init(void)
 static void __exit camera_exit(void)
 {
 	pr_debug("unregistering video\n");
+
+	flush_workqueue(v4l2_work);
+	destroy_workqueue(v4l2_work);
 
 	video_unregister_device(g_cam->video_dev);
 

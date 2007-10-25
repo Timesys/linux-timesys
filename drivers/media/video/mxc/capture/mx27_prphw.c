@@ -361,7 +361,6 @@ static const unsigned char coeftab[] = {
 	1, 20
 };
 
-
 /*!
  * @brief Build PrP coefficient table based on average algorithm
  *
@@ -614,7 +613,7 @@ int prp_scale(scale_t * pscale, int din, int dout, int inv,
 			return -1;
 		}
 	}
- 
+
 	if ((num > MAX_TBL * MAX_TBL) || scale(pscale, num, den) < 0) {
 		pr_debug("Scale err, unsupported ratio %d : %d\n", num, den);
 		return -1;
@@ -1066,50 +1065,6 @@ static int prphw_ch2_cfg(emma_prp_cfg * cfg, unsigned long *prp_cntl)
 
 	__raw_writel((cfg->ch2_width << 16) | cfg->ch2_height,
 		     PRP_CH2_OUT_IMAGE_SIZE);
-
-	if (cfg->ch2_pix == PRP_PIX2_YUV420) {
-		u32 size;
-
-		/* Luminanance band start address */
-		__raw_writel(cfg->ch2_ptr, PRP_DEST_Y_PTR);
-
-		if ((cfg->in_csi & PRP_CSI_LOOP) == PRP_CSI_LOOP) {
-			if (!cfg->ch2_ptr2)
-				__raw_writel(cfg->ch2_ptr, PRP_SOURCE_Y_PTR);
-			else
-				__raw_writel(cfg->ch2_ptr2, PRP_SOURCE_Y_PTR);
-		}
-
-		/* Cb and Cr band start address */
-		size = cfg->ch2_width * cfg->ch2_height;
-		__raw_writel(cfg->ch2_ptr + size, PRP_DEST_CB_PTR);
-		__raw_writel(cfg->ch2_ptr + size + (size >> 2),
-			     PRP_DEST_CR_PTR);
-
-		if ((cfg->in_csi & PRP_CSI_LOOP) == PRP_CSI_LOOP) {
-			if (!cfg->ch2_ptr2) {
-				__raw_writel(cfg->ch2_ptr + size,
-					     PRP_SOURCE_CB_PTR);
-				__raw_writel(cfg->ch2_ptr + size + (size >> 2),
-					     PRP_SOURCE_CR_PTR);
-			} else {
-				__raw_writel(cfg->ch2_ptr2 + size,
-					     PRP_SOURCE_CB_PTR);
-				__raw_writel(cfg->ch2_ptr2 + size + (size >> 2),
-					     PRP_SOURCE_CR_PTR);
-			}
-		}
-	} else {		/* Pixel interleaved YUV422 or YUV444 */
-		__raw_writel(cfg->ch2_ptr, PRP_DEST_Y_PTR);
-
-		if ((cfg->in_csi & PRP_CSI_LOOP) == PRP_CSI_LOOP) {
-			if (!cfg->ch2_ptr2)
-				__raw_writel(cfg->ch2_ptr, PRP_SOURCE_Y_PTR);
-			else
-				__raw_writel(cfg->ch2_ptr2, PRP_SOURCE_Y_PTR);
-		}
-	}
-	*prp_cntl |= PRP_CNTL_CH2B1 | PRP_CNTL_CH2B2;
 
 	return 0;
 }

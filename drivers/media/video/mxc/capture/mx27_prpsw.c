@@ -293,12 +293,11 @@ static irqreturn_t prp_isr(int irq, void *dev_id)
 	} else if (cam->capture_on) {
 		if (status & PRP_INTRSTAT_CH2OVF) {
 			prphw_disable(PRP_CHANNEL_2);
-			prphw_enable(PRP_CHANNEL_2);
 			cam->enc_callback(1, cam);
-		}
-		else if (status &
-             (PRP_INTRSTAT_CH2BUF1 | PRP_INTRSTAT_CH2BUF2)) 		{
-			cam->enc_callback(0, cam);
+		} else if (status &
+			   (PRP_INTRSTAT_CH2BUF1 | PRP_INTRSTAT_CH2BUF2)) {
+			if (cam->overflow != 1)
+				cam->enc_callback(0, cam);
 		}
 	}
 	if (cam->overlay_on
@@ -1002,7 +1001,6 @@ static int prp_resize_check_ch1(emma_prp_cfg * cfg)
 			goto exit_cascade;
 		}
 	}
-
 
 	pr_debug("Ch1 resize error.\n");
 	return -1;
