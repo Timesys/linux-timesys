@@ -230,6 +230,138 @@ static const unsigned char *ave_coeff[] = {
 	c11, c12, c13, c14, c15, c16, c17, c18, c19, c20
 };
 
+static const unsigned char coeftab[] = {
+	1, 1,
+	19, 20,
+	18, 19,
+	17, 18,
+	16, 17,
+	15, 16,
+	14, 15,
+	13, 14,
+	12, 13,
+	11, 12,
+	10, 11,
+	9, 10,
+	17, 19,
+	8, 9,
+	15, 17,
+	7, 8,
+	13, 15,
+	6, 7,
+	17, 20,
+	11, 13,
+	16, 19,
+	5, 6,
+	14, 17,
+	9, 11,
+	13, 16,
+	4, 5,
+	15, 19,
+	11, 14,
+	7, 9,
+	10, 13,
+	13, 17,
+	3, 4,
+	14, 19,
+	11, 15,
+	8, 11,
+	13, 18,
+	5, 7,
+	12, 17,
+	7, 10,
+	9, 13,
+	11, 16,
+	13, 19,
+	2, 3,
+	13, 20,
+	11, 17,
+	9, 14,
+	7, 11,
+	12, 19,
+	5, 8,
+	8, 13,
+	11, 18,
+	3, 5,
+	10, 17,
+	7, 12,
+	11, 19,
+	4, 7,
+	9, 16,
+	5, 9,
+	11, 20,
+	6, 11,
+	7, 13,
+	8, 15,
+	9, 17,
+	10, 19,
+	1, 2,
+	9, 19,
+	8, 17,
+	7, 15,
+	6, 13,
+	5, 11,
+	9, 20,
+	4, 9,
+	7, 16,
+	3, 7,
+	8, 19,
+	5, 12,
+	7, 17,
+	2, 5,
+	7, 18,
+	5, 13,
+	3, 8,
+	7, 19,
+	4, 11,
+	5, 14,
+	6, 17,
+	7, 20,
+	1, 3,
+	6, 19,
+	5, 16,
+	4, 13,
+	3, 10,
+	5, 17,
+	2, 7,
+	5, 18,
+	3, 11,
+	4, 15,
+	5, 19,
+	1, 4,
+	4, 17,
+	3, 13,
+	2, 9,
+	3, 14,
+	4, 19,
+	1, 5,
+	3, 16,
+	2, 11,
+	3, 17,
+	1, 6,
+	3, 19,
+	2, 13,
+	3, 20,
+	1, 7,
+	2, 15,
+	1, 8,
+	2, 17,
+	1, 9,
+	2, 19,
+	1, 10,
+	1, 11,
+	1, 12,
+	1, 13,
+	1, 14,
+	1, 15,
+	1, 16,
+	1, 17,
+	1, 18,
+	1, 19,
+	1, 20
+};
+
+
 /*!
  * @brief Build PrP coefficient table based on average algorithm
  *
@@ -394,6 +526,38 @@ static int scale(scale_t * t, int inv, int outv)
 }
 
 /*!
+ * @brief Get approximate ratio
+ *
+ * @param pscale	The pointer to scale_t structure which holdes
+ * 			coefficient tables
+ * @param mt		Scale ratio numerator
+ * @param nt		Scale ratio denominator
+ * @param *n		denominator of approximate ratio
+ * @return		numerator of approximate ratio
+ */
+
+static int approx_ratio(int mt, int nt, int *n)
+{
+	int index = sizeof(coeftab) / sizeof(coeftab[0]) / 2;
+	int left = 0;
+	int right = index - 1;
+	int nom, den;
+	while (index > 0) {
+		nom = coeftab[(((right + left) >> 1) << 1) + 1];
+		den = coeftab[(((right + left) >> 1) << 1)];
+		if ((nom * nt - mt * den) < 0) {
+			left = (right + left) >> 1;
+		} else {
+			right = (right + left) >> 1;
+		}
+		index = index >> 1;
+	}
+	*n = coeftab[left * 2];
+	nom = coeftab[left * 2 + 1];
+	return nom;
+}
+
+/*!
  * @brief Build PrP coefficient table
  *
  * @param pscale	The pointer to scale_t structure which holdes
@@ -408,10 +572,10 @@ static int scale(scale_t * t, int inv, int outv)
  * @return		Zero on success, others on failure
  */
 int prp_scale(scale_t * pscale, int din, int dout, int inv,
-	      unsigned short *vout, unsigned short *pout, int retry)
+	      unsigned short *vout, unsigned short *pout, int ch)
 {
-	int num;
-	int den;
+	int num, new_num;
+	int den, new_den;
 	unsigned short outv;
 
 	/* auto-generation of values */
@@ -429,18 +593,29 @@ int prp_scale(scale_t * pscale, int din, int dout, int inv,
 		return -1;
 	}
 
-      lp_retry:
 	num = ratio(din, dout, &den);
 	if (!num) {
 		pr_debug("Scale err, unsupported ratio %d : %d\n", din, dout);
 		return -1;
 	}
 
-	if (num > MAX_TBL || scale(pscale, num, den) < 0) {
-		dout++;
-		if (retry--)
-			goto lp_retry;
-
+	if (num > MAX_TBL) {
+		if (num / den <= MAX_TBL) {
+			new_num = approx_ratio(num, den, &new_den);
+			num = new_num;
+			den = new_den;
+		} else if (ch == PRP_CHANNEL_2) {
+			pr_debug("Unsupported ch_2 resize ratio %d : %d\n", num,
+				 den);
+			return -1;
+		} else if (num / den > MAX_TBL * MAX_TBL) {
+			pr_debug("Unsupported ch_1 resize ratio %d : %d\n", num,
+				 den);
+			return -1;
+		}
+	}
+ 
+	if ((num > MAX_TBL * MAX_TBL) || scale(pscale, num, den) < 0) {
 		pr_debug("Scale err, unsupported ratio %d : %d\n", num, den);
 		return -1;
 	}

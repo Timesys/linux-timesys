@@ -200,8 +200,6 @@ typedef struct _emma_prp_ratio {
  * The following definitions are for resizing. Definition values must not
  * be changed otherwise decision logic will be wrong.
  */
-#define SCALE_RETRY	16	/* retry times if ratio is not supported */
-
 #define BC_COEF		3
 #define MAX_TBL		20
 #define SZ_COEF		(1 << BC_COEF)
@@ -296,7 +294,7 @@ void prphw_exit(void);
  * retry	in	retry times (round the output length) when need
  */
 int prp_scale(scale_t * pscale, int din, int dout, int inv,
-	      unsigned short *vout, unsigned short *pout, int retry);
+	      unsigned short *vout, unsigned short *pout, int ch);
 
 int prp_init(void *dev_id);
 void prp_exit(void *dev_id);

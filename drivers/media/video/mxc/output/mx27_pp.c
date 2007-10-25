@@ -84,6 +84,171 @@ void pp_dump(void)
 	PP_DUMP(PP_CSC_COEF_4);
 }
 
+static const unsigned char pp_coeftab[] = {
+	2, 1,
+	19, 10,
+	17, 9,
+	15, 8,
+	13, 7,
+	11, 6,
+	20, 11,
+	9, 5,
+	16, 9,
+	7, 4,
+	19, 11,
+	12, 7,
+	17, 10,
+	5, 3,
+	18, 11,
+	13, 8,
+	8, 5,
+	19, 12,
+	11, 7,
+	14, 9,
+	17, 11,
+	20, 13,
+	3, 2,
+	19, 13,
+	16, 11,
+	13, 9,
+	10, 7,
+	17, 12,
+	7, 5,
+	18, 13,
+	11, 8,
+	15, 11,
+	19, 14,
+	4, 3,
+	17, 13,
+	13, 10,
+	9, 7,
+	14, 11,
+	19, 15,
+	5, 4,
+	16, 13,
+	11, 9,
+	17, 14,
+	6, 5,
+	19, 16,
+	13, 11,
+	20, 17,
+	7, 6,
+	15, 13,
+	8, 7,
+	17, 15,
+	9, 8,
+	19, 17,
+	10, 9,
+	11, 10,
+	12, 11,
+	13, 12,
+	14, 13,
+	15, 14,
+	16, 15,
+	17, 16,
+	18, 17,
+	19, 18,
+	20, 19,
+	1, 1,
+	19, 20,
+	18, 19,
+	17, 18,
+	16, 17,
+	15, 16,
+	14, 15,
+	13, 14,
+	12, 13,
+	11, 12,
+	10, 11,
+	9, 10,
+	17, 19,
+	8, 9,
+	15, 17,
+	7, 8,
+	13, 15,
+	6, 7,
+	17, 20,
+	11, 13,
+	16, 19,
+	5, 6,
+	14, 17,
+	9, 11,
+	13, 16,
+	4, 5,
+	15, 19,
+	11, 14,
+	7, 9,
+	10, 13,
+	13, 17,
+	3, 4,
+	14, 19,
+	11, 15,
+	8, 11,
+	13, 18,
+	5, 7,
+	12, 17,
+	7, 10,
+	9, 13,
+	11, 16,
+	13, 19,
+	2, 3,
+	13, 20,
+	11, 17,
+	9, 14,
+	7, 11,
+	12, 19,
+	5, 8,
+	8, 13,
+	11, 18,
+	3, 5,
+	10, 17,
+	7, 12,
+	11, 19,
+	4, 7,
+	9, 16,
+	5, 9,
+	11, 20,
+	6, 11,
+	7, 13,
+	8, 15,
+	9, 17,
+	10, 19,
+	1, 2,
+	9, 19,
+	8, 17,
+	7, 15,
+	6, 13,
+	5, 11,
+	9, 20,
+	4, 9,
+	7, 16,
+	3, 7,
+	8, 19,
+	5, 12,
+	7, 17,
+	2, 5,
+	7, 18,
+	5, 13,
+	3, 8,
+	7, 19,
+	4, 11,
+	5, 14,
+	6, 17,
+	7, 20,
+	1, 3,
+	6, 19,
+	5, 16,
+	4, 13,
+	3, 10,
+	5, 17,
+	2, 7,
+	5, 18,
+	3, 11,
+	4, 15,
+	5, 19,
+	1, 4
+};
+
 /*!
  * @brief Set PP input address.
  * @param ptr	The pointer to the Y value of input
@@ -404,6 +569,37 @@ static int scale_0d(int k, int coeff, int base, int nxt)
 	return k;
 }
 
+/*!
+ * @brief Get approximate ratio
+ *
+ * @param pscale	The pointer to scale_t structure which holdes
+ * 			coefficient tables
+ * @param mt		Scale ratio numerator
+ * @param nt		Scale ratio denominator
+ * @param *n		denominator of approximate ratio
+ * @return		numerator of approximate ratio
+ */
+static int approx_ratio(int mt, int nt, int *n)
+{
+	int index = sizeof(pp_coeftab) / sizeof(pp_coeftab[0]) / 2;
+	int left = 0;
+	int right = index - 1;
+	int nom = 0, den = 0;
+	while (index > 0) {
+		nom = pp_coeftab[(((right + left) >> 1) << 1)];
+		den = pp_coeftab[(((right + left) >> 1) << 1) + 1];
+		if ((nom * nt - mt * den) > 0) {
+			left = (right + left) >> 1;
+		} else {
+			right = (right + left) >> 1;
+		}
+		index = index >> 1;
+	}
+	*n = pp_coeftab[right * 2 + 1];
+	nom = pp_coeftab[right * 2];
+	return nom;
+}
+
 /*
  * @brief Build PP coefficient table
  * Build PP coefficient table for one dimension (width or height)
@@ -423,11 +619,6 @@ static int scale_1d(int inv, int outv, int k)
 
 	if (inv == outv)
 		return scale_0d(k, 1, 1, 1);	/* force scaling */
-
-	if (inv * 4 < outv) {
-		pr_debug("upscale err: ratio should be in range 1:1 to 1:4\n");
-		return -1;
-	}
 
 	v = 0;
 	if (inv < outv) {
@@ -510,7 +701,7 @@ static int scale_1d(int inv, int outv, int k)
  */
 static int scale_1d_smart(int *inv, int *outv, int index)
 {
-	int len, num, den, retry;
+	int len, num, den, approx_num, approx_den;
 	static int num1, den1;
 
 	if (!inv || !outv)
@@ -520,42 +711,42 @@ static int scale_1d_smart(int *inv, int *outv, int index)
 	if (!(*inv) || !(*outv))
 		return -1;
 
-	retry = SCALE_RETRY;
+	if ((*outv > 4 * (*inv))
+	    || ((*inv > 2 * (*outv)) && (*inv != 4 * (*outv)))) {
+		pr_debug("unsupported pp resize ration: inv/outv = %d/%d\n",
+			 *inv, *outv);
+		return -1;
+	}
 
-	do {
-		num = ratio(*inv, *outv, &den);
-		pr_debug("num = %d, den = %d\n", num, den);
-		if (!num)
-			continue;
+	num = ratio(*inv, *outv, &den);
 
-		if (index != 0) {
-			/*
-			 * We are now resizing height. Check to see if the
-			 * resize ratio for width can be reused by height
-			 */
-			if ((num == num1) && (den == den1))
-				return index;
+	if (index == 0) {
+		if ((num > 20) || (den > 20)) {
+			approx_num = approx_ratio(num, den, &approx_den);
+			num = approx_num;
+			den = approx_den;
 		}
-
-		if ((len = scale_1d(num, den, index)) < 0)
-			/* increase output dimension to try another ratio */
-			(*outv)++;
-		else {
-			if (index == 0) {
-				/*
-				 * We are now resizing width. The same resize
-				 * ratio may be reused by height, so save the
-				 * ratio.
-				 */
-				num1 = num;
-				den1 = den;
-			}
-			return len;
+	} else {
+		if ((num > (40 - index)) || (den > (40 - index))) {
+			approx_num = approx_ratio(num, den, &approx_den);
+			num = approx_num;
+			den = approx_den;
 		}
-	} while (retry--);
+		if ((num == num1) && (den == den1)) {
+			return index;
+		}
+	}
 
-	pr_debug("pp scale err\n");
-	return -1;
+	if ((len = scale_1d(num, den, index)) < 0) {
+		return -1;
+	} else {
+		if (index == 0) {
+			num1 = num;
+			den1 = den;
+		}
+		return len;
+	}
+
 }
 
 /*

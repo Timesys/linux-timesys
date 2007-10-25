@@ -888,32 +888,12 @@ static void rotation(unsigned long private)
  * @return	output dimension (should equal the parameter *output*)
  * 		-1 on failure
  */
-static int check_simple(scale_t * scale, int input, int output)
+static int check_simple(scale_t * scale, int input, int output, int ch)
 {
 	unsigned short int_out;	/* PrP internel width or height */
 	unsigned short orig_out = output;
 
-	if (prp_scale(scale, input, output, input, &orig_out, &int_out, 0))
-		return -1;	/* resize failed */
-	else
-		return int_out;
-}
-
-/*
- * @brief Check if the resize ratio is supported based on the input and output
- *        dimension
- * @param	input	input dimension
- * @param	output	output dimension
- * @return	output dimension, may be rounded.
- * 		-1 on failure
- */
-static int check_simple_retry(scale_t * scale, int input, int output)
-{
-	unsigned short int_out;	/* PrP internel width or height */
-	unsigned short orig_out = output;
-
-	if (prp_scale(scale, input, output, input, &orig_out, &int_out,
-		      SCALE_RETRY))
+	if (prp_scale(scale, input, output, input, &orig_out, &int_out, ch))
 		return -1;	/* resize failed */
 	else
 		return int_out;
@@ -944,9 +924,10 @@ static int prp_resize_check_ch1(emma_prp_cfg * cfg)
 	 * ratio is not exactly supported, try cascade resize. If it
 	 * still fails, use parallel resize but with rounded value.
 	 */
-	w = check_simple(pscale, in_w, ch1_w);
-	h = check_simple(pscale + 1, in_h, ch1_h);
-	if ((w == ch1_w) && (h == ch1_h))
+	w = check_simple(pscale, in_w, ch1_w, PRP_CHANNEL_1);
+	h = check_simple(pscale + 1, in_h, ch1_h, PRP_CHANNEL_1);
+
+	if ((in_w <= ch1_w * MAX_TBL) && (in_h <= MAX_TBL * ch1_h))
 		goto exit_parallel;
 
 	if (cfg->ch2_pix != PRP_PIX2_UNUSED) {
@@ -954,14 +935,11 @@ static int prp_resize_check_ch1(emma_prp_cfg * cfg)
 		 * Channel 2 is already used. The pscale is still pointing
 		 * to ch1 resize coeff for temporary use.
 		 */
-		w = check_simple(pscale, in_w, ch2_w);
-		h = check_simple(pscale + 1, in_h, ch2_h);
-		if ((w == ch2_w) && (h == ch2_h)) {
-			/* Try cascade resize now */
-			w = check_simple(pscale, ch2_w, ch1_w);
-			h = check_simple(pscale + 1, ch2_h, ch1_h);
-			if ((w == ch1_w) && (h == ch1_h))
-				goto exit_cascade;
+		if ((ch2_w * MAX_TBL <= ch1_w) && (ch2_h * MAX_TBL <= ch1_h)) {
+			w = check_simple(pscale, ch2_w, ch1_w, PRP_CHANNEL_1);
+			h = check_simple(pscale + 1, ch2_h, ch1_h,
+					 PRP_CHANNEL_1);
+			goto exit_cascade;
 		}
 	} else {
 		/*
@@ -969,36 +947,61 @@ static int prp_resize_check_ch1(emma_prp_cfg * cfg)
 		 * Channel 2 is not used. So we have more values to pick
 		 * for channel 2 resize.
 		 */
-		for (w = in_w - 2; w > ch1_w; w -= 2) {
-			/* Ch2 width resize */
-			if (check_simple(pscale + 2, in_w, w) != w)
-				continue;
-			/* Ch1 width resize */
-			if (check_simple(pscale, w, ch1_w) != ch1_w)
-				continue;
-			break;
-		}
-		if ((ch2_w = w) > ch1_w) {
-			/* try cascade resize for height */
-			for (h = in_h - 1; h > ch1_h; h--) {
-				/* Ch2 height resize */
-				if (check_simple(pscale + 3, in_h, h) != h)
+		if (in_w * MAX_TBL > ch1_w) {
+			for (w = in_w / 2; w > ch1_w; w /= 2) {
+				/* Ch1 width resize */
+				if (check_simple
+				    (pscale, w, ch1_w, PRP_CHANNEL_1) < 0)
 					continue;
-				/* Ch1 height resize */
-				if (check_simple(pscale + 1, h, ch1_h) != ch1_h)
+				/* Ch2 width resize */
+				ch2_w =
+				    check_simple(pscale + 2, in_w, w,
+						 PRP_CHANNEL_1);
+				if (ch2_w < 0) {
+					w = in_w / MAX_TBL;
 					continue;
+				}
+				check_simple(pscale, ch2_w, ch1_w,
+					     PRP_CHANNEL_1);
 				break;
 			}
-			if ((ch2_h = h) > ch1_h)
-				goto exit_cascade;
+		} else {
+			w = check_simple(pscale, in_w, ch1_w, PRP_CHANNEL_1);
+			ch2_w = check_simple(pscale + 2, w, w, PRP_CHANNEL_1);
+		}
+		if (ch2_w >= ch1_w) {
+			if (in_h * MAX_TBL > ch1_h) {
+				/* try cascade resize for height */
+				for (h = in_h / 2; h > ch1_h; h /= 2) {
+					/* Ch2 height resize */
+					if (check_simple
+					    (pscale + 1, h, ch1_h,
+					     PRP_CHANNEL_1) < 0)
+						continue;
+					/* Ch1 height resize */
+					ch2_h =
+					    check_simple(pscale + 3, in_h, h,
+							 PRP_CHANNEL_1);
+					if (ch2_w < 0) {
+						h = in_h / MAX_TBL;
+						continue;
+					}
+					check_simple(pscale + 1, ch2_h, ch1_h,
+						     PRP_CHANNEL_1);
+					break;
+				}
+			} else {
+				h = check_simple(pscale + 1, in_h, ch1_h,
+						 PRP_CHANNEL_1);
+				ch2_h =
+				    check_simple(pscale + 3, h, h,
+						 PRP_CHANNEL_1);
+			}
+
+			goto exit_cascade;
 		}
 	}
 
-	/* Have to try parallel resize again and round the dimensions */
-	w = check_simple_retry(pscale, in_w, ch1_w);
-	h = check_simple_retry(pscale + 1, in_h, ch1_h);
-	if ((w != -1) && (h != -1))
-		goto exit_parallel;
 
 	pr_debug("Ch1 resize error.\n");
 	return -1;
@@ -1031,8 +1034,9 @@ static int prp_resize_check_ch2(emma_prp_cfg * cfg)
 	if (cfg->ch2_pix == PRP_PIX2_UNUSED)
 		return 0;
 
-	w = check_simple_retry(pscale, cfg->in_width, cfg->ch2_width);
-	h = check_simple_retry(pscale + 1, cfg->in_height, cfg->ch2_height);
+	w = check_simple(pscale, cfg->in_width, cfg->ch2_width, PRP_CHANNEL_2);
+	h = check_simple(pscale + 1, cfg->in_height, cfg->ch2_height,
+			 PRP_CHANNEL_2);
 	if ((w != -1) && (h != -1)) {
 		pr_debug("Ch2 resize.\n");
 		pr_debug("Original width = %d internel width = %d\n",
