@@ -512,7 +512,13 @@ static void mxcmci_start_cmd(struct mxcmci_host *host, struct mmc_command *cmd,
 
 	__raw_writel(cmdat, host->base + MMC_CMD_DAT_CONT);
 
-	mxcmci_start_clock(host, true);
+	if (!(cmdat & CMD_DAT_CONT_DATA_ENABLE) || (cmdat & CMD_DAT_CONT_WRITE)) {
+		mxcmci_start_clock(host, true);
+	} else {
+		__raw_writel(STR_STP_CLK_IPG_CLK_GATE_DIS |
+			     STR_STP_CLK_IPG_PERCLK_GATE_DIS,
+			     host->base + MMC_STR_STP_CLK);
+	}
 }
 
 /*!
@@ -530,6 +536,9 @@ static void mxcmci_finish_request(struct mxcmci_host *host,
 	host->cmd = NULL;
 	host->data = NULL;
 
+	if (!(req->cmd->flags & MMC_KEEP_CLK_RUN)) {
+		mxcmci_stop_clock(host, true);
+	}
 	mmc_request_done(host->mmc, req);
 }
 

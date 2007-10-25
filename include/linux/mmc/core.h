@@ -48,6 +48,8 @@ struct mmc_command {
 
 #define mmc_resp_type(cmd)	((cmd)->flags & (MMC_RSP_PRESENT|MMC_RSP_136|MMC_RSP_CRC|MMC_RSP_BUSY|MMC_RSP_OPCODE))
 
+#define MMC_KEEP_CLK_RUN (1 << 31)		/* Keep card clock on after request */
+
 /*
  * These are the command types.
  */
