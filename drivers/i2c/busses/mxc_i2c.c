@@ -33,6 +33,7 @@
 #include <linux/clk.h>
 #include <asm/irq.h>
 #include <asm/io.h>
+#include <asm/arch/mxc_i2c.h>
 #include "mxc_i2c_reg.h"
 
 /*!
@@ -692,7 +693,7 @@ static int mxci2c_probe(struct platform_device *pdev)
 	/*
 	 * Set the adapter information
 	 */
-	strcpy(mxc_i2c->adap.name, pdev->name);
+	strcpy(mxc_i2c->adap.name, MXC_ADAPTER_NAME);
 	mxc_i2c->adap.id = id;
 	mxc_i2c->adap.algo = &mxc_i2c_algorithm;
 	mxc_i2c->adap.timeout = 1;
