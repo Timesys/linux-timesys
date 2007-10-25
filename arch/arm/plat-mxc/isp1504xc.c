@@ -123,8 +123,6 @@ extern int gpio_usbotg_hs_active(void);
 
 static void isp1508_fix(u32 * view)
 {
-	gpio_usbotg_hs_active();
-
 	/* Set bits IND_PASS_THRU and IND_COMPL */
 	isp1504_set(0x60, ISP1504_ITFCTL, view);
 
