@@ -197,7 +197,7 @@
 #define  OTGSC_IE_A_SESSION_VALID	(1 << 26)
 #define  OTGSC_IE_B_SESSION_VALID	(1 << 27)
 #define  OTGSC_IE_B_SESSION_END		(1 << 28)
-#define  OTGSC_IE_1ms_TIMER		(1 << 19)
+#define  OTGSC_IE_1ms_TIMER		(1 << 29)
 #define  OTGSC_IE_DATA_PULSE		(1 << 30)
 
 #if 1				/* FIXME these here for compatibility between my names and Leo's */
