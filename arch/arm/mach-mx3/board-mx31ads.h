@@ -71,7 +71,7 @@
 /* UART 2 configuration */
 #define UART2_MODE              MODE_DCE
 #define UART2_IR                IRDA
-#ifdef CONFIG_MXC_FIR_MODULE
+#if defined(CONFIG_MXC_FIR) | defined(CONFIG_MXC_FIR_MODULE)
 #define UART2_ENABLED           0
 #else
 #define UART2_ENABLED           1
