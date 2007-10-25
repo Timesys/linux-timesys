@@ -3,7 +3,7 @@
 #
 
 # Common support
-obj-y := gpio.o clock.o wdog.o snoop.o irq.o
+obj-y := gpio.o clock.o wdog.o snoop.o irq.o io.o
 
 ifneq ($(CONFIG_ARCH_MX27),y)
 obj-y += time.o cpu_common.o  spba.o sdma/

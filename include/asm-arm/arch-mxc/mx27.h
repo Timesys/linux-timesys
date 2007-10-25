@@ -178,6 +178,12 @@
         ((x >= X_MEMC_BASE_ADDR) && (x < (X_MEMC_BASE_ADDR + X_MEMC_SIZE))) ? X_MEMC_IO_ADDRESS(x):\
         0xDEADBEEF)
 
+#define IS_STATIC_MAPPED(x)						\
+        ((((x) >= AIPI_BASE_ADDR_VIRT) && ((x) < (AIPI_BASE_ADDR_VIRT + AIPI_SIZE))) || \
+	 (((x) >= SAHB1_BASE_ADDR_VIRT) && ((x) < (SAHB1_BASE_ADDR_VIRT + SAHB1_SIZE))) || \
+	 (((x) >= CS4_BASE_ADDR_VIRT) && ((x) < (CS4_BASE_ADDR_VIRT + CS4_SIZE))) || \
+	 (((x) >= X_MEMC_BASE_ADDR_VIRT) && ((x) < (X_MEMC_BASE_ADDR_VIRT + X_MEMC_SIZE))))
+
 /*
  * define the address mapping macros: in physical address order
  */

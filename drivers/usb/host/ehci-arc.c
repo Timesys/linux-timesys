@@ -32,6 +32,7 @@
 #include <linux/fsl_devices.h>
 #include <linux/usb/otg.h>
 #include <linux/usb/fsl_xcvr.h>
+#include <asm/io.h>
 #include <asm/arch/fsl_usb.h>
 
 #include "ehci-fsl.h"
