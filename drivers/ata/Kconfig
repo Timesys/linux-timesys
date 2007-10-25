@@ -588,4 +588,12 @@ config PATA_SCC
 
 	  If unsure, say N.
 
+config PATA_FSL
+	tristate "Freescale on-chip PATA support"
+	depends on (ARCH_MX3 || ARCH_MX27 || PPC_512x || M54455)
+	help
+	  On Freescale processors, say Y here if you wish to use the on-chip
+	  ATA interface.
+	  If you are unsure, say N to this.
+
 endif # ATA

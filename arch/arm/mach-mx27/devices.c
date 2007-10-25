@@ -15,6 +15,8 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/platform_device.h>
+#include <linux/fsl_devices.h>
+#include <linux/clk.h>
 
 #include <linux/spi/spi.h>
 
@@ -598,6 +600,84 @@ static inline void mxc_init_dptc(void)
 }
 #endif
 
+#ifdef	CONFIG_PATA_FSL
+static struct clk *ata_clk;
+extern void gpio_ata_active(void);
+extern void gpio_ata_inactive(void);
+
+static int ata_init(struct platform_device *pdev)
+{
+	/* Configure the pins */
+
+	gpio_ata_active();
+
+	/* Enable the clock */
+
+	ata_clk = clk_get(&pdev->dev, "ata_clk.0");
+	clk_enable(ata_clk);
+
+	return 0;
+}
+
+static void ata_exit(void)
+{
+	/* Disable the clock */
+
+	clk_disable(ata_clk);
+	clk_put(ata_clk);
+	ata_clk = NULL;
+
+	/* Free the pins */
+
+	gpio_ata_inactive();
+}
+
+static int ata_get_clk_rate(void)
+{
+	return clk_get_rate(ata_clk);
+}
+
+static struct fsl_ata_platform_data ata_data = {
+	.init             = ata_init,
+	.exit             = ata_exit,
+	.get_clk_rate     = ata_get_clk_rate,
+};
+
+static struct resource pata_fsl_resources[] = {
+	[0] = {		/* I/O */
+		.start		= IO_ADDRESS(ATA_BASE_ADDR + 0x00),
+		.end		= IO_ADDRESS(ATA_BASE_ADDR + 0xD8),
+		.flags		= IORESOURCE_MEM,
+	},
+	[2] = {		/* IRQ */
+		.start		= INT_ATA,
+		.end		= INT_ATA,
+		.flags		= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device pata_fsl_device = {
+	.name			= "pata_fsl",
+	.id			= -1,
+	.num_resources		= ARRAY_SIZE(pata_fsl_resources),
+	.resource		= pata_fsl_resources,
+	.dev			= {
+		.platform_data	= &ata_data,
+		.coherent_dma_mask = ~0,	/* $$$ REVISIT */
+	},
+};
+
+static inline void mxc_init_pata(void)
+{
+printk(KERN_ERR "%s: entry\n", __func__);
+	(void)platform_device_register(&pata_fsl_device);
+}
+#else /* CONFIG_PATA_FSL */
+static inline void mxc_init_pata(void)
+{
+}
+#endif /* CONFIG_PATA_FSL */
+
 static int __init mxc_init_devices(void)
 {
 	mxc_init_wdt();
@@ -611,6 +691,7 @@ static int __init mxc_init_devices(void)
 #ifndef CONFIG_MX27_DPTC
 	mxc_init_dptc();
 #endif
+	mxc_init_pata();
 
 	return 0;
 }
