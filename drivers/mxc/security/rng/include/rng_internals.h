@@ -90,7 +90,6 @@
  * not defined, those functions will not be present in the driver.
  */
 #define RNG_REGISTER_PEEK_POKE
-#undef RNG_REGISTER_PEEK_POKE
 
 /*!
  * Turn on compilation of run-time operational, debug, and error messages.
