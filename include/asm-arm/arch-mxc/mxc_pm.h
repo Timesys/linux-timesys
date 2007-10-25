@@ -32,11 +32,6 @@
 #define DOZE_MODE               112
 #define STOP_MODE               113
 #define DSM_MODE                114
-/*
- * Break-Point Frequency below which is low frequency and
- * above which is high frequency
- */
-#define BREAKPT_FREQ            ((long)(400000000))
 
 #define GATE_STOP_WAIT          9
 #define GATE_STOP               10

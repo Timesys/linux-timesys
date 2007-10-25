@@ -62,7 +62,7 @@
 /*!
  * SAHARA IRQ number.
  *
- * MX21 has two blocks of 32 interrupts. The SAHARA IRQ is number 27
+ * MX2 has two blocks of 32 interrupts. The SAHARA IRQ is number 27
  * in the second block. This means that the SAHARA IRQ is 27 + 32 = 59.
  */
 #ifndef SAHARA_IRQ
