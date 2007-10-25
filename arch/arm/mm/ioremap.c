@@ -52,18 +52,17 @@ static int remap_area_pte(pmd_t *pmd, unsigned long addr, unsigned long end,
 		return -ENOMEM;
 
 	do {
-		if (!pte_none(*pte))
-			goto bad;
+		if (!pte_none(*pte)) {
+			printk(KERN_CRIT "remap_area_pte: page already exists\n");
+			BUG();
+			return -EFAULT;
+		}
 
 		set_pte_ext(pte, pfn_pte(phys_addr >> PAGE_SHIFT, prot),
 			    type->prot_pte_ext);
 		phys_addr += PAGE_SIZE;
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 	return 0;
-
- bad:
-	printk(KERN_CRIT "remap_area_pte: page already exists\n");
-	BUG();
 }
 
 static inline int remap_area_pmd(pgd_t *pgd, unsigned long addr,
