@@ -444,6 +444,11 @@ static int fs453_enable(struct i2c_client *client, int enable)
 		return fs453_write(client, FS453_PWR_MGNT, 0x3BFF, 2);
 }
 
+#ifdef CONFIG_ARCH_MX27
+extern void gpio_fs453_reset_low(void);
+extern void gpio_fs453_reset_high(void);
+#endif
+
 /*!
  * @brief FS453 control routine
  * @param	cmd	Control command
@@ -452,6 +457,20 @@ static int fs453_enable(struct i2c_client *client, int enable)
  */
 int fs453_ioctl(unsigned int cmd, void *arg)
 {
+	/* check for deferred I2C registration */
+	if (!fs453_client) {
+		int err;
+#ifdef CONFIG_ARCH_MX27
+		/* reset the FS453 via the CLS/GPIOA25 line */
+		gpio_fs453_reset_low();
+		gpio_fs453_reset_high();
+#endif
+
+		if ((err = i2c_add_driver(&fs453_driver))) {
+			pr_info("FS453: driver registration failed\n");
+		}
+	}
+
 	if (!fs453_client)
 		return -ENODEV;
 
@@ -468,10 +487,6 @@ static int __init fs453_init(void)
 
 	pr_info("FS453/4 driver, (c) 2005 Freescale Semiconductor, Inc.\n");
 
-	if ((err = i2c_add_driver(&fs453_driver))) {
-		pr_info("FS453: driver registration failed\n");
-		return err;
-	}
 
 	return 0;
 }
