@@ -738,7 +738,7 @@ static int mxcmci_data_done(struct mxcmci_host *host, unsigned int stat)
 	host->data = NULL;
 	data->bytes_xfered = host->dma_size;
 
-	if (host->req->stop && data->error) {
+	if (host->req->stop && !data->error) {
 		mxcmci_start_cmd(host, host->req->stop, 0);
 	} else {
 		mxcmci_finish_request(host, host->req);
