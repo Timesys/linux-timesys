@@ -852,9 +852,6 @@ static void mxc_nand_command(struct mtd_info *mtd, unsigned command,
 	      "mxc_nand_command (cmd = 0x%x, col = 0x%x, page = 0x%x)\n",
 	      command, column, page_addr);
 
-	if ((NFMS >> NFMS_BIT) & 0x1)
-		is2k_Pagesize = 1;
-
 	/*
 	 * Reset command state information
 	 */
@@ -1045,12 +1042,23 @@ static int mxc_nand_scan_bbt(struct mtd_info *mtd)
 	struct nand_chip *this = mtd->priv;
 
 	/* Config before scanning */
+	/* Do not rely on NFMS_BIT, set/clear NFMS bit based on mtd->writesize */
 	if (mtd->writesize == NAND_PAGESIZE_2KB) {
 		NFMS |= (1 << NFMS_BIT);
+		is2k_Pagesize = 1;
+	} else {
+		if ((NFMS >> NFMS_BIT) & 0x1) {	/* This case has happened on some SoCs */
+			printk(KERN_INFO
+			       "NFMS Bit set for 512B Page, resetting it. [RCSR: 0x%08x]\n",
+			       NFMS);
+			NFMS &= ~(1 << NFMS_BIT);
+		}
+		is2k_Pagesize = 0;
 	}
 
 	this->bbt_td = NULL;
 	this->bbt_md = NULL;
+
 	if (!this->badblock_pattern) {
 		if (mtd->writesize == NAND_PAGESIZE_2KB)
 			this->badblock_pattern = &smallpage_memorybased;
