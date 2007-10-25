@@ -1121,6 +1121,9 @@ int32_t ipu_disable_channel(ipu_channel_t channel, bool wait_for_stop)
 	uint32_t in_dma;
 	uint32_t out_dma;
 	uint32_t chan_mask = 0;
+	uint32_t timeout;
+	uint32_t eof_intr;
+	uint32_t enabled;
 
 	/* Get input and output dma channels */
 	out_dma = channel_2_dma(channel, IPU_OUTPUT_BUFFER);
@@ -1134,7 +1137,7 @@ int32_t ipu_disable_channel(ipu_channel_t channel, bool wait_for_stop)
 		chan_mask |= 1UL << sec_dma;
 
 	if (wait_for_stop && channel != MEM_SDC_FG && channel != MEM_SDC_BG) {
-		uint32_t timeout = 40;
+		timeout = 40;
 		while ((__raw_readl(IDMAC_CHA_BUSY) & chan_mask) ||
 		       (_ipu_channel_status(channel) == TASK_STAT_ACTIVE)) {
 			timeout--;
@@ -1155,37 +1158,38 @@ int32_t ipu_disable_channel(ipu_channel_t channel, bool wait_for_stop)
 		dev_dbg(g_ipu_dev, "timeout = %d * 10ms\n", 40 - timeout);
 	}
 	/* SDC BG and FG must be disabled before DMA is disabled */
-	if (channel == MEM_SDC_BG) {
-		uint32_t timeout = 5;
-		spin_lock_irqsave(&ipu_lock, lock_flags);
-		ipu_clear_irq(IPU_IRQ_SDC_BG_EOF);
-		if (_ipu_sdc_bg_uninit() && wait_for_stop) {
-			spin_unlock_irqrestore(&ipu_lock, lock_flags);
+	if ((channel == MEM_SDC_BG) || (channel == MEM_SDC_FG)) {
 
-			while (!ipu_get_irq_status(IPU_IRQ_SDC_BG_EOF)) {
-				msleep(5);
-				timeout--;
-				if (timeout == 0)
-					break;
-			}
-		} else {
-			spin_unlock_irqrestore(&ipu_lock, lock_flags);
+		if (channel == MEM_SDC_BG)
+			eof_intr = IPU_IRQ_SDC_BG_EOF;
+		else
+			eof_intr = IPU_IRQ_SDC_FG_EOF;
+
+		/* Wait for any buffer flips to finsh */
+		timeout = 4;
+		while (timeout &&
+		       ((__raw_readl(IPU_CHA_BUF0_RDY) & chan_mask) ||
+			(__raw_readl(IPU_CHA_BUF1_RDY) & chan_mask))) {
+			msleep(10);
+			timeout--;
 		}
-	} else if (channel == MEM_SDC_FG) {
-		uint32_t timeout = 5;
-		spin_lock_irqsave(&ipu_lock, lock_flags);
-		ipu_clear_irq(IPU_IRQ_SDC_FG_EOF);
-		if (_ipu_sdc_fg_uninit() && wait_for_stop) {
-			spin_unlock_irqrestore(&ipu_lock, lock_flags);
 
-			while (!ipu_get_irq_status(IPU_IRQ_SDC_FG_EOF)) {
-				msleep(5);
-				timeout--;
-				if (timeout == 0)
-					break;
-			}
+		spin_lock_irqsave(&ipu_lock, lock_flags);
+		ipu_clear_irq(eof_intr);
+		if (channel == MEM_SDC_BG)
+			enabled = _ipu_sdc_bg_uninit();
+		else
+			enabled = _ipu_sdc_fg_uninit();
+		spin_unlock_irqrestore(&ipu_lock, lock_flags);
+
+		if (enabled && wait_for_stop) {
+			timeout = 5;
 		} else {
-			spin_unlock_irqrestore(&ipu_lock, lock_flags);
+			timeout = 0;
+		}
+		while (timeout && !ipu_get_irq_status(eof_intr)) {
+			msleep(5);
+			timeout--;
 		}
 	}
 

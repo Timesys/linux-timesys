@@ -179,6 +179,7 @@ static int mxcfb_set_par(struct fb_info *fbi)
 
 	ipu_disable_irq(mxc_fbi->ipu_ch_irq);
 	ipu_disable_channel(mxc_fbi->ipu_ch, true);
+	ipu_uninit_channel(mxc_fbi->ipu_ch);
 	ipu_clear_irq(mxc_fbi->ipu_ch_irq);
 	mxcfb_set_fix(fbi);
 
