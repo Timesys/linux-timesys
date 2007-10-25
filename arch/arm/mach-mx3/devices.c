@@ -917,9 +917,6 @@ static int ata_get_clk_rate(void)
 }
 
 static struct fsl_ata_platform_data ata_data = {
-	.udma_mask        = 0x0f,	/* up to UDMA3 */
-	.fifo_alarm       = MXC_IDE_DMA_WATERMARK / 2,
-	.max_sg           = MXC_IDE_DMA_BD_NR,
 	.init             = ata_init,
 	.exit             = ata_exit,
 	.get_clk_rate     = ata_get_clk_rate,

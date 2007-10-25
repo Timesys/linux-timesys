@@ -142,9 +142,6 @@ struct fsl_spi_platform_data {
 };
 
 struct fsl_ata_platform_data {
-	int	udma_mask;	/* UDMA modes h/w can handle */
-	int	fifo_alarm;	/* value for fifo_alarm reg */
-	int	max_sg;		/* longest sglist h/w DMA handle */
 	int	(*init)(struct platform_device *pdev);
 	void	(*exit)(void);
 	int	(*get_clk_rate)(void);

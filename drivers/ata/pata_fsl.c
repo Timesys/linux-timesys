@@ -24,17 +24,12 @@
 #include <linux/libata.h>
 #include <linux/platform_device.h>
 #include <linux/fsl_devices.h>
-#include <asm/dma.h>
 
 #define DRV_NAME "pata_fsl"
 #define DRV_VERSION "1.0"
 
 struct pata_fsl_priv {
-	int ultra;
 	u8 *fsl_ata_regs;
-	int dma_rchan;
-	int dma_wchan;
-	int dma_done;
 };
 
 enum {
@@ -290,154 +285,9 @@ static void pata_fsl_set_piomode(struct ata_port *ap, struct ata_device *adev)
 	set_ata_bus_timing(adev->pio_mode, to_platform_device(ap->dev));
 }
 
-static void pata_fsl_set_dmamode(struct ata_port *ap, struct ata_device *adev)
-{
-	struct pata_fsl_priv *priv = ap->host->private_data;
-
-	priv->ultra = adev->dma_mode >= XFER_UDMA_0;
-
-	set_ata_bus_timing(adev->dma_mode, to_platform_device(ap->dev));
-}
-
 static int pata_fsl_port_start(struct ata_port *ap)
 {
 	return 0;
-}
-
-static void dma_callback(void *arg, int error_status, unsigned int count)
-{
-	struct ata_port *ap = arg;
-	struct pata_fsl_priv *priv = ap->host->private_data;
-
-	priv->dma_done = 1;
-
-	ata_interrupt(0, ap->host);
-}
-
-static void pata_fsl_bmdma_setup(struct ata_queued_cmd *qc)
-{
-	struct scatterlist tmp[42];
-	struct scatterlist *sg, *tsg = tmp;
-	int nr_sg = 0;
-	int chan;
-	int dma_mode = 0, dma_ultra;
-	u8 ata_control;
-	struct ata_port *ap = qc->ap;
-	struct pata_fsl_priv *priv = ap->host->private_data;
-	u8 *ata_regs = priv->fsl_ata_regs;
-	struct fsl_ata_platform_data *plat = ap->dev->platform_data;
-
-	/*
-	 * Configure the ATA interface.
-	 */
-	dma_ultra = priv->ultra ?
-		FSL_ATA_CTRL_DMA_ULTRA : 0;
-
-	ata_control = FSL_ATA_CTRL_FIFO_RST_B |
-		      FSL_ATA_CTRL_ATA_RST_B |
-		      FSL_ATA_CTRL_DMA_PENDING |
-		      dma_ultra;
-
-	if (qc->dma_dir == DMA_TO_DEVICE) {
-		chan = priv->dma_wchan;
-		ata_control |= FSL_ATA_CTRL_FIFO_TX_EN |
-			      FSL_ATA_CTRL_DMA_WRITE;
-		dma_mode = DMA_MODE_WRITE;
-	} else {
-		chan = priv->dma_rchan;
-		ata_control |= FSL_ATA_CTRL_FIFO_RCV_EN;
-		dma_mode = DMA_MODE_READ;
-	}
-
-	__raw_writel(ata_control, ata_regs + FSL_ATA_CONTROL);
-	__raw_writel(plat->fifo_alarm, ata_regs + FSL_ATA_FIFO_ALARM);
-	__raw_writel(FSL_ATA_INTR_ATA_INTRQ1 /* | FSL_ATA_INTR_ATA_INTRQ2 */,
-		     ata_regs + FSL_ATA_INT_EN);
-	mb();
-
-	/*
-	 * Set up the DMA completion callback
-	 */
-	mxc_dma_callback_set(chan, dma_callback, (void *)ap);
-
-	/*
-	 * Map the sg list.
-	 */
-	ata_for_each_sg(sg, qc) {
-		BUG_ON(sg_dma_len(sg) > 65535);
-		memcpy(tsg, sg, sizeof *sg);
-		nr_sg++;
-	}
-
-	mxc_dma_sg_config(chan, tsg, nr_sg, 0, dma_mode);
-}
-
-static void pata_fsl_bmdma_start(struct ata_queued_cmd *qc)
-{
-	struct ata_port *ap = qc->ap;
-	struct pata_fsl_priv *priv = ap->host->private_data;
-	int chan;
-
-	/*
-	 * Start the channel.
-	 */
-	chan = qc->dma_dir == DMA_TO_DEVICE ? priv->dma_wchan : priv->dma_rchan;
-
-	priv->dma_done = 0;
-
-	mxc_dma_enable(chan);
-
-	ap->ops->exec_command(ap, &qc->tf);
-}
-
-static void pata_fsl_bmdma_stop(struct ata_queued_cmd *qc)
-{
-	struct ata_port *ap = qc->ap;
-	struct pata_fsl_priv *priv = ap->host->private_data;
-
-	priv->dma_done = 0;
-}
-
-static u8 pata_fsl_bmdma_status(struct ata_port *ap)
-{
-	u8 status;
-	struct pata_fsl_priv *priv = ap->host->private_data;
-	u8 *ata_regs = priv->fsl_ata_regs;
-
-	status = __raw_readl(ata_regs + FSL_ATA_INT_PEND);
-
-	return priv->dma_done ? ATA_DMA_INTR : 0;
-}
-
-static void pata_fsl_dma_init(struct ata_port *ap)
-{
-	struct pata_fsl_priv *priv = ap->host->private_data;
-
-	priv->dma_rchan = -1;
-	priv->dma_wchan = -1;
-
-	priv->dma_rchan = mxc_dma_request(MXC_DMA_ATA_RX, "MXC ATA RX");
-	if (priv->dma_rchan < 0) {
-		dev_printk(KERN_ERR, ap->dev, "couldn't get RX DMA channel\n");
-		goto err_out;
-	}
-
-	priv->dma_wchan = mxc_dma_request(MXC_DMA_ATA_TX, "MXC ATA TX");
-	if (priv->dma_wchan < 0) {
-		dev_printk(KERN_ERR, ap->dev, "couldn't get TX DMA channel\n");
-		goto err_out;
-	}       
-
-	dev_printk(KERN_ERR, ap->dev, "rchan=%d wchan=%d\n", priv->dma_rchan,
-		   priv->dma_wchan);
-	return;
-
-err_out:
-	ap->mwdma_mask = 0;
-	ap->udma_mask = 0;
-	mxc_dma_free(priv->dma_rchan);
-	mxc_dma_free(priv->dma_wchan);
-	kfree(priv);
 }
 
 static u8 pata_fsl_irq_ack(struct ata_port *ap, unsigned int chk_drq)
@@ -467,7 +317,6 @@ static struct scsi_host_template pata_fsl_sht = {
 	.emulated		= ATA_SHT_EMULATED,
 	.use_clustering		= ATA_SHT_USE_CLUSTERING,
 	.proc_name		= DRV_NAME,
-	.dma_boundary		= ATA_DMA_BOUNDARY,
 	.slave_configure	= ata_scsi_slave_config,
 	.slave_destroy		= ata_scsi_slave_destroy,
 	.bios_param		= ata_std_bios_param,
@@ -475,7 +324,6 @@ static struct scsi_host_template pata_fsl_sht = {
 
 static struct ata_port_operations pata_fsl_port_ops = {
 	.set_piomode		= pata_fsl_set_piomode,
-	.set_dmamode		= pata_fsl_set_dmamode,
 
 	.port_disable		= ata_port_disable,
 	.tf_load		= ata_tf_load,
@@ -490,9 +338,6 @@ static struct ata_port_operations pata_fsl_port_ops = {
 	.post_internal_cmd	= ata_bmdma_post_internal_cmd,
 	.cable_detect		= ata_cable_unknown,
 
-	.bmdma_setup		= pata_fsl_bmdma_setup,
-	.bmdma_start		= pata_fsl_bmdma_start,
-
 	.qc_prep		= ata_noop_qc_prep,
 	.qc_issue		= ata_qc_issue_prot,
 
@@ -503,9 +348,6 @@ static struct ata_port_operations pata_fsl_port_ops = {
 	.irq_ack		= pata_fsl_irq_ack,
 
 	.port_start		= pata_fsl_port_start,
-
-	.bmdma_stop		= pata_fsl_bmdma_stop,
-	.bmdma_status		= pata_fsl_bmdma_status,
 };
 
 static void fsl_setup_port(struct ata_ioports *ioaddr)
@@ -581,8 +423,8 @@ static int __devinit pata_fsl_probe(struct platform_device *pdev)
 	ap->ioaddr.altstatus_addr = ap->ioaddr.ctl_addr;
 	ap->ops = &pata_fsl_port_ops;
 	ap->pio_mask = 0x7F;
-	ap->mwdma_mask = 0x7F;
-	ap->udma_mask = plat->udma_mask;
+	ap->mwdma_mask = 0x00;
+	ap->udma_mask = 0x00;
 
 	fsl_setup_port(&ap->ioaddr);
 
@@ -604,13 +446,8 @@ static int __devinit pata_fsl_probe(struct platform_device *pdev)
 	/* Set initial timing and mode */
 	set_ata_bus_timing(XFER_PIO_4, pdev);
 
-	/* get DMA ready */
-	pata_fsl_dma_init(ap);
-
 	/*
 	 * Enable hardware interrupts.
-	 * INTRQ2 goes to the CPU, so we enable it here, but we may need
-	 * to ignore it when DMA is doing the transfer.
 	 */
 	__raw_writel(FSL_ATA_INTR_ATA_INTRQ2, ata_regs + FSL_ATA_INT_EN);
 	mb();
