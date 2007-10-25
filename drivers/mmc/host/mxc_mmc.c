@@ -570,11 +570,11 @@ static int mxcmci_cmd_done(struct mxcmci_host *host, unsigned int stat)
 	if (stat & STATUS_TIME_OUT_RESP) {
 		__raw_writel(STATUS_TIME_OUT_RESP, host->base + MMC_STATUS);
 		pr_debug("%s: CMD TIMEOUT\n", DRIVER_NAME);
-		cmd->error = MMC_ERR_TIMEOUT;
+		cmd->error = -ETIMEDOUT;
 	} else if (stat & STATUS_RESP_CRC_ERR && cmd->flags & MMC_RSP_CRC) {
 		__raw_writel(STATUS_RESP_CRC_ERR, host->base + MMC_STATUS);
 		printk(KERN_ERR "%s: cmd crc error\n", DRIVER_NAME);
-		cmd->error = MMC_ERR_BADCRC;
+		cmd->error = -EILSEQ;
 	}
 
 	/* Read response from the card */
@@ -605,7 +605,7 @@ static int mxcmci_cmd_done(struct mxcmci_host *host, unsigned int stat)
 	pr_debug("%s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n", DRIVER_NAME,
 		 cmd->resp[0], cmd->resp[1], cmd->resp[2], cmd->resp[3]);
 
-	if (!host->data || cmd->error != MMC_ERR_NONE) {
+	if (!host->data || cmd->error) {
 		/* complete the command */
 		mxcmci_finish_request(host, host->req);
 		return 1;
@@ -656,12 +656,12 @@ static int mxcmci_cmd_done(struct mxcmci_host *host, unsigned int stat)
 		status = __raw_readl(host->base + MMC_STATUS);
 		if (status & STATUS_TIME_OUT_READ) {
 			pr_debug("%s: Read time out occurred\n", DRIVER_NAME);
-			data->error = MMC_ERR_TIMEOUT;
+			data->error = -ETIMEDOUT;
 			__raw_writel(STATUS_TIME_OUT_READ,
 				     host->base + MMC_STATUS);
 		} else if (status & STATUS_READ_CRC_ERR) {
 			pr_debug("%s: Read CRC error occurred\n", DRIVER_NAME);
-			data->error = MMC_ERR_BADCRC;
+			data->error = -EILSEQ;
 			__raw_writel(STATUS_READ_CRC_ERR,
 				     host->base + MMC_STATUS);
 		}
@@ -691,7 +691,7 @@ static int mxcmci_cmd_done(struct mxcmci_host *host, unsigned int stat)
 		status = __raw_readl(host->base + MMC_STATUS);
 		if (status & STATUS_WRITE_CRC_ERR) {
 			pr_debug("%s: Write CRC error occurred\n", DRIVER_NAME);
-			data->error = MMC_ERR_BADCRC;
+			data->error = -EILSEQ;
 			__raw_writel(STATUS_WRITE_CRC_ERR,
 				     host->base + MMC_STATUS);
 		}
@@ -738,7 +738,7 @@ static int mxcmci_data_done(struct mxcmci_host *host, unsigned int stat)
 	host->data = NULL;
 	data->bytes_xfered = host->dma_size;
 
-	if (host->req->stop && data->error == MMC_ERR_NONE) {
+	if (host->req->stop && data->error) {
 		mxcmci_start_cmd(host, host->req->stop, 0);
 	} else {
 		mxcmci_finish_request(host, host->req);
@@ -1063,13 +1063,13 @@ static void mxcmci_dma_irq(void *devid, int error, unsigned int cnt)
 			if (status & STATUS_TIME_OUT_READ) {
 				pr_debug("%s: Read time out occurred\n",
 					 DRIVER_NAME);
-				data->error = MMC_ERR_TIMEOUT;
+				data->error = -ETIMEDOUT;
 				__raw_writel(STATUS_TIME_OUT_READ,
 					     host->base + MMC_STATUS);
 			} else if (status & STATUS_READ_CRC_ERR) {
 				pr_debug("%s: Read CRC error occurred\n",
 					 DRIVER_NAME);
-				data->error = MMC_ERR_BADCRC;
+				data->error = -EILSEQ;
 				__raw_writel(STATUS_READ_CRC_ERR,
 					     host->base + MMC_STATUS);
 			}
@@ -1082,7 +1082,7 @@ static void mxcmci_dma_irq(void *devid, int error, unsigned int cnt)
 			if (status & STATUS_WRITE_CRC_ERR) {
 				pr_debug("%s: Write CRC error occurred\n",
 					 DRIVER_NAME);
-				data->error = MMC_ERR_BADCRC;
+				data->error = -EILSEQ;
 				__raw_writel(STATUS_WRITE_CRC_ERR,
 					     host->base + MMC_STATUS);
 			}
@@ -1090,7 +1090,7 @@ static void mxcmci_dma_irq(void *devid, int error, unsigned int cnt)
 				     host->base + MMC_STATUS);
 		}
 	} else {
-		data->error = MMC_ERR_FAILED;
+		data->error = -EIO;
 		pr_debug("%s:%d: MXC MMC DMA transfer failed.\n", __FUNCTION__,
 			 __LINE__);
 	}
