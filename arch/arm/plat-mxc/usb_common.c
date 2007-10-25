@@ -178,7 +178,8 @@ struct platform_device *host_pdev_register(struct resource *res, int n_res, stru
 		return NULL;
 	}
 
-	printk(KERN_INFO "usb: %s registered\n", config->name);
+	printk(KERN_INFO "usb: %s host (%s) registered\n", config->name,
+	       config->transceiver);
 	pr_debug("pdev=0x%p  dev=0x%p  resources=0x%p  pdata=0x%p\n",
 		 pdev, &pdev->dev, pdev->resource, pdev->dev.platform_data);
 
