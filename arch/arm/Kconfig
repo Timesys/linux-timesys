@@ -306,6 +306,13 @@ config ARCH_L7200
 	  If you have any questions or comments about the Linux kernel port
 	  to this board, send e-mail to <sjhill@cotw.com>.
 
+config ARCH_MXC
+	bool "Freescale MXC/iMX-based"
+	select ISA
+	select ARCH_MTD_XIP
+	help
+	  Support for Freescale MXC/iMX-based family of processors
+
 config ARCH_KS8695
 	bool "Micrel/Kendin KS8695"
 	help
@@ -450,6 +457,8 @@ source "arch/arm/mach-aaec2000/Kconfig"
 source "arch/arm/mach-realview/Kconfig"
 
 source "arch/arm/mach-at91/Kconfig"
+
+source "arch/arm/plat-mxc/Kconfig"
 
 source "arch/arm/mach-netx/Kconfig"
 
@@ -689,7 +698,7 @@ config LEDS
 		   ARCH_OMAP || ARCH_P720T || ARCH_PXA_IDP || \
 		   ARCH_SA1100 || ARCH_SHARK || ARCH_VERSATILE || \
 		   ARCH_AT91 || MACH_TRIZEPS4 || ARCH_DAVINCI || \
-		   ARCH_KS8695
+		   ARCH_KS8695 || ARCH_MXC
 	help
 	  If you say Y here, the LEDs on your machine will be used
 	  to provide useful information about your current system status.
@@ -703,7 +712,7 @@ config LEDS
 
 config LEDS_TIMER
 	bool "Timer LED" if (!ARCH_CDB89712 && !ARCH_OMAP) || \
-			    MACH_OMAP_H2 || MACH_OMAP_PERSEUS2
+			    MACH_OMAP_H2 || MACH_OMAP_PERSEUS2 || ARCH_MXC
 	depends on LEDS
 	depends on !GENERIC_CLOCKEVENTS
 	default y if ARCH_EBSA110
@@ -720,7 +729,7 @@ config LEDS_TIMER
 
 config LEDS_CPU
 	bool "CPU usage LED" if (!ARCH_CDB89712 && !ARCH_EBSA110 && \
-			!ARCH_OMAP) || MACH_OMAP_H2 || MACH_OMAP_PERSEUS2
+			!ARCH_OMAP) || MACH_OMAP_H2 || MACH_OMAP_PERSEUS2 || ARCH_MXC
 	depends on LEDS
 	help
 	  If you say Y here, the red LED will be used to give a good real
@@ -978,7 +987,7 @@ source "drivers/acorn/block/Kconfig"
 if PCMCIA || ARCH_CLPS7500 || ARCH_IOP32X || ARCH_IOP33X || ARCH_IXP4XX \
 	|| ARCH_L7200 || ARCH_LH7A40X || ARCH_PXA || ARCH_RPC \
 	|| ARCH_S3C2410 || ARCH_SA1100 || ARCH_SHARK || FOOTBRIDGE \
-	|| ARCH_IXP23XX
+	|| ARCH_IXP23XX || ARCH_MX3 || ARCH_MX27
 source "drivers/ide/Kconfig"
 endif
 
@@ -1034,6 +1043,10 @@ source "drivers/mmc/Kconfig"
 
 source "drivers/rtc/Kconfig"
 
+if ARCH_MXC
+source "drivers/mxc/Kconfig"
+endif
+
 endmenu
 
 source "fs/Kconfig"
@@ -1041,6 +1054,32 @@ source "fs/Kconfig"
 source "arch/arm/oprofile/Kconfig"
 
 source "arch/arm/Kconfig.debug"
+
+menu "CodeTEST setup"
+
+config CODETEST
+	bool "Turn on Freescale CodeTEST support"
+
+config CT_HOOKS_ENABLED
+	bool "Enable hooks by default"
+	depends on CODETEST
+
+config CT_USEPCI
+	bool "Use PCI Adapter"
+	depends on CODETEST
+
+config CT_USEMICTOR
+	bool
+	depends on CODETEST
+	default n if CT_USEPCI
+	default y if !CT_USEPCI
+
+config CT_ADDR
+	hex "Tag Port Physical Address"
+	depends on CODETEST && CT_USEMICTOR
+	default 0x14000000
+
+endmenu
 
 source "security/Kconfig"
 

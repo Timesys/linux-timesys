@@ -171,6 +171,8 @@ extern void __pgd_error(const char *file, int line, unsigned long val);
 #define L_PTE_EXEC		(1 << 6)
 #define L_PTE_DIRTY		(1 << 7)
 #define L_PTE_SHARED		(1 << 10)	/* shared(v6), coherent(xsc3) */
+#define L_PTE_EXTENDED		(1 << 9)	/* CB bits mapped to extended memory type */
+
 
 #ifndef __ASSEMBLY__
 
@@ -291,6 +293,15 @@ PTE_BIT_FUNC(mkyoung,   |= L_PTE_YOUNG);
  */
 #define pgprot_noncached(prot)	__pgprot(pgprot_val(prot) & ~(L_PTE_CACHEABLE | L_PTE_BUFFERABLE))
 #define pgprot_writecombine(prot) __pgprot(pgprot_val(prot) & ~L_PTE_CACHEABLE)
+#define pgprot_writethru(prot)	__pgprot(pgprot_val(prot) & ~L_PTE_BUFFERABLE)
+
+/* Extended config for non-shared device attributes */
+#define pgprot_nonshareddev(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED)
+/* Extended configurations for inner writeback cacheable */
+#define pgprot_writealloc(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED & ~L_PTE_CACHEABLE)
+#define pgprot_outer_wrthru(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED & ~L_PTE_BUFFERABLE)
+#define pgprot_outer_noncached(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED & ~(L_PTE_CACHEABLE | L_PTE_BUFFERABLE))
+
 
 #define pmd_none(pmd)		(!pmd_val(pmd))
 #define pmd_present(pmd)	(pmd_val(pmd))
