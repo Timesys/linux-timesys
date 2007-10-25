@@ -1259,7 +1259,7 @@ mxc_v4l2out_do_ioctl(struct inode *inode, struct file *file,
 				if(dq_timeout_cnt == 0){
 					dev_dbg(vdev->dev, "VIDIOC_DQBUF: timeout\n");
 				}
-				dq_timeout++;
+				dq_timeout_cnt++;
 				retval = -ETIME;
 				break;
 			} else if (signal_pending(current)) {
@@ -1267,7 +1267,7 @@ mxc_v4l2out_do_ioctl(struct inode *inode, struct file *file,
 					dev_dbg(vdev->dev,
 						"VIDIOC_DQBUF: interrupt received\n");
 				}
-				dq_intr_cnt++
+				dq_intr_cnt++;
 				retval = -ERESTARTSYS;
 				break;
 			}
