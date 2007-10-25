@@ -110,7 +110,7 @@ static struct nand_ecclayout nand_hw_eccoob_16 = {
  */
 
 #ifdef CONFIG_MTD_PARTITIONS
-static const char *part_probes[] = { /* "RedBoot", */ "cmdlinepart", NULL };
+static const char *part_probes[] = { "RedBoot", "cmdlinepart", NULL };
 #endif
 
 static wait_queue_head_t irq_waitq;

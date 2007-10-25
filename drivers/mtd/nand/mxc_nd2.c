@@ -17,29 +17,20 @@
 #include <linux/module.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/nand.h>
-#include <linux/mtd/partitions.h>
 #include <linux/interrupt.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 #include <linux/err.h>
-
+#include <linux/mtd/partitions.h>
 #include <asm/mach/flash.h>
 #include <asm/io.h>
+#include "mxc_nd2.h"
 
-#include "mxc_nd.h"
+#define DVR_VER "2.3"
 
-#define DVR_VER "2.11"
-
-/*
- * Define delays in microsec for NAND device operations
- */
-#define TROP_US_DELAY   2000
-
-/*
- * Macro useful to check if the nand chip is 2K page
- */
-#define IS_2K_PAGE_NAND	(mtd->writesize == NAND_PAGESIZE_2KB)
+/* Global address Variables */
+static u32 nfc_axi_base, nfc_ip_base;
 
 static void mxc_swap_2k_bi_main_sp(void);
 
@@ -51,6 +42,11 @@ struct mxc_mtd_s {
 };
 
 static struct mxc_mtd_s *mxc_nand_data;
+
+/*
+ * Define delays in microsec for NAND device operations
+ */
+#define TROP_US_DELAY   2000
 
 struct nand_info {
 	bool bSpareOnly;
@@ -66,11 +62,11 @@ static int hardware_ecc = 0;
 static int hardware_ecc = 1;
 #endif
 
-static int scan_done;
-static int skip_erase;
 static int page_to_block_shift;
 static int g_page_mask;
-static uint8_t *oob_data_shadow_p;
+static int scan_done;
+static int skip_erase;
+static u8 *oob_data_shadow_p;
 /*
  * OOB data that is shadowed in the SDRAM to prevent the Spare only access
  * to the Nand chip. This is valid only for the JFFS2 File System.
@@ -117,7 +113,7 @@ static struct nand_ecclayout nand_hw_eccoob_2k = {
  */
 
 /*!
- * @file mxc_nd2.c
+ * @file mxc_nd3.c
  *
  * @brief This file contains the hardware specific layer for NAND Flash on
  * MXC processor
@@ -126,14 +122,15 @@ static struct nand_ecclayout nand_hw_eccoob_2k = {
  */
 
 #ifdef CONFIG_MTD_PARTITIONS
-static const char *part_probes[] = { "cmdlinepart", NULL };
+static const char *part_probes[] = { "RedBoot", "cmdlinepart", NULL };
 #endif
 
 static wait_queue_head_t irq_waitq;
 
 static irqreturn_t mxc_nfc_irq(int irq, void *dev_id)
 {
-	NFC_CONFIG1 |= NFC_INT_MSK;	/* Disable interrupt */
+	/* Disable Interuupt */
+	raw_write(raw_read(REG_NFC_INTRRUPT) | NFC_INT_MSK, REG_NFC_INTRRUPT);
 	wake_up(&irq_waitq);
 
 	return IRQ_HANDLED;
@@ -151,6 +148,7 @@ static u8 mxc_main_xfer_buf[2048] ____cacheline_aligned;
  * mark_oob_data_clean - marks a block to indicate that the block is erased 
  * and doesnot contain JFFS2 clean marker.
  */
+
 static void mark_oob_data_dirty(u32 page, int update_sp)
 {
 	u32 blk = page >> page_to_block_shift;
@@ -171,6 +169,7 @@ static int is_oob_data_dirty(u32 page)
 
 static void mark_oob_data_clean(u32 page)
 {
+
 	u32 blk = page >> page_to_block_shift;
 	u32 off = blk / 8;
 	u32 bit = blk % 8;
@@ -216,17 +215,23 @@ static void nfc_memcpy(void *dst, const void *src, int len)
  */
 static void wait_op_done(int maxRetries, bool useirq)
 {
+
 	if (useirq) {
-		if ((NFC_CONFIG2 & NFC_INT) == 0) {
-			NFC_CONFIG1 &= ~NFC_INT_MSK;	/* Enable interrupt */
-			wait_event(irq_waitq, NFC_CONFIG2 & NFC_INT);
-			NFC_CONFIG2 &= ~NFC_INT;
+		if ((raw_read(REG_NFC_OPS_STAT) & NFC_OPS_STAT) == 0) {
+			/* Enable Interuupt */
+			raw_write(raw_read(REG_NFC_INTRRUPT) & ~NFC_INT_MSK,
+				  REG_NFC_INTRRUPT);
+			wait_event(irq_waitq,
+				   (raw_read(REG_NFC_OPS_STAT) & NFC_OPS_STAT));
+			raw_write((raw_read(REG_NFC_OPS_STAT) & ~NFC_OPS_STAT),
+				  REG_NFC_OPS_STAT);
 		}
 	} else {
 		while (1) {
 			maxRetries--;
-			if (NFC_CONFIG2 & NFC_INT) {
-				NFC_CONFIG2 &= ~NFC_INT;
+			if (raw_read(REG_NFC_OPS_STAT) & NFC_OPS_STAT) {
+				raw_write((raw_read(REG_NFC_OPS_STAT) &
+					   ~NFC_OPS_STAT), REG_NFC_OPS_STAT);
 				break;
 			}
 			udelay(1);
@@ -249,8 +254,9 @@ static void send_cmd(u16 cmd, bool useirq)
 {
 	DEBUG(MTD_DEBUG_LEVEL3, "send_cmd(0x%x, %d)\n", cmd, useirq);
 
-	NFC_FLASH_CMD = (u16) cmd;
-	NFC_CONFIG2 = NFC_CMD;
+	raw_write(cmd, REG_NFC_FLASH_CMD);
+	ACK_OPS;
+	raw_write(NFC_CMD, REG_NFC_OPS);
 
 	/* Wait for operation to complete */
 	wait_op_done(TROP_US_DELAY, useirq);
@@ -267,9 +273,10 @@ static void send_cmd(u16 cmd, bool useirq)
 static void send_addr(u16 addr, bool useirq)
 {
 	DEBUG(MTD_DEBUG_LEVEL3, "send_addr(0x%x %d)\n", addr, useirq);
+	raw_write((addr << NFC_FLASH_ADDR_SHIFT), REG_NFC_FLASH_ADDR);
 
-	NFC_FLASH_ADDR = addr;
-	NFC_CONFIG2 = NFC_ADDR;
+	ACK_OPS;		/* defined only for V3 */
+	raw_write(NFC_ADDR, REG_NFC_OPS);
 
 	/* Wait for operation to complete */
 	wait_op_done(TROP_US_DELAY, useirq);
@@ -283,12 +290,16 @@ static void send_addr(u16 addr, bool useirq)
  */
 static void send_prog_page(u8 buf_id)
 {
+	u32 val = buf_id;
 	DEBUG(MTD_DEBUG_LEVEL3, "%s\n", __FUNCTION__);
 
-	/* NFC buffer 0 is used for page read/write */
-	NFC_BUF_ADDR = buf_id;
+	NFC_SET_RBA(val, RBA_BUFFER0);	/* defined only for V3 */
 
-	NFC_CONFIG2 = NFC_INPUT;
+	/* Set RBA bits for BUFFER val */
+	raw_write(val, REG_NFC_SET_RBA);
+
+	ACK_OPS;		/* defined only for V3 */
+	raw_write(NFC_INPUT, REG_NFC_OPS);
 
 	/* Wait for operation to complete */
 	wait_op_done(TROP_US_DELAY, true);
@@ -302,12 +313,15 @@ static void send_prog_page(u8 buf_id)
  */
 static void send_read_page(u8 buf_id)
 {
+	u32 val = buf_id;
 	DEBUG(MTD_DEBUG_LEVEL3, "%s\n", __FUNCTION__);
 
-	/* NFC buffer 0 is used for page read/write */
-	NFC_BUF_ADDR = buf_id;
+	NFC_SET_RBA(val, RBA_BUFFER0);	/* defined only for V3 */
+	/* Set RBA bits for BUFFER val */
+	raw_write(val, REG_NFC_SET_RBA);
 
-	NFC_CONFIG2 = NFC_OUTPUT;
+	ACK_OPS;		/* defined only for V3 */
+	raw_write(NFC_OUTPUT, REG_NFC_OPS);
 
 	/* Wait for operation to complete */
 	wait_op_done(TROP_US_DELAY, true);
@@ -319,14 +333,21 @@ static void send_read_page(u8 buf_id)
  */
 static void send_read_id(void)
 {
-	/* NFC buffer 0 is used for device ID output */
-	NFC_BUF_ADDR = 0x0;
+	u32 val = 0;
 
+	/* NFC buffer 0 is used for device ID output */
+	/* Set RBA bits for BUFFER0 */
+
+	NFC_SET_RBA(val, RBA_BUFFER0);	/* defined only for V3 */
+	raw_write(val, REG_NFC_SET_RBA);
+
+	ACK_OPS;		/* defined only for V3 */
 	/* Read ID into main buffer */
-	NFC_CONFIG2 = NFC_ID;
+	raw_write(NFC_ID, REG_NFC_OPS);
 
 	/* Wait for operation to complete */
 	wait_op_done(TROP_US_DELAY, true);
+
 }
 
 /*!
@@ -338,20 +359,27 @@ static void send_read_id(void)
 static u16 get_dev_status(void)
 {
 	volatile u16 *mainBuf = MAIN_AREA1;
-	u32 store;
+	volatile u32 store;
+	u32 val = 1;
 	u16 ret;
 	/* Issue status request to NAND device */
 
 	/* store the main area1 first word, later do recovery */
 	store = *((u32 *) mainBuf);
+	*(u32 *) mainBuf = 0x0;
+
 	/*
 	 * NFC buffer 1 is used for device status to prevent
 	 * corruption of read/write buffer on status requests.
 	 */
-	NFC_BUF_ADDR = 1;
 
+	/* Set RBA bits for BUFFER1 */
+	NFC_SET_RBA(val, RBA_BUFFER1);	/* defined only for V3 */
+	raw_write(val, REG_NFC_SET_RBA);
+
+	ACK_OPS;		/* defined only for V3 */
 	/* Read status into main buffer */
-	NFC_CONFIG2 = NFC_STATUS;
+	raw_write(NFC_STATUS, REG_NFC_OPS);
 
 	/* Wait for operation to complete */
 	wait_op_done(TROP_US_DELAY, true);
@@ -360,7 +388,6 @@ static u16 get_dev_status(void)
 	/* get status, then recovery area 1 data */
 	ret = mainBuf[0];
 	*((u32 *) mainBuf) = store;
-
 	return ret;
 }
 
@@ -374,15 +401,17 @@ static u16 get_dev_status(void)
 static int mxc_nand_dev_ready(struct mtd_info *mtd)
 {
 	/*
-	 * NFC handles R/B internally.Therefore,this function
-	 * always returns status as ready.
+	 * For V1/V2 NFC this function returns always  1.
 	 */
-	return 1;
+	if (CHECK_NFC_RB)
+		return 1;
+	else
+		return 0;
 }
 
 static void mxc_nand_enable_hwecc(struct mtd_info *mtd, int mode)
 {
-	NFC_CONFIG1 |= NFC_ECC_EN;
+	raw_write((raw_read(REG_NFC_ECC_EN) | NFC_ECC_EN), REG_NFC_ECC_EN);
 	return;
 }
 
@@ -401,7 +430,7 @@ static int mxc_check_ecc_status(struct mtd_info *mtd)
 		no_subpages = 4;
 	}
 
-	ecc_stat = NFC_ECC_STATUS_RESULT;
+	ecc_stat = raw_read(REG_NFC_ECC_STATUS_RESULT);
 	do {
 		err = ecc_stat & 0x7;
 		if (err > 0x4) {
@@ -433,6 +462,7 @@ static int mxc_nand_correct_data(struct mtd_info *mtd, u_char * dat,
  * 4 symbols of 9 bits each in 528 byte page.
  * So this function is not required.
  */
+
 static int mxc_nand_calculate_ecc(struct mtd_info *mtd, const u_char * dat,
 				  u_char * ecc_code)
 {
@@ -443,7 +473,7 @@ static int mxc_nand_calculate_ecc(struct mtd_info *mtd, const u_char * dat,
 /*!
  * This function reads byte from the NAND Flash
  *
- * @param     mtd     MTD structure for the NAND Flash
+ * @param       mtd     MTD structure for the NAND Flash
  *
  * @return    data read from the NAND Flash
  */
@@ -520,6 +550,11 @@ static u16 mxc_nand_read_word(struct mtd_info *mtd)
  */
 static u_char mxc_nand_read_byte16(struct mtd_info *mtd)
 {
+	/* Check for status request */
+	if (g_nandfc_info.bStatusRequest) {
+		return (get_dev_status() & 0xFF);
+	}
+
 	return mxc_nand_read_word(mtd) & 0xFF;
 }
 
@@ -613,11 +648,12 @@ static void mxc_nand_select_chip(struct mtd_info *mtd, int chip)
 	}
 
 	if (chip == -1) {
-		NFC_CONFIG1 &= ~(NFC_CE);
+		raw_write((raw_read(REG_NFC_CE) & ~NFC_CE), REG_NFC_CE);
 		return;
 	}
 
-	NFC_CONFIG1 |= NFC_CE;
+	raw_write((raw_read(REG_NFC_CE) | NFC_CE), REG_NFC_CE);
+
 #endif
 
 	switch (chip) {
@@ -656,6 +692,7 @@ static void mxc_do_addr_cycle(struct mtd_info *mtd, int column, int page_addr)
 			page_addr >>= 8;
 		} while (page_mask != 0);
 	}
+
 }
 
 /*
@@ -669,10 +706,7 @@ static void read_full_page(struct mtd_info *mtd, int page_addr)
 
 	if (IS_2K_PAGE_NAND) {
 		send_cmd(NAND_CMD_READSTART, false);
-		send_read_page(0);
-		send_read_page(1);
-		send_read_page(2);
-		send_read_page(3);
+		READ_2K_PAGE;
 		mxc_swap_2k_bi_main_sp();
 	} else {
 		send_read_page(0);
@@ -719,7 +753,6 @@ static void mxc_nand_command(struct mtd_info *mtd, unsigned command,
 	DEBUG(MTD_DEBUG_LEVEL3,
 	      "mxc_nand_command (cmd = 0x%x, col = 0x%x, page = 0x%x)\n",
 	      command, column, page_addr);
-
 	/*
 	 * Reset command state information
 	 */
@@ -768,11 +801,9 @@ static void mxc_nand_command(struct mtd_info *mtd, unsigned command,
 
 	case NAND_CMD_PAGEPROG:
 		if (!g_nandfc_info.bSpareOnly) {
-			send_prog_page(0);
 			if (IS_2K_PAGE_NAND) {
-				send_prog_page(1);
-				send_prog_page(2);
-				send_prog_page(3);
+			PROG_2K_PAGE} else {
+				send_prog_page(0);
 			}
 		} else {
 			return;
@@ -816,10 +847,7 @@ static void mxc_nand_command(struct mtd_info *mtd, unsigned command,
 			/* send read confirm command */
 			send_cmd(NAND_CMD_READSTART, true);
 			/* read for each AREA */
-			send_read_page(0);
-			send_read_page(1);
-			send_read_page(2);
-			send_read_page(3);
+			READ_2K_PAGE;
 		} else {
 			send_read_page(0);
 		}
@@ -858,7 +886,9 @@ static void mxc_low_erase(struct mtd_info *mtd)
 #define mxc_low_erase(x)
 #endif
 
-// Kevin: why do we need this???
+/* Kevin: why do we need this???, 
+ * Yes, to avoid LED event trigger functions which will add code, -Raj*/
+
 static int mxc_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 {
 	unsigned long timeo = jiffies;
@@ -872,8 +902,16 @@ static int mxc_nand_wait(struct mtd_info *mtd, struct nand_chip *chip)
 	send_cmd(NAND_CMD_STATUS, 1);
 
 	while (time_before(jiffies, timeo)) {
-		if (get_dev_status() & NAND_STATUS_READY)
-			break;
+#ifdef CONFIG_ARCH_MXC_HAS_NFC_V3
+		if (chip->dev_ready) {
+			if (chip->dev_ready(mtd))
+				break;
+		} else
+#endif
+		{
+			if (get_dev_status() & NAND_STATUS_READY)
+				break;
+		}
 		cond_resched();
 	}
 
@@ -894,8 +932,8 @@ static int mxc_nand_read_oob(struct mtd_info *mtd, struct nand_chip *chip,
 		read_full_page(mtd, page);
 		sndcmd = 0;
 	}
-	nfc_memcpy((void *)chip->oob_poi, (void *)SPARE_AREA0, mtd->oobsize);
 
+	nfc_memcpy((void *)chip->oob_poi, (void *)SPARE_AREA0, mtd->oobsize);
 	return sndcmd;
 }
 
@@ -904,26 +942,14 @@ static int mxc_nand_write_oob(struct mtd_info *mtd, struct nand_chip *chip,
 {
 	int status = 0;
 	const uint8_t *buf = chip->oob_poi;
+	int read_oob_col = 0;
+	volatile uint16_t *p_addr = SPARE_AREA0;
 
 	//FIXME Check for bad block marking
 	if (0xFF == buf[chip->badblockpos]) {
 		mark_oob_data_dirty(page, 1);
 	} else {
-		int read_oob_col;
-		int read_oob_cmd;
-		volatile uint16_t *p_addr;
-
-		if (IS_2K_PAGE_NAND) {
-			read_oob_col = 2048;
-			read_oob_cmd = NAND_CMD_READ0;
-			p_addr = MAIN_AREA0;
-		} else {
-			read_oob_col = 0;
-			read_oob_cmd = NAND_CMD_READOOB;
-			p_addr = SPARE_AREA0;
-		}
-		/* This is only place, Spare Only write happens */
-		send_cmd(read_oob_cmd, false);
+		send_cmd(NAND_CMD_READ0, false);
 		send_cmd(NAND_CMD_SEQIN, false);
 		mxc_do_addr_cycle(mtd, read_oob_col, page);
 
@@ -933,18 +959,11 @@ static int mxc_nand_write_oob(struct mtd_info *mtd, struct nand_chip *chip,
 		send_cmd(NAND_CMD_PAGEPROG, true);
 
 		status = mxc_nand_wait(mtd, chip);
-
 		if (status & NAND_STATUS_FAIL)
 			return -EIO;
 	}
-
 	return 0;
 }
-
-// read column 464-465 byte but only 464 for bad block marker
-#define BAD_BLK_MARKER_464      (*((volatile u16 *)IO_ADDRESS(NFC_BASE_ADDR + 0x600 + 464)))
-// read column 0-1 byte, but only 1 is used for swapped main area data
-#define BAD_BLK_MARKER_SP_0     (*((volatile u16 *)IO_ADDRESS(NFC_BASE_ADDR + 0x800)))
 
 /*
  * This function does the trick of swapping the 464th byte in the last RAM
@@ -957,13 +976,14 @@ static int mxc_nand_write_oob(struct mtd_info *mtd, struct nand_chip *chip,
 static void mxc_swap_2k_bi_main_sp(void)
 {
 	u16 tmp1, tmp2, new_tmp1;
-	tmp1 = BAD_BLK_MARKER_464;
-	tmp2 = BAD_BLK_MARKER_SP_0;
 
+	tmp1 = __raw_readw(BAD_BLK_MARKER_464);
+	tmp2 = __raw_readw(BAD_BLK_MARKER_SP_0);
 	new_tmp1 = (tmp1 & 0xFF00) | (tmp2 >> 8);
 	tmp2 = (tmp1 << 8) | (tmp2 & 0xFF);
-	BAD_BLK_MARKER_464 = new_tmp1;
-	BAD_BLK_MARKER_SP_0 = tmp2;
+	__raw_writew(new_tmp1, BAD_BLK_MARKER_464);
+	__raw_writew(tmp2, BAD_BLK_MARKER_SP_0);
+
 }
 
 /* Kevin: This is solid but need to optimize the nfc_memcpy */
@@ -1040,11 +1060,6 @@ static int mxc_nand_scan_bbt(struct mtd_info *mtd)
 	/* propagate ecc.layout to mtd_info */
 	mtd->ecclayout = this->ecc.layout;
 
-	/* NAND bus width determines access funtions used by upper layer */
-	if (this->options & NAND_BUSWIDTH_16) {
-		NFMS |= (1 << NFMS_NF_DWIDTH);
-	}
-
 	this->bbt_td = NULL;
 	this->bbt_md = NULL;
 	if (!this->badblock_pattern) {
@@ -1069,19 +1084,23 @@ static int __init mxcnd_probe(struct platform_device *pdev)
 	struct nand_chip *this;
 	struct mtd_info *mtd;
 	struct flash_platform_data *flash = pdev->dev.platform_data;
-	int nr_parts = 0, n;
+	int nr_parts = 0, n, err = 0;
 
-	int err = 0;
+	nfc_axi_base = IO_ADDRESS(NFC_AXI_BASE_ADDR);
+	nfc_ip_base = IO_ADDRESS(NFC_BASE_ADDR);
+
+	/* Resetting  NFC */
+	raw_write(NFC_RST, REG_NFC_RST);
 
 	/* Allocate memory for MTD device structure and private data */
-	mxc_nand_data = kmalloc(sizeof(struct mxc_mtd_s), GFP_KERNEL);
+	mxc_nand_data = kzalloc(sizeof(struct mxc_mtd_s), GFP_KERNEL);
 	if (!mxc_nand_data) {
 		printk(KERN_ERR "%s: failed to allocate mtd_info\n",
 		       __FUNCTION__);
 		err = -ENOMEM;
 		goto out;
 	}
-	memset(mxc_nand_data, 0, sizeof(struct mxc_mtd_s));
+
 	memset((char *)&g_nandfc_info, 0, sizeof(g_nandfc_info));
 
 	mxc_nand_data->dev = &pdev->dev;
@@ -1093,7 +1112,6 @@ static int __init mxcnd_probe(struct platform_device *pdev)
 
 	/* 5 us command delay time */
 	this->chip_delay = 5;
-
 	this->priv = mxc_nand_data;
 	this->dev_ready = mxc_nand_dev_ready;
 	this->cmdfunc = mxc_nand_command;
@@ -1105,15 +1123,19 @@ static int __init mxcnd_probe(struct platform_device *pdev)
 	this->read_buf = mxc_nand_read_buf;
 	this->verify_buf = mxc_nand_verify_buf;
 	this->scan_bbt = mxc_nand_scan_bbt;
+	/* NAND bus width determines access funtions used by upper layer */
 	if (flash->width == 2) {
-		this->options |= NAND_BUSWIDTH_16;
 		this->read_byte = mxc_nand_read_byte16;
+		this->options |= NAND_BUSWIDTH_16;
+		NFMS |= (1 << NFMS_NF_DWIDTH);
 	}
 
 	nfc_clk = clk_get(&pdev->dev, "nfc_clk");
 	clk_enable(nfc_clk);	/* Enabled here to satisfy following reset command to succeed */
 
-	NFC_CONFIG1 |= NFC_INT_MSK;
+	/* Disable interrupt */
+	raw_write((raw_read(REG_NFC_INTRRUPT) | NFC_INT_MSK), REG_NFC_INTRRUPT);
+
 	init_waitqueue_head(&irq_waitq);
 	err = request_irq(INT_NANDFC, mxc_nfc_irq, 0, "mxc_nd", NULL);
 	if (err) {
@@ -1132,26 +1154,29 @@ static int __init mxcnd_probe(struct platform_device *pdev)
 		this->ecc.mode = NAND_ECC_HW;
 		this->ecc.size = 512;	/* RS-ECC is applied for both MAIN+SPARE not MAIN alone */
 		this->ecc.bytes = 9;	/* used for both main and spare area */
-		NFC_CONFIG1 |= NFC_ECC_EN;
+		raw_write((raw_read(REG_NFC_ECC_EN) | NFC_ECC_EN),
+			  REG_NFC_ECC_EN);
 	} else {
 		this->ecc.mode = NAND_ECC_SOFT;
-		NFC_CONFIG1 &= ~NFC_ECC_EN;
+		raw_write((raw_read(REG_NFC_ECC_EN) & ~NFC_ECC_EN),
+			  REG_NFC_ECC_EN);
 	}
-	NFC_CONFIG1 &= ~(NFC_SP_EN);
+
+	raw_write(raw_read(REG_NFC_SP_EN) & ~NFC_SP_EN, REG_NFC_SP_EN);
 
 	/* Reset NAND */
 	this->cmdfunc(mtd, NAND_CMD_RESET, -1, -1);
 
 	/* preset operation */
 	/* Unlock the internal RAM Buffer */
-	NFC_CONFIG = 0x2;
+	raw_write(NFC_SET_BLS(NFC_BLS_UNLCOKED), REG_NFC_BLS);
 
 	/* Blocks to be unlocked */
-	NFC_UNLOCKSTART_BLKADDR = 0x0;
-	NFC_UNLOCKEND_BLKADDR = 0xFFFF;
+	/* Start Address = 0X0, End Address   = 0xFFFF */
+	UNLOCK_ADDR(0x0, 0xFFFF);
 
 	/* Unlock Block Command for given address range */
-	NFC_WRPROT = 0x4;
+	raw_write(NFC_SET_WPC(NFC_WPC_UNLOCK), REG_NFC_WPC);
 
 	/* Scan to find existence of the device */
 	if (nand_scan(mtd, 1)) {
@@ -1325,5 +1350,5 @@ module_init(mxc_nd_init);
 module_exit(mxc_nd_cleanup);
 
 MODULE_AUTHOR("Freescale Semiconductor, Inc.");
-MODULE_DESCRIPTION("MXC NAND MTD driver Version 2");
+MODULE_DESCRIPTION("MXC NAND MTD driver Version 2-3");
 MODULE_LICENSE("GPL");

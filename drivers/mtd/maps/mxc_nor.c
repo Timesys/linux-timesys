@@ -57,11 +57,9 @@ static int __devinit mxcflash_probe(struct platform_device *pdev)
 	struct resource *res = pdev->resource;
 	unsigned long size = res->end - res->start + 1;
 
-	info = kmalloc(sizeof(struct mxcflash_info), GFP_KERNEL);
+	info = kzalloc(sizeof(struct mxcflash_info), GFP_KERNEL);
 	if (!info)
 		return -ENOMEM;
-
-	memset(info, 0, sizeof(struct mxcflash_info));
 
 	if (!request_mem_region(res->start, size, "flash")) {
 		err = -EBUSY;
