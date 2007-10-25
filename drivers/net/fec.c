@@ -340,6 +340,24 @@ static int	mii_queue(struct net_device *dev, int request,
 #define PHY_STAT_100FDX	0x8000  /* 100 Mbit full duplex selected */
 
 
+#ifndef MODULE
+static int fec_mac_setup(char *p)
+{
+	int i;
+
+	for (i = 0; i < 6; i++) {
+		if (!p || !*p)
+			break;
+		fec_mac_default[i] = simple_strtoul(p, &p, 16);
+		if (*p == ':')
+			p++;
+	}
+	return 0;
+}
+
+__setup("fec_mac=", fec_mac_setup);
+#endif
+
 static int
 fec_enet_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
