@@ -46,7 +46,7 @@ void gpio_uart_active(int port, int ir_mode)
 	}
 
 	if (g_uart_activated[port]) {
-		pr_info("UART %d has been activated multi-times\n", port + 1);
+		pr_info("UART %d has been activated multiple times\n", port + 1);
 		return;
 	}
 	g_uart_activated[port] = 1;

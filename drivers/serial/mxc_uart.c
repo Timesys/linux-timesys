@@ -1682,7 +1682,6 @@ static int __init mxcuart_console_setup(struct console *co, char *options)
 	if (options != NULL) {
 		uart_parse_options(options, &baud, &parity, &bits, &flow);
 	}
-	gpio_uart_active(umxc->port.line, umxc->ir_mode);
 	return uart_set_options(&umxc->port, co, baud, parity, bits, flow);
 }
 
