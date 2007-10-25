@@ -166,6 +166,11 @@ static u8 mt9v111_sensor_lib(mt9v111_coreReg * coreReg, mt9v111_IFPReg * ifpReg)
 	data = ifpReg->formatControl;	// Set bit 12
 	mt9v111_write_reg(reg, data);
 
+	// Flicker Control
+	reg = MT9V111I_FLICKER_CONTROL;
+	data = ifpReg->flickerCtrl;
+	mt9v111_write_reg(reg, data);
+
 	// AE limit 4
 	reg = MT9V111I_SHUTTER_WIDTH_LIMIT_AE;
 	data = ifpReg->gainLimitAE;
@@ -361,6 +366,7 @@ sensor_interface *mt9v111_config(int *frame_rate, int high_quality)
 	mt9v111_device.ifpReg->formatControl = 0xc800;
 	mt9v111_device.ifpReg->modeControl = 0x708e;
 	mt9v111_device.ifpReg->awbSpeed = 0x4514;
+	mt9v111_device.ifpReg->flickerCtrl = 0x02;
 	mt9v111_device.coreReg->shutterWidth = 0xf8;
 
 	out_width = 640;
@@ -511,6 +517,149 @@ static void mt9v111_get_ae_mode(int *ae_mode)
 }
 
 /*!
+ * mt9v111 sensor enable/disable AE 
+ *
+ * @param active      int
+ * @return  None
+ */
+static void mt9v111_set_ae(int active)
+{
+	u8 reg;
+	u16 data;
+
+	mt9v111_device.ifpReg->modeControl &= 0xfff3;
+	mt9v111_device.ifpReg->modeControl |= (active & 0x01) << 14;
+
+	reg = MT9V111I_ADDR_SPACE_SEL;
+	data = mt9v111_device.ifpReg->addrSpaceSel;
+	mt9v111_write_reg(reg, data);
+
+	reg = MT9V111I_MODE_CONTROL;
+	data = mt9v111_device.ifpReg->modeControl;
+	mt9v111_write_reg(reg, data);
+}
+
+/*!
+ * mt9v111 sensor enable/disable auto white balance
+ *
+ * @param active      int
+ * @return  None
+ */
+static void mt9v111_set_awb(int active)
+{
+	u8 reg;
+	u16 data;
+
+	mt9v111_device.ifpReg->modeControl &= 0xfff3;
+	mt9v111_device.ifpReg->modeControl |= (active & 0x01) << 1;
+
+	reg = MT9V111I_ADDR_SPACE_SEL;
+	data = mt9v111_device.ifpReg->addrSpaceSel;
+	mt9v111_write_reg(reg, data);
+
+	reg = MT9V111I_MODE_CONTROL;
+	data = mt9v111_device.ifpReg->modeControl;
+	mt9v111_write_reg(reg, data);
+}
+
+/*!
+ * mt9v111 sensor set the flicker control 
+ *
+ * @param control      int
+ * @return  None
+ */
+static void mt9v111_flicker_control(int control)
+{
+	u8 reg;
+	u16 data;
+
+	reg = MT9V111I_ADDR_SPACE_SEL;
+	data = mt9v111_device.ifpReg->addrSpaceSel;
+	mt9v111_write_reg(reg, data);
+
+	switch (control) {
+	case MT9V111_FLICKER_DISABLE:
+		mt9v111_device.ifpReg->formatControl &= ~(0x01 << 11);
+
+		reg = MT9V111I_FORMAT_CONTROL;
+		data = mt9v111_device.ifpReg->formatControl;
+		mt9v111_write_reg(reg, data);
+		break;
+
+	case MT9V111_FLICKER_MANUAL_50:
+		if (!(mt9v111_device.ifpReg->formatControl & (0x01 << 11))) {
+			mt9v111_device.ifpReg->formatControl |= (0x01 << 11);
+			reg = MT9V111I_FORMAT_CONTROL;
+			data = mt9v111_device.ifpReg->formatControl;
+			mt9v111_write_reg(reg, data);
+		}
+		mt9v111_device.ifpReg->flickerCtrl = 0x01;
+		reg = MT9V111I_FLICKER_CONTROL;
+		data = mt9v111_device.ifpReg->flickerCtrl;
+		mt9v111_write_reg(reg, data);
+		break;
+
+	case MT9V111_FLICKER_MANUAL_60:
+		if (!(mt9v111_device.ifpReg->formatControl & (0x01 << 11))) {
+			mt9v111_device.ifpReg->formatControl |= (0x01 << 11);
+			reg = MT9V111I_FORMAT_CONTROL;
+			data = mt9v111_device.ifpReg->formatControl;
+			mt9v111_write_reg(reg, data);
+		}
+		mt9v111_device.ifpReg->flickerCtrl = 0x03;
+		reg = MT9V111I_FLICKER_CONTROL;
+		data = mt9v111_device.ifpReg->flickerCtrl;
+		mt9v111_write_reg(reg, data);
+		break;
+
+	case MT9V111_FLICKER_AUTO_DETECTION:
+		if (!(mt9v111_device.ifpReg->formatControl & (0x01 << 11))) {
+			mt9v111_device.ifpReg->formatControl |= (0x01 << 11);
+			reg = MT9V111I_FORMAT_CONTROL;
+			data = mt9v111_device.ifpReg->formatControl;
+			mt9v111_write_reg(reg, data);
+		}
+		mt9v111_device.ifpReg->flickerCtrl = 0x10;
+		reg = MT9V111I_FLICKER_CONTROL;
+		data = mt9v111_device.ifpReg->flickerCtrl;
+		mt9v111_write_reg(reg, data);
+		break;
+	}
+	return;
+
+}
+
+/*!
+ * mt9v111 Get mode&flicker control parameters 
+ *
+ * @return  None
+ */
+static void mt9v111_get_control_params(int *ae, int *awb, int *flicker)
+{
+	if ((ae != NULL) && (awb != NULL) && (flicker != NULL)) {
+		*ae = (mt9v111_device.ifpReg->modeControl & 0x4000) >> 14;
+		*awb = (mt9v111_device.ifpReg->modeControl & 0x02) >> 1;
+		*flicker = (mt9v111_device.ifpReg->formatControl & 0x800) >> 9;
+		if (*flicker) {
+			*flicker = (mt9v111_device.ifpReg->flickerCtrl & 0x03);
+			switch (*flicker) {
+			case 1:
+				*flicker = MT9V111_FLICKER_MANUAL_50;
+				break;
+			case 3:
+				*flicker = MT9V111_FLICKER_MANUAL_60;
+				break;
+			default:
+				*flicker = MT9V111_FLICKER_AUTO_DETECTION;
+				break;
+			}
+		} else
+			*flicker = MT9V111_FLICKER_DISABLE;
+	}
+	return;
+}
+
+/*!
  * mt9v111 Reset function
  *
  * @return  None
@@ -527,24 +676,24 @@ static sensor_interface *mt9v111_reset(void)
  */
 static int mt9v111_get_status(void)
 {
-        int retval=0;
-        u8 reg;
-        u16 data=0;
+	int retval = 0;
+	u8 reg;
+	u16 data = 0;
 
 	if (!interface_param)
-		return -ENODEV;	
+		return -ENODEV;
 
-        reg = MT9V111I_ADDR_SPACE_SEL;
-        data = MT9V111I_SEL_SCA;
-        retval = mt9v111_write_reg(reg, data);
+	reg = MT9V111I_ADDR_SPACE_SEL;
+	data = MT9V111I_SEL_SCA;
+	retval = mt9v111_write_reg(reg, data);
 
-        reg = MT9V111S_SENSOR_CORE_VERSION;
-        retval = mt9v111_read_reg(&reg, &data);
-        data = mt9v111_endian_swap16(data);
-        if (MT9V111_CHIP_VERSION != data)
-                retval = -ENODEV;
+	reg = MT9V111S_SENSOR_CORE_VERSION;
+	retval = mt9v111_read_reg(&reg, &data);
+	data = mt9v111_endian_swap16(data);
+	if (MT9V111_CHIP_VERSION != data)
+		retval = -ENODEV;
 
-        return retval;
+	return retval;
 }
 
 struct camera_sensor camera_sensor_if = {
@@ -552,6 +701,10 @@ struct camera_sensor camera_sensor_if = {
 	.get_color = mt9v111_get_color,
 	.set_ae_mode = mt9v111_set_ae_mode,
 	.get_ae_mode = mt9v111_get_ae_mode,
+	.set_ae = mt9v111_set_ae,
+	.set_awb = mt9v111_set_awb,
+	.flicker_control = mt9v111_flicker_control,
+	.get_control_params = mt9v111_get_control_params,
 	.config = mt9v111_config,
 	.reset = mt9v111_reset,
 	.get_status = mt9v111_get_status,
@@ -656,7 +809,7 @@ static int mt9v111_attach(struct i2c_adapter *adap)
 	clk = clk_get(NULL, "csi_clk");
 	clk_enable(clk);
 	set_mclk_rate(&mclk);
-	
+
 	err = i2c_probe(adap, &addr_data, &mt9v111_detect_client);
 	clk_disable(clk);
 	clk_put(clk);

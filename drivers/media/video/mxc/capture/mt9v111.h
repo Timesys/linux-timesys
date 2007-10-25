@@ -106,6 +106,7 @@
 #define MT9V111I_GAMMA_KNEE_Y90           0x57
 #define MT9V111I_GAMMA_VALUE_Y0           0x58
 #define MT9V111I_SHUTTER_60               0x59
+#define MT9V111I_FLICKER_CONTROL	  0x5B
 #define MT9V111I_SEARCH_FLICK_60          0x5c
 #define MT9V111I_RATIO_IMAGE_GAIN_BASE    0x5e
 #define MT9V111I_RATIO_IMAGE_GAIN_DELTA   0x5f
@@ -226,6 +227,16 @@ typedef enum {
 	MT9V111_OutputResolution_QQVGA,	/*!< QQVGA size */
 	MT9V111_OutputResolution_SXGA	/*!< SXGA size */
 } MT9V111_OutputResolution;
+
+/*!
+ * The flicker control setting 
+ */
+enum {
+	MT9V111_FLICKER_DISABLE = 0,
+	MT9V111_FLICKER_MANUAL_50,
+	MT9V111_FLICKER_MANUAL_60,
+	MT9V111_FLICKER_AUTO_DETECTION
+};
 
 enum {
 	MT9V111_WINWIDTH = 0x287,
@@ -370,6 +381,7 @@ typedef struct {
 	u32 gammaKneeY90;	/*!< Gamma knee points Y9 and Y10 */
 	u32 gammaKneeY0;	/*!< Gamma knee point Y0 */
 	u32 shutter_width_60;
+	u32 flickerCtrl;
 	u32 search_flicker_60;
 	u32 ratioImageGainBase;
 	u32 ratioImageGainDelta;
@@ -422,5 +434,12 @@ typedef struct {
 	u16 width;
 	u16 height;
 } mt9v111_image_format;
+
+typedef struct {
+	u16 ae;
+	u16 awb;
+	u16 flicker;
+	u16 reserved;
+} mt9v111_ctrl_params;
 
 #endif				// MT9V111_H_

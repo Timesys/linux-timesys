@@ -290,9 +290,15 @@ static void mxc_v4l2out_timer_handler(unsigned long arg)
 		goto exit0;
 	}
 #ifdef CONFIG_VIDEO_MXC_OUTPUT_FBSYNC
-	if (g_fb_enabled && (vout->v4l2_fb.flags != V4L2_FBUF_FLAG_OVERLAY))
-		g_pp_ready = 1;
-	else if (pp_enable(1)) {
+	if (vout->tear_protection == TEARING_PROTECTION_ACTIVE) {
+		if (g_fb_enabled
+		    && (vout->v4l2_fb.flags != V4L2_FBUF_FLAG_OVERLAY))
+			g_pp_ready = 1;
+		else if (pp_enable(1)) {
+			pr_debug("unable to enable PP\n");
+			goto exit0;
+		}
+	} else if (pp_enable(1)) {
 		pr_debug("unable to enable PP\n");
 		goto exit0;
 	}
@@ -457,11 +463,13 @@ static int mxc_v4l2out_streamon(vout_data * vout)
 		return -EINVAL;
 	}
 #ifdef CONFIG_VIDEO_MXC_OUTPUT_FBSYNC
-	g_output_fb = vout->output_fb_num[vout->cur_disp_output];
-	g_fb_enabled = 0;
-	g_pp_ready = 0;
-	fb_register_client(&fb_event_notifier);
-	mx2fb_register_client(&mx2fb_event_notifier);
+	if (vout->tear_protection == TEARING_PROTECTION_ACTIVE) {
+		g_output_fb = vout->output_fb_num[vout->cur_disp_output];
+		g_fb_enabled = 0;
+		g_pp_ready = 0;
+		fb_register_client(&fb_event_notifier);
+		mx2fb_register_client(&mx2fb_event_notifier);
+	}
 #endif
 	vout->frame_count = 0;
 	vout->state = STATE_STREAM_ON;
@@ -534,11 +542,13 @@ static int mxc_v4l2out_streamoff(vout_data * vout)
 		mx2_gw_set(&gwinfo);
 	}
 #ifdef CONFIG_VIDEO_MXC_OUTPUT_FBSYNC
-	g_output_fb = -1;
-	g_fb_enabled = 0;
-	g_pp_ready = 0;
-	fb_unregister_client(&fb_event_notifier);
-	mx2fb_unregister_client(&mx2fb_event_notifier);
+	if (vout->tear_protection == TEARING_PROTECTION_ACTIVE) {
+		g_output_fb = -1;
+		g_fb_enabled = 0;
+		g_pp_ready = 0;
+		fb_unregister_client(&fb_event_notifier);
+		mx2fb_unregister_client(&mx2fb_event_notifier);
+	}
 #endif
 
 	mxc_free_buffers(vout->display_bufs, vout->display_bufs_vaddr,
@@ -686,6 +696,9 @@ static int mxc_get_v42lout_control(vout_data * vout, struct v4l2_control *c)
 		return (vout->rotate & IPU_ROTATE_VERT_FLIP) ? 1 : 0;
 	case (V4L2_CID_PRIVATE_BASE + 1):
 		return vout->rotate;
+	case V4L2_CID_MXC_TEAR_PROTECT:
+		c->value = vout->tear_protection;
+		return 0;
 	default:
 		return -EINVAL;
 	}
@@ -706,6 +719,16 @@ static int mxc_set_v42lout_control(vout_data * vout, struct v4l2_control *c)
 	case V4L2_CID_HFLIP:
 	case V4L2_CID_VFLIP:
 	case V4L2_CID_MXC_ROT:
+		return 0;
+	case V4L2_CID_MXC_TEAR_PROTECT:
+#ifdef CONFIG_VIDEO_MXC_OUTPUT_FBSYNC
+		if (c->value == TEARING_PROTECTION_ACTIVE)
+			vout->tear_protection = TEARING_PROTECTION_ACTIVE;
+		else
+			vout->tear_protection = TEARING_PROTECTION_INACTIVE;;
+#else
+		vout->tear_protection = TEARING_PROTECTION_UNSUPPORTED;
+#endif
 		return 0;
 	default:
 		return -EINVAL;
@@ -754,6 +777,11 @@ static int mxc_v4l2out_open(struct inode *inode, struct file *file)
 		g_irq_cnt = g_buf_output_cnt = g_buf_q_cnt = g_buf_dq_cnt = 0;
 
 	}
+#ifdef CONFIG_VIDEO_MXC_OUTPUT_FBSYNC
+	vout->tear_protection = TEARING_PROTECTION_ACTIVE;
+#else
+	vout->tear_protection = TEARING_PROTECTION_UNSUPPORTED;
+#endif
 
 	file->private_data = dev;
 	up(&vout->busy_lock);

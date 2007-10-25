@@ -468,6 +468,15 @@ static int mxc_get_v42l_control(cam_data * cam, struct v4l2_control *c)
 	case V4L2_CID_BLACK_LEVEL:
 		c->value = cam->ae_mode;
 		break;
+	case V4L2_CID_AUTO_WHITE_BALANCE:
+		c->value = cam->awb_enable;
+		break;
+	case V4L2_CID_AUTOGAIN:
+		c->value = cam->ae_enable;
+		break;
+	case V4L2_CID_MXC_FLICKER:
+		c->value = cam->flicker_ctrl;
+		break;
 	default:
 		status = -EINVAL;
 	}
@@ -558,6 +567,27 @@ static int mxc_set_v42l_control(cam_data * cam, struct v4l2_control *c)
 		csi_enable_mclk(CSI_MCLK_I2C, false, false);
 		break;
 	case V4L2_CID_MXC_FLASH:
+		break;
+	case V4L2_CID_AUTOGAIN:
+		cam->ae_enable = c->value;
+		csi_enable_mclk(CSI_MCLK_I2C, true, true);
+		if (cam->cam_sensor->set_ae)
+			cam->cam_sensor->set_ae(cam->ae_enable);
+		csi_enable_mclk(CSI_MCLK_I2C, false, false);
+		break;
+	case V4L2_CID_AUTO_WHITE_BALANCE:
+		cam->awb_enable = c->value;
+		csi_enable_mclk(CSI_MCLK_I2C, true, true);
+		if (cam->cam_sensor->set_awb)
+			cam->cam_sensor->set_awb(cam->awb_enable);
+		csi_enable_mclk(CSI_MCLK_I2C, false, false);
+		break;
+	case V4L2_CID_MXC_FLICKER:
+		cam->flicker_ctrl = c->value;
+		csi_enable_mclk(CSI_MCLK_I2C, true, true);
+		if (cam->cam_sensor->flicker_control)
+			cam->cam_sensor->flicker_control(cam->flicker_ctrl);
+		csi_enable_mclk(CSI_MCLK_I2C, false, false);
 		break;
 	default:
 		return -EINVAL;
@@ -747,7 +777,7 @@ static int mxc_v4l_dqueue(cam_data * cam, struct v4l2_buffer *buf)
 static int mxc_get_video_input(cam_data * cam)
 {
 	int retval = 0;
-	csi_enable_mclk(CSI_MCLK_I2C, true, true);	
+	csi_enable_mclk(CSI_MCLK_I2C, true, true);
 	retval = cam->cam_sensor->get_status();
 	csi_enable_mclk(CSI_MCLK_I2C, false, false);
 	return retval;
@@ -779,8 +809,8 @@ static int mxc_v4l_open(struct inode *inode, struct file *file)
 	}
 
 	err = mxc_get_video_input(cam);
-        if (0 != err)
-                return -ENODEV;
+	if (0 != err)
+		return -ENODEV;
 
 	if (down_interruptible(&cam->busy_lock))
 		return -EINTR;
@@ -822,6 +852,9 @@ static int mxc_v4l_open(struct inode *inode, struct file *file)
 					   &cam->red, &cam->green, &cam->blue);
 		if (cam->cam_sensor->get_ae_mode)
 			cam->cam_sensor->get_ae_mode(&cam->ae_mode);
+		cam->cam_sensor->get_control_params(&cam->ae_enable,
+						    &cam->awb_enable,
+						    &cam->flicker_ctrl);
 		csi_enable_mclk(CSI_MCLK_I2C, false, false);
 		prp_init(cam);
 
@@ -1718,7 +1751,7 @@ mxc_v4l_do_ioctl(struct inode *inode, struct file *file,
 			cam->output = *p_output_num;
 			break;
 		}
-	
+
 	case VIDIOC_G_INPUT:
 		{
 			int *p_input_index = arg;
@@ -1731,7 +1764,7 @@ mxc_v4l_do_ioctl(struct inode *inode, struct file *file,
 
 			break;
 		}
-	
+
 	case VIDIOC_ENUM_FMT:
 	case VIDIOC_TRY_FMT:
 	case VIDIOC_QUERYCTRL:

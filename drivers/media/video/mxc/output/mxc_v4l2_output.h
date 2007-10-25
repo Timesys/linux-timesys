@@ -57,6 +57,15 @@ typedef enum {
 } v4lout_state;
 
 /*!
+ * States for tearing protection 
+ */
+typedef enum {
+	TEARING_PROTECTION_INACTIVE,
+	TEARING_PROTECTION_ACTIVE,
+	TEARING_PROTECTION_UNSUPPORTED
+} v4l_tear_protect;
+
+/*!
  * common v4l2 driver structure.
  */
 typedef struct _vout_data {
@@ -70,6 +79,8 @@ typedef struct _vout_data {
 	 * number of process that have device open
 	 */
 	int open_count;
+
+	v4l_tear_protect tear_protection;
 
 	/*!
 	 * params lock for this camera

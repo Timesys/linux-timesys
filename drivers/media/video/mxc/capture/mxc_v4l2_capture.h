@@ -74,6 +74,10 @@ struct camera_sensor {
 			   int *blue);
 	void (*set_ae_mode) (int ae_mode);
 	void (*get_ae_mode) (int *ae_mode);
+	void (*set_ae) (int active);
+	void (*set_awb) (int active);
+	void (*flicker_control) (int control);
+	void (*get_control_params) (int *ae, int *awb, int *flicker);
 	sensor_interface *(*config) (int *frame_rate, int high_quality);
 	sensor_interface *(*reset) (void);
 	int (*get_status) (void);
@@ -142,6 +146,9 @@ typedef struct _cam_data {
 	int green;
 	int blue;
 	int ae_mode;
+	int ae_enable;
+	int awb_enable;
+	int flicker_ctrl;
 
 	/* standart */
 	struct v4l2_streamparm streamparm;
