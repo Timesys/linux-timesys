@@ -99,6 +99,7 @@ struct pm_ops mx31_pm_ops = {
 	.prepare = mx31_pm_prepare,
 	.enter = mx31_pm_enter,
 	.finish = mx31_pm_finish,
+	.valid = pm_valid_only_mem,
 };
 
 static int __init mx31_pm_init(void)
