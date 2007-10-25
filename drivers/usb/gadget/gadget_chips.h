@@ -75,6 +75,12 @@
 #define	gadget_is_pxa27x(g)	0
 #endif
 
+#ifdef CONFIG_USB_GADGET_ARC
+#define	gadget_is_arcotg(g)	!strcmp("arc_udc", (g)->name)
+#else
+#define	gadget_is_arcotg(g)	0
+#endif
+
 #ifdef CONFIG_USB_GADGET_HUSB2DEV
 #define gadget_is_husb2dev(g)	!strcmp("husb2_udc", (g)->name)
 #else
@@ -185,5 +191,7 @@ static inline int usb_gadget_controller_number(struct usb_gadget *gadget)
 		return 0x18;
 	else if (gadget_is_fsl_usb2(gadget))
 		return 0x19;
+	else if (gadget_is_arcotg(gadget))
+		return 0x1A;
 	return -ENOENT;
 }

@@ -197,16 +197,25 @@ config USB_OMAP
 	default USB_GADGET
 	select USB_GADGET_SELECTED
 
-config USB_OTG
-	boolean "OTG Support"
-	depends on USB_GADGET_OMAP && ARCH_OMAP_OTG && USB_OHCI_HCD
+config USB_GADGET_ARC
+	boolean "ARC USB Device Controller"
+	depends on ARCH_MXC
+	select USB_GADGET_DUALSPEED
+	select USB_GADGET_ARC_OTGHS if USB_EHCI_ARC_OTGHS
+	select USB_GADGET_ARC_OTGFS if USB_EHCI_ARC_OTGFS
 	help
-	   The most notable feature of USB OTG is support for a
-	   "Dual-Role" device, which can act as either a device
-	   or a host.  The initial role choice can be changed
-	   later, when two dual-role devices talk to each other.
+	   Some Freescale processors have an ARC High Speed
+	   USBOTG controller, which supports device mode.
 
-	   Select this only if your OMAP board has a Mini-AB connector.
+	   Say "y" to link the driver statically, or "m" to build a
+	   dynamically linked module called "arc_udc" and force all
+	   gadget drivers to also be dynamically linked.
+
+config USB_ARC
+	tristate
+	depends on USB_GADGET_ARC
+	default USB_GADGET
+	select USB_GADGET_SELECTED
 
 config USB_GADGET_AT91
 	boolean "AT91 USB Device Port"
@@ -260,6 +269,18 @@ config USB_DUMMY_HCD
 
 endchoice
 
+config USB_OTG
+	boolean "OTG Support"
+	depends on (USB_GADGET_OMAP && ARCH_OMAP_OTG && USB_OHCI_HCD) || \
+		   (USB_GADGET_ARC && (ARCH_MX3 || ARCH_MX27) && USB_EHCI_HCD)
+	help
+	   The most notable feature of USB OTG is support for a
+	   "Dual-Role" device, which can act as either a device
+	   or a host.  The initial role choice can be changed
+	   later, when two dual-role devices talk to each other.
+
+	   Select this only if your board has a Mini-AB connector.
+
 config USB_GADGET_DUALSPEED
 	bool
 	depends on USB_GADGET
@@ -267,6 +288,38 @@ config USB_GADGET_DUALSPEED
 	help
 	  Means that gadget drivers should include extra descriptors
 	  and code to handle dual-speed controllers.
+
+config USB_GADGET_ARC_OTG
+	bool "Support for OTG prepheral port on ARC controller"
+	depends on USB_GADGET_ARC
+	default y
+	---help---
+	  Enable support for the USB OTG port in HS/FS prepheral mode.
+
+choice
+	prompt "Select transceiver"
+	depends on USB_GADGET_ARC_OTG
+
+config USB_GADGET_ARC_OTGFS
+	bool "Full Speed"
+	depends on !USB_EHCI_ARC_OTGHS
+	help
+	  The ARC OTG controller can be connected to either a FS or
+	  a HS transceiver.
+
+	  Enable this configuration option if you want to use the FS
+	  transceiver.
+
+config USB_GADGET_ARC_OTGHS
+	bool "High Speed"
+	depends on !USB_EHCI_ARC_OTGFS
+	help
+	  The ARC OTG controller can be connected to either a FS or
+	  a HS transceiver.
+
+	  Enable this configuration option if you want to use the HS
+	  transceiver.
+endchoice
 
 #
 # USB Gadget Drivers
@@ -320,7 +373,7 @@ config USB_ZERO
 
 config USB_ZERO_HNPTEST
 	boolean "HNP Test Device"
-	depends on USB_ZERO && USB_OTG
+	depends on USB_ZERO && USB_OTG2
 	help
 	  You can configure this device to enumerate using the device
 	  identifiers of the USB-OTG test device.  That means that when

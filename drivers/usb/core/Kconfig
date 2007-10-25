@@ -87,11 +87,14 @@ config USB_SUSPEND
 	  If you are unsure about this, say N here.
 
 config USB_OTG
-	bool
+	bool "Enable host-side support for On-The-Go (OTG)"
 	depends on USB && EXPERIMENTAL
 	select USB_SUSPEND
 	default n
-
+	help
+          Say y here if you want support for the Host Negotiation Protocol
+          (HNP) and the Session Request Protocol (SRP), parts of the OTG
+          supplement to the USB protocol, to be included in the USB host core.
 
 config USB_OTG_WHITELIST
 	bool "Rely on OTG Targeted Peripherals List"

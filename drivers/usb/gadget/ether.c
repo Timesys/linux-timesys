@@ -261,6 +261,10 @@ MODULE_PARM_DESC(host_addr, "Host Ethernet Address");
 #define DEV_CONFIG_CDC
 #endif
 
+#ifdef CONFIG_USB_GADGET_ARC
+#define DEV_CONFIG_CDC
+#endif
+
 #ifdef CONFIG_USB_GADGET_S3C2410
 #define DEV_CONFIG_CDC
 #endif

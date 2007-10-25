@@ -29,6 +29,52 @@ config USB_EHCI_HCD
 	  To compile this driver as a module, choose M here: the
 	  module will be called ehci-hcd.
 
+config USB_EHCI_ARC
+	bool "Support for ARC controller"
+	depends on USB_EHCI_HCD && ARCH_MXC
+	---help---
+	   Some Freescale processors have an ARC High Speed
+	   USBOTG controller, which supports EHCI host mode.
+
+	   Say "y" here to add support for this controller
+	   to the EHCI HCD driver.
+
+config USB_EHCI_ARC_H1
+	bool "Support for Host1 port on ARC controller"
+	depends on USB_EHCI_ARC	&& (ARCH_MX27 || ARCH_MX3)
+	---help---
+	  Enable support for the USB Host1 port.
+
+config USB_EHCI_ARC_H2
+	bool "Support for Host2 port on ARC controller"
+	depends on USB_EHCI_ARC	&& (ARCH_MX27 || ARCH_MX3)
+	---help---
+	  Enable support for the USB Host2 port.
+
+config USB_EHCI_ARC_OTG
+	bool "Support for OTG host port on ARC controller"
+	depends on USB_EHCI_ARC
+	default y
+	---help---
+	  Enable support for the USB OTG port in HS/FS Host mode.
+
+choice
+	prompt "Select transceiver speed"
+	depends on USB_EHCI_ARC_OTG
+	default USB_EHCI_ARC_OTGHS
+	default USB_EHCI_ARC_OTGFS if ARCH_MX27
+
+config USB_EHCI_ARC_OTGHS
+	bool "High Speed"
+	---help---
+	  Enable support for the USB OTG port in HS Host mode.
+
+config USB_EHCI_ARC_OTGFS
+	bool "Full Speed"
+	---help---
+	  Enable support for the USB OTG port in FS Host mode.
+endchoice
+
 config USB_EHCI_SPLIT_ISO
 	bool "Full speed ISO transactions (EXPERIMENTAL)"
 	depends on USB_EHCI_HCD && EXPERIMENTAL
@@ -41,6 +87,7 @@ config USB_EHCI_SPLIT_ISO
 config USB_EHCI_ROOT_HUB_TT
 	bool "Root Hub Transaction Translators (EXPERIMENTAL)"
 	depends on USB_EHCI_HCD && EXPERIMENTAL
+	default y if USB_EHCI_ARC
 	---help---
 	  Some EHCI chips have vendor-specific extensions to integrate
 	  transaction translators, so that no OHCI or UHCI companion
