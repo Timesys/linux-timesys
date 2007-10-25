@@ -475,9 +475,21 @@ static void dr_ep_change_stall(unsigned char ep_num, unsigned char dir,
 			tmp_epctrl &= ~EPCTRL_RX_EP_STALL;
 			tmp_epctrl |= EPCTRL_RX_DATA_TOGGLE_RST;
 		}
-
 	}
 	usb_slave_regs->endptctrl[ep_num] = cpu_to_le32(tmp_epctrl);
+}
+
+/* Get stall status of a specific ep
+   Return: 0: not stalled; 1:stalled */
+static int dr_ep_get_stall(unsigned char ep_num, unsigned char dir)
+{
+	u32 epctrl;
+
+	epctrl = le32_to_cpu(usb_slave_regs->endptctrl[ep_num]);
+	if (dir)
+		return (epctrl & EPCTRL_TX_EP_STALL) ? 1 : 0;
+	else
+		return (epctrl & EPCTRL_RX_EP_STALL) ? 1 : 0;
 }
 
 /********************************************************************
@@ -1577,49 +1589,64 @@ static void ch9setaddress(struct arcotg_udc *udc, u16 value, u16 index,
 		ep0stall(udc);
 }
 
-static void ch9getstatus(struct arcotg_udc *udc, u16 value, u16 index,
-			 u16 length)
+static void ch9getstatus(struct arcotg_udc *udc, u8 request_type, u16 value,
+			 u16 index, u16 length)
 {
-	u16 usb_status = 0;	/* fix me to give correct status */
+	u16 tmp = 0;		/* Status, cpu endian */
 
 	struct arcotg_req *req;
 	struct arcotg_ep *ep;
 	int status = 0;
-	unsigned long flags;
 
-	pr_debug("%s\n", __FUNCTION__);
 	ep = &udc->eps[0];
 
-	req = container_of(arcotg_alloc_request(&ep->ep, GFP_KERNEL),
-			   struct arcotg_req, req);
+	if ((request_type & USB_RECIP_MASK) == USB_RECIP_DEVICE) {
+		/* Get device status */
+		tmp = 1 << USB_DEVICE_SELF_POWERED;
+		tmp |= udc->remote_wakeup << USB_DEVICE_REMOTE_WAKEUP;
+	} else if ((request_type & USB_RECIP_MASK) == USB_RECIP_INTERFACE) {
+		/* Get interface status */
+		/* We don't have interface information in udc driver */
+		tmp = 0;
+	} else if ((request_type & USB_RECIP_MASK) == USB_RECIP_ENDPOINT) {
+		/* Get endpoint status */
+		struct arcotg_ep *target_ep;
+
+		target_ep = get_ep_by_pipe(udc, get_pipe_by_windex(index));
+
+		/* stall if endpoint doesn't exist */
+		if (!target_ep->desc)
+			goto stall;
+		tmp = dr_ep_get_stall(ep_index(target_ep), ep_is_in(target_ep))
+				<< USB_ENDPOINT_HALT;
+	}
+
+	udc->ep0_dir = USB_DIR_IN;
+	/* Borrow the per device status_req */
+	req = udc->status_req;
+	/* Fill in the reqest structure */
+	*((u16 *) req->req.buf) = cpu_to_le16(tmp);
+	req->ep = ep;
 	req->req.length = 2;
-	req->req.buf = &usb_status;
 	req->req.status = -EINPROGRESS;
 	req->req.actual = 0;
+	req->req.complete = NULL;
+	req->dtd_count = 0;
 
-	spin_lock_irqsave(&udc->lock, flags);
-
-	/* data phase */
+	/* prime the data phase */
 	if ((arcotg_req_to_dtd(req, udc) == 0))
 		status = arcotg_queue_td(ep, req);
 	else			/* no mem */
 		goto stall;
 
 	if (status) {
-		printk(KERN_ERR "Can't respond to getstatus request \n");
-		ep0stall(udc);
-	} else {
-		udc->ep0_state = DATA_STATE_XMIT;
-		pr_debug("udc: ep0_state now DATA_STATE_XMIT\n");
+		printk(KERN_ERR "Can't respond to getstatus request\n");
+		goto stall;
 	}
-
 	list_add_tail(&req->queue, &ep->queue);
-	dump_ep_queue(ep);
-
-	spin_unlock_irqrestore(&udc->lock, flags);
+	udc->ep0_state = DATA_STATE_XMIT;
 	return;
-
-      stall:
+stall:
 	ep0stall(udc);
 }
 
@@ -1683,8 +1710,8 @@ static void setup_received_irq(struct arcotg_udc *udc,
 			     bRequestType & (USB_DIR_IN | USB_TYPE_STANDARD))
 			    != (USB_DIR_IN | USB_TYPE_STANDARD))
 				break;
-			ch9getstatus(udc, setup->wValue, setup->wIndex,
-				     setup->wLength);
+			ch9getstatus(udc, setup->bRequestType, setup->wValue,
+				     setup->wIndex, setup->wLength);
 			break;
 
 		case USB_REQ_SET_ADDRESS:
@@ -2140,6 +2167,7 @@ static void reset_irq(struct arcotg_udc *udc)
 
 	/* Clear usb state */
 	udc->usb_state = USB_STATE_DEFAULT;
+	udc->remote_wakeup = 0;	/* default to 0 on reset */
 
 	/* Clear all the setup token semaphores */
 	temp = le32_to_cpu(usb_slave_regs->endptsetupstat);
@@ -2759,6 +2787,7 @@ static void *struct_udc_setup(struct platform_device *pdev)
 	udc->resume_state = USB_STATE_NOTATTACHED;
 	udc->usb_state = USB_STATE_POWERED;
 	udc->ep0_dir = 0;
+	udc->remote_wakeup = 0;	/* default to 0 on reset */
 	/* initliaze the arcotg_udc lock */
 	spin_lock_init(&udc->lock);
 

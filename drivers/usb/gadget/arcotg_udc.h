@@ -517,6 +517,7 @@ struct arcotg_udc {
 	unsigned softconnect:1;
 	unsigned vbus_active:1;
 	unsigned stopped:1;
+	unsigned remote_wakeup:1;
 
 	struct ep_queue_head *ep_qh;	/* Endpoints Queue-Head */
 	int ep_qh_size;		/* Endpoints Queue-Head */
@@ -591,6 +592,8 @@ static void dump_msg(const char *label, const u8 * buf, unsigned int length)
 
 #define get_ep_by_pipe(udc, pipe)	((pipe == 1)? &udc->eps[0]: \
 					&udc->eps[pipe])
+#define get_pipe_by_windex(windex)	((windex & USB_ENDPOINT_NUMBER_MASK) \
+					* 2 + ((windex & USB_DIR_IN) ? 1 : 0))
 
 /* Bulk only class request */
 #define USB_BULK_RESET_REQUEST          0xff
