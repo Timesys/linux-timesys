@@ -19,7 +19,7 @@ config FB_MXC_SYNC_PANEL
 	default y
 
 config FB_MXC_TVOUT
-	bool "TV Out Encoder"
+	tristate "TV Out Encoder"
 	depends on FB_MXC_SYNC_PANEL
 	default n
 
