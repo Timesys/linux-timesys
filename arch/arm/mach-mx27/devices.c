@@ -600,7 +600,7 @@ static inline void mxc_init_dptc(void)
 }
 #endif
 
-#ifdef	CONFIG_PATA_FSL
+#if defined(CONFIG_PATA_FSL) || defined(CONFIG_PATA_FSL_MODULE)
 static struct clk *ata_clk;
 extern void gpio_ata_active(void);
 extern void gpio_ata_inactive(void);
