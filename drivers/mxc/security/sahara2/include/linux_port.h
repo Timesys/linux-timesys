@@ -1665,8 +1665,11 @@ extern void v6_flush_kern_cache_all_L2(void);
  *
  * @return void
  */
-#define os_cache_clean_range(start,len)                                   \
-    dma_map_single(NULL, (void*)start, len, DMA_TO_DEVICE)
+#define os_cache_clean_range(start,len)						\
+{										\
+	dmac_clean_range(start, (void *)((unsigned long)(start) + len));	\
+	outer_clean_range(__pa(start), __pa((unsigned long)(start) + len));	\
+}
 
 /*!
  * Invalidate a range of addresses in the cache
@@ -1676,8 +1679,11 @@ extern void v6_flush_kern_cache_all_L2(void);
  *
  * @return void
  */
-#define os_cache_inv_range(start,len)                                     \
-    dma_map_single(NULL, (void*)start, len, DMA_FROM_DEVICE)
+#define os_cache_inv_range(start,len)						\
+{										\
+	dmac_inv_range(start, (void *)((unsigned long)(start) + len));		\
+	outer_inv_range(__pa(start), __pa((unsigned long)(start) + len));	\
+}
 
 /*!
  * Flush a range of addresses from the cache.  That is, perform clean
@@ -1688,8 +1694,11 @@ extern void v6_flush_kern_cache_all_L2(void);
  *
  * @return void
  */
-#define os_cache_flush_range(start,len)                                   \
-    dma_map_single(NULL, (void*)start, len, DMA_BIDIRECTIONAL)
+#define os_cache_flush_range(start,len)						\
+{										\
+	dmac_flush_range(start, (void *)((unsigned long)(start) + len));	\
+	outer_flush_range(__pa(start), __pa((unsigned long)(start) + len));	\
+}
 
 	  /*! @} *//* cacheops */
 
