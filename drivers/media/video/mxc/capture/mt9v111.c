@@ -117,13 +117,11 @@ static int mt9v111_i2c_client_xfer(unsigned int addr, char *reg, int reg_len,
 	return ret;
 }
 
-#ifdef MT9V111_DEBUG
 static int mt9v111_read_reg(u8 * reg, u16 * val)
 {
 	return mt9v111_i2c_client_xfer(MT9V111_I2C_ADDRESS, reg, 1,
 				       (u8 *) val, 2, MXC_I2C_FLAG_READ);
 }
-#endif
 
 static int mt9v111_write_reg(u8 reg, u16 val)
 {
@@ -522,6 +520,33 @@ static sensor_interface *mt9v111_reset(void)
 	return mt9v111_config(&reset_frame_rate, 0);
 }
 
+/*!
+ * mt9v111 get_status function
+ *
+ * @return  int
+ */
+static int mt9v111_get_status(void)
+{
+        int retval=0;
+        u8 reg;
+        u16 data=0;
+
+	if (!interface_param)
+		return -ENODEV;	
+
+        reg = MT9V111I_ADDR_SPACE_SEL;
+        data = MT9V111I_SEL_SCA;
+        retval = mt9v111_write_reg(reg, data);
+
+        reg = MT9V111S_SENSOR_CORE_VERSION;
+        retval = mt9v111_read_reg(&reg, &data);
+        data = mt9v111_endian_swap16(data);
+        if (MT9V111_CHIP_VERSION != data)
+                retval = -ENODEV;
+
+        return retval;
+}
+
 struct camera_sensor camera_sensor_if = {
 	.set_color = mt9v111_set_color,
 	.get_color = mt9v111_get_color,
@@ -529,6 +554,7 @@ struct camera_sensor camera_sensor_if = {
 	.get_ae_mode = mt9v111_get_ae_mode,
 	.config = mt9v111_config,
 	.reset = mt9v111_reset,
+	.get_status = mt9v111_get_status,
 };
 
 #ifdef MT9V111_DEBUG
@@ -630,9 +656,8 @@ static int mt9v111_attach(struct i2c_adapter *adap)
 	clk = clk_get(NULL, "csi_clk");
 	clk_enable(clk);
 	set_mclk_rate(&mclk);
-
+	
 	err = i2c_probe(adap, &addr_data, &mt9v111_detect_client);
-
 	clk_disable(clk);
 	clk_put(clk);
 
@@ -693,7 +718,6 @@ static __init int mt9v111_init(void)
 	memset(mt9v111_device.ifpReg, 0, sizeof(mt9v111_IFPReg));
 
 	err = i2c_add_driver(&mt9v111_i2c_driver);
-
 	return err;
 }
 

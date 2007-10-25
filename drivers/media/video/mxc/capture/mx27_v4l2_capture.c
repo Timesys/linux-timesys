@@ -683,6 +683,25 @@ static int mxc_v4l_dqueue(cam_data * cam, struct v4l2_buffer *buf)
 }
 
 /*!
+ * Get the current attached camera device
+ *
+ * @param inode      struct i2c_client *
+ *
+ * @param int       int * p_input_index
+ *
+ * @return           0 success, ENODEV for invalid device instance,
+ *                   -1 for other errors.
+ */
+static int mxc_get_video_input(cam_data * cam)
+{
+	int retval = 0;
+	csi_enable_mclk(CSI_MCLK_I2C, true, true);	
+	retval = cam->cam_sensor->get_status();
+	csi_enable_mclk(CSI_MCLK_I2C, false, false);
+	return retval;
+}
+
+/*!
  * V4L interface - open function
  *
  * @param inode        structure inode *
@@ -703,6 +722,10 @@ static int mxc_v4l_open(struct inode *inode, struct file *file)
 		pr_info("Internal error, cam_data not found!\n");
 		return -ENODEV;
 	}
+
+	err = mxc_get_video_input(cam);
+        if (0 != err)
+                return -ENODEV;
 
 	if (down_interruptible(&cam->busy_lock))
 		return -EINTR;
@@ -1633,12 +1656,24 @@ mxc_v4l_do_ioctl(struct inode *inode, struct file *file,
 			cam->output = *p_output_num;
 			break;
 		}
+	
+	case VIDIOC_G_INPUT:
+		{
+			int *p_input_index = arg;
 
+			retval = mxc_get_video_input(cam);
+			if (0 == retval)
+				*p_input_index = 1;
+			else
+				*p_input_index = -ENODEV;
+
+			break;
+		}
+	
 	case VIDIOC_ENUM_FMT:
 	case VIDIOC_TRY_FMT:
 	case VIDIOC_QUERYCTRL:
 	case VIDIOC_ENUMINPUT:
-	case VIDIOC_G_INPUT:
 	case VIDIOC_S_INPUT:
 	case VIDIOC_G_TUNER:
 	case VIDIOC_S_TUNER:

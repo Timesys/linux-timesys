@@ -30,6 +30,11 @@
 #define MT9V111_H_
 
 /*!
+ * mt9v111 CHIP VERSION 
+ */
+#define MT9V111_CHIP_VERSION	0x823A
+
+/*!
  * mt9v111 IFP REGISTER BANK MAP
  */
 #define MT9V111I_ADDR_SPACE_SEL           0x1

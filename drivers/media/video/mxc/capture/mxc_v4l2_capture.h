@@ -76,6 +76,7 @@ struct camera_sensor {
 	void (*get_ae_mode) (int *ae_mode);
 	sensor_interface *(*config) (int *frame_rate, int high_quality);
 	sensor_interface *(*reset) (void);
+	int (*get_status) (void);
 };
 
 /*!
