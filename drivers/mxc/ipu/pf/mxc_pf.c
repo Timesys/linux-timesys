@@ -885,7 +885,7 @@ int mxc_pf_fsync(struct file *filp, struct dentry *dentry, int datasync)
 {
 	if (pf_data.buffer_dirty) {
 		flush_cache_all();
-//              l2_flush_all();
+		outer_flush_all();
 	}
 	pf_data.buffer_dirty = false;
 
