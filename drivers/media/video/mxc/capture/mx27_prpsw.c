@@ -290,7 +290,14 @@ static irqreturn_t prp_isr(int irq, void *dev_id)
 		 * They are execlusive.
 		 */
 	} else if (cam->capture_on) {
-		if (status & (PRP_INTRSTAT_CH2BUF1 | PRP_INTRSTAT_CH2BUF2)) {
+		if (status & PRP_INTRSTAT_CH2OVF)
+		{
+			//printk(KERN_INFO "prphw_isr - PRP_INTRSTAT_CH2OVF: status: 0x%x\n", status);
+			prphw_disable(PRP_CHANNEL_2);
+			prphw_enable(PRP_CHANNEL_2);
+			cam->enc_callback(0, cam);
+		}
+		else if (status & (PRP_INTRSTAT_CH2BUF1 | PRP_INTRSTAT_CH2BUF2)) 		{
 			cam->enc_callback(0, cam);
 		}
 	}
