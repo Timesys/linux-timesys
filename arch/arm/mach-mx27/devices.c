@@ -672,7 +672,6 @@ static struct platform_device pata_fsl_device = {
 
 static inline void mxc_init_pata(void)
 {
-printk(KERN_ERR "%s: entry\n", __func__);
 	(void)platform_device_register(&pata_fsl_device);
 }
 #else /* CONFIG_PATA_FSL */
