@@ -66,6 +66,7 @@ static struct clk *vpu_clk;
 /* implement the blocking ioctl */
 static int codec_done = 0;
 static wait_queue_head_t vpu_queue;
+static int wait_intr_cnt = 0;
 
 /*!
  * Private function to free buffers
@@ -257,10 +258,14 @@ static int vpu_ioctl(struct inode *inode, struct file *filp, u_int cmd,
 			     msecs_to_jiffies(timeout))) {
 				printk(KERN_WARNING "VPU blocking: timeout.\n");
 				ret = -ETIME;
+				return ret;
 			} else if (signal_pending(current)) {
-				printk(KERN_WARNING
-				       "VPU interrupt received.\n");
+				if (wait_intr_cnt == 0) {
+					printk(KERN_WARNING "VPU interrupt received.\n");
+				}
+				wait_intr_cnt++;
 				ret = -ERESTARTSYS;
+				return ret;
 			}
 
 			codec_done = 0;

@@ -59,6 +59,8 @@ uint32_t g_buf_output_cnt;
 uint32_t g_buf_q_cnt;
 uint32_t g_buf_dq_cnt;
 
+static int dq_intr_cnt = 0;
+
 #ifdef CONFIG_VIDEO_MXC_OUTPUT_FBSYNC
 static uint32_t g_output_fb = -1;
 static uint32_t g_fb_enabled = 0;
@@ -727,6 +729,7 @@ static int mxc_v4l2out_open(struct inode *inode, struct file *file)
 	vout_data *vout = video_get_drvdata(dev);
 	int err;
 
+	dq_intr_cnt = 0;
 	if (!vout) {
 		pr_info("Internal error, vout_data not found!\n");
 		return -ENODEV;
@@ -1026,8 +1029,10 @@ mxc_v4l2out_do_ioctl(struct inode *inode, struct file *file,
 				retval = -ETIME;
 				break;
 			} else if (signal_pending(current)) {
-				pr_debug("VIDIOC_DQBUF: interrupt received\n");
-				vout->state = STATE_STREAM_STOPPING;
+				if(dq_intr_cnt == 0)
+					pr_debug("VIDIOC_DQBUF: interrupt received\n");
+				dq_intr_cnt++;
+				// vout->state = STATE_STREAM_STOPPING;
 				retval = -ERESTARTSYS;
 				break;
 			}

@@ -64,6 +64,9 @@ uint32_t g_buf_output_cnt;
 uint32_t g_buf_q_cnt;
 uint32_t g_buf_dq_cnt;
 
+static int dq_intr_cnt=0;
+static int dq_timeout_cnt=0;
+
 #define QUEUE_SIZE (MAX_FRAME_NUM + 1)
 static __inline int queue_size(v4l_queue * q)
 {
@@ -960,6 +963,8 @@ static int mxc_v4l2out_open(struct inode *inode, struct file *file)
 	vout_data *vout = video_get_drvdata(dev);
 	int err;
 
+	dq_intr_cnt = 0;
+	dq_timeout_cnt = 0;
 	if (!vout) {
 		return -ENODEV;
 	}
@@ -1251,13 +1256,18 @@ mxc_v4l2out_do_ioctl(struct inode *inode, struct file *file,
 							      queue_size(&vout->
 									 done_q)
 							      != 0, 10 * HZ)) {
-				dev_dbg(vdev->dev, "VIDIOC_DQBUF: timeout\n");
+				if(dq_timeout_cnt == 0){
+					dev_dbg(vdev->dev, "VIDIOC_DQBUF: timeout\n");
+				}
+				dq_timeout++;
 				retval = -ETIME;
 				break;
 			} else if (signal_pending(current)) {
-				dev_dbg(vdev->dev,
-					"VIDIOC_DQBUF: interrupt received\n");
-				vout->state = STATE_STREAM_STOPPING;
+				if (dq_intr_cnt == 0) {
+					dev_dbg(vdev->dev,
+						"VIDIOC_DQBUF: interrupt received\n");
+				}
+				dq_intr_cnt++
 				retval = -ERESTARTSYS;
 				break;
 			}

@@ -43,6 +43,10 @@ static int csi_mclk_flag_backup;
 static int video_nr = -1;
 static cam_data *g_cam;
 
+static int dq_intr_cnt=0;
+static int dq_timeout_cnt=0;
+static int empty_wq_cnt=0;
+
 /*!
  * Free frame buffers
  *
@@ -651,12 +655,15 @@ static int mxc_v4l_dqueue(cam_data * cam, struct v4l2_buffer *buf)
 
 	if (!wait_event_interruptible_timeout(cam->enc_queue,
 					      cam->enc_counter != 0, 10 * HZ)) {
-		printk(KERN_ERR "mxc_v4l_dqueue timeout enc_counter %x\n",
-		       cam->enc_counter);
+ 		if(dq_timeout_cnt == 0)
+			printk(KERN_ERR "mxc_v4l_dqueue timeout enc_counter %x\n",
+			       cam->enc_counter);
+		dq_timeout_cnt++;
 		return -ETIME;
 	} else if (signal_pending(current)) {
-		printk(KERN_ERR "mxc_v4l_dqueue() interrupt received\n");
-		mxc_free_frames(cam);
+ 		if(dq_intr_cnt == 0)
+			printk(KERN_ERR "mxc_v4l_dqueue() interrupt received\n");
+ 		dq_intr_cnt++;
 		return -ERESTARTSYS;
 	}
 
@@ -718,6 +725,9 @@ static int mxc_v4l_open(struct inode *inode, struct file *file)
 	cam_data *cam = dev->priv;
 	int err = 0;
 
+	dq_intr_cnt    = 0;
+	dq_timeout_cnt = 0;
+	empty_wq_cnt   = 0;
 	if (!cam) {
 		pr_info("Internal error, cam_data not found!\n");
 		return -ENODEV;
@@ -1817,7 +1827,10 @@ static void camera_callback(u32 mask, void *dev)
 		return;
 
 	if (list_empty(&cam->working_q)) {
-		printk(KERN_ERR "camera_callback: working queue empty\n");
+		if (empty_wq_cnt == 0) {
+			printk(KERN_ERR "camera_callback: working queue empty\n");
+		}
+		empty_wq_cnt++;
 		return;
 	}
 
