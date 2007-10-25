@@ -1032,7 +1032,6 @@ mxc_v4l2out_do_ioctl(struct inode *inode, struct file *file,
 				if(dq_intr_cnt == 0)
 					pr_debug("VIDIOC_DQBUF: interrupt received\n");
 				dq_intr_cnt++;
-				// vout->state = STATE_STREAM_STOPPING;
 				retval = -ERESTARTSYS;
 				break;
 			}

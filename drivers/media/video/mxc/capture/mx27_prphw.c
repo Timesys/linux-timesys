@@ -528,7 +528,8 @@ int prphw_enable(int channel)
 	if (channel & PRP_CHANNEL_1)
 		val |= PRP_CNTL_CH1EN;
 	if (channel & PRP_CHANNEL_2)
-		val |= (PRP_CNTL_CH2EN | PRP_CNTL_CH2_FLOWEN);
+		val |=
+		    (PRP_CNTL_CH2EN | PRP_CNTL_CH2_FLOWEN | PRP_CNTL_AUTODROP);
 
 	__raw_writel(val, PRP_CNTL);
 
