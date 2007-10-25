@@ -401,9 +401,9 @@ static void mxc_expio_irq_handler(u32 irq, struct irq_desc *desc)
 	mxc_card_status = stat;
 
 	if (card_int != 0) {
-		for (i = MXC_CARD_MIN; i <= MXC_CARD_MAX - 1; i++) {
+		for (i = MXC_CARD_MIN; i <= MXC_CARD_MAX; i++) {
 			if ((card_int & (1 << i)) != 0) {
-				pr_info("card no %d state changed\n", i);
+				pr_debug("card no %d state changed\n", i);
 			}
 		}
 	}
@@ -414,9 +414,8 @@ static void mxc_expio_irq_handler(u32 irq, struct irq_desc *desc)
 	int_valid = (int_valid & 0x0F8E) | (card_int << PBC_INTR_SD2_EN_BIT);
 
 	if (unlikely(!int_valid)) {
-		printk(KERN_ERR "\nEXPIO: Spurious interrupt:0x%0x\n\n",
-		       int_valid);
-		pr_info("CPLD IMR(0x38)=0x%x, BSTAT1(0x28)=0x%x\n", imr, stat);
+		pr_debug("\nEXPIO: Spurious interrupt:0x%0x\n\n", int_valid);
+		pr_debug("CPLD IMR(0x38)=0x%x, BSTAT1(0x28)=0x%x\n", imr, stat);
 		goto out;
 	}
 
