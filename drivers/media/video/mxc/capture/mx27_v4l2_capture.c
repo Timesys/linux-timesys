@@ -41,7 +41,8 @@
 
 static int csi_mclk_flag_backup;
 static int video_nr = -1;
-static cam_data *g_cam;
+cam_data *g_cam;
+EXPORT_SYMBOL(g_cam);
 
 static int dq_intr_cnt=0;
 static int dq_timeout_cnt=0;

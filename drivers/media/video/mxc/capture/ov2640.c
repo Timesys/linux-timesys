@@ -688,10 +688,12 @@ static sensor_interface *ov2640_config(int *frame_rate, int high_quality)
 		g_cam->crop_bounds.top = 0;
 		g_cam->crop_bounds.height = 1120;
 		g_cam->crop_current = g_cam->crop_defrect = g_cam->crop_bounds;
+#ifdef CONFIG_ARCH_MX3
 		ipu_csi_set_window_size(g_cam->crop_current.width,
 					g_cam->crop_current.height);
 		ipu_csi_set_window_pos(g_cam->crop_current.left,
 				       g_cam->crop_current.top);
+#endif
 		g_cam->streamparm.parm.capture.capturemode = 1;
 	} else {
 		out_width = 640;
@@ -701,10 +703,12 @@ static sensor_interface *ov2640_config(int *frame_rate, int high_quality)
 		g_cam->crop_bounds.top = 0;
 		g_cam->crop_bounds.height = 480;
 		g_cam->crop_current = g_cam->crop_defrect = g_cam->crop_bounds;
+#ifdef CONFIG_ARCH_MX3
 		ipu_csi_set_window_size(g_cam->crop_current.width,
 					g_cam->crop_current.height);
 		ipu_csi_set_window_pos(g_cam->crop_current.left,
 				       g_cam->crop_current.top);
+#endif
 		g_cam->streamparm.parm.capture.capturemode = 0;
 	}
 	ov2640_interface(interface_param, out_width, out_height);
