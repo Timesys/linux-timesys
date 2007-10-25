@@ -448,100 +448,6 @@ static inline fsl_shw_return_t encrypt_mac(sah_Head_Desc ** desc_chain,
 	return status;
 }
 
-#if SUPPORT_SSL
-/*!
- * Generate an SSL value
- *
- * @param         user_ctx         Info for acquiring memory
- * @param         auth_ctx         Info for CTR0, size of MAC
- * @param         cipher_key_info
- * @param         auth_key_info
- * @param         auth_data_length
- * @param         auth_data
- * @param         payload_length
- * @param         payload
- * @param         ct
- * @param         auth_value
- *
- * @return    A return code of type #fsl_shw_return_t.
- */
-static fsl_shw_return_t do_ssl_gen(fsl_shw_uco_t * user_ctx,
-				   fsl_shw_acco_t * auth_ctx,
-				   fsl_shw_sko_t * cipher_key_info,
-				   fsl_shw_sko_t * auth_key_info,
-				   uint32_t auth_data_length,
-				   const uint8_t * auth_data,
-				   uint32_t payload_length,
-				   const uint8_t * payload,
-				   uint8_t * ct, uint8_t * auth_value)
-{
-	SAH_SF_DCLS;
-	uint8_t *ptr1 = NULL;
-
-	/* Assume one-shot init-finalize... no precomputes */
-	header = SAH_HDR_MDHA_SET_MODE_MD_KEY ^
-	    sah_insert_mdha_algorithm[auth_ctx->auth_info.hash_ctx_info.
-				      algorithm] ^ sah_insert_mdha_init ^
-	    sah_insert_mdha_ssl ^ sah_insert_mdha_pdata ^
-	    sah_insert_mdha_mac_full;
-
-	/* set up hmac */
-	DESC_IN_KEY(header, 0, NULL, auth_key_info);
-
-	/* This is wrong -- need to find 16 extra bytes of data from
-	 * somewhere */
-	DESC_IN_OUT(SAH_HDR_MDHA_HASH, payload_length, payload, 1, auth_value);
-
-	/* set up encrypt */
-	header = SAH_HDR_SKHA_SET_MODE_IV_KEY
-	    ^ sah_insert_skha_mode[auth_ctx->cipher_ctx_info.mode]
-	    ^ sah_insert_skha_encrypt
-	    ^ sah_insert_skha_algorithm[cipher_key_info->algorithm];
-
-	/* Honor 'no key parity checking' for DES and TDES */
-	if ((cipher_key_info->flags & FSL_SKO_KEY_IGNORE_PARITY) &&
-	    ((cipher_key_info->algorithm == FSL_KEY_ALG_DES) ||
-	     (cipher_key_info->algorithm == FSL_KEY_ALG_TDES))) {
-		header ^= sah_insert_skha_no_key_parity;
-	}
-
-	if (auth_ctx->cipher_ctx_info.mode == FSL_SYM_MODE_CTR) {
-		header ^=
-		    sah_insert_skha_modulus[auth_ctx->cipher_ctx_info.
-					    modulus_exp];
-	}
-
-	if ((auth_ctx->cipher_ctx_info.mode == FSL_SYM_MODE_ECB)
-	    || (auth_ctx->cipher_ctx_info.flags & FSL_SYM_CTX_INIT)) {
-		ptr1 = block_zeros;
-	} else {
-		ptr1 = auth_ctx->cipher_ctx_info.context;
-	}
-
-	DESC_IN_KEY(header, auth_ctx->cipher_ctx_info.block_size_bytes, ptr1,
-		    cipher_key_info);
-
-	/* This is wrong -- need to find 16 extra bytes of data from
-	 * somewhere...
-	 */
-	if (payload_length != 0) {
-		DESC_IN_OUT(SAH_HDR_SKHA_ENC_DEC,
-			    payload_length, payload, payload_length, ct);
-	}
-
-	SAH_SF_EXECUTE();
-
-      out:
-	SAH_SF_DESC_CLEAN();
-
-	/* Eliminate compiler warnings until full implementation... */
-	(void)auth_data;
-	(void)auth_data_length;
-
-	return ret;
-}				/* do_ssl_gen() */
-#endif
-
 /*!
  * @brief Generate a (CCM) auth code and encrypt the payload.
  *
@@ -593,17 +499,6 @@ fsl_shw_return_t fsl_shw_gen_encrypt(fsl_shw_uco_t * user_ctx,
 	SAH_SF_DCLS;
 
 	SAH_SF_USER_CHECK();
-
-	if (auth_ctx->mode == FSL_ACC_MODE_SSL) {
-#if SUPPORT_SSL
-		ret = do_ssl_gen(user_ctx, auth_ctx, cipher_key_info,
-				 auth_key_info, auth_data_length, auth_data,
-				 payload_length, payload, ct, auth_value);
-#else
-		ret = FSL_RETURN_BAD_MODE_S;
-#endif
-		return ret;
-	}
 
 	if (auth_ctx->mode != FSL_ACC_MODE_CCM) {
 		ret = FSL_RETURN_BAD_MODE_S;

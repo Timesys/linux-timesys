@@ -223,12 +223,6 @@ typedef enum fsl_shw_acc_mode_t {
 	 * be non-multiple of block size.  This mode may be used for AES.
 	 */
 	FSL_ACC_MODE_CCM,
-	/*!
-	 * SSL mode.  Not supported.  Combines HMAC and encrypt (or decrypt).
-	 * Needs one key object for encryption, another for the HMAC.  The usual
-	 * hashing and symmetric encryption algorithms are supported.
-	 */
-	FSL_ACC_MODE_SSL
 } fsl_shw_acc_mode_t;
 
 /* REQ-FSLSHW-PINTFC-COA-HCO-001 */
