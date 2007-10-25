@@ -340,13 +340,13 @@ static inline void mxc_init_ir(void)
  */
 #if defined(CONFIG_MXC_SECURITY_SCC) || defined(CONFIG_MXC_SECURITY_SCC_MODULE)
 static struct platform_device mxc_scc_device = {
-        .name = "mxc_scc",
-        .id = 0,
+	.name = "mxc_scc",
+	.id = 0,
 };
 
 static void mxc_init_scc(void)
 {
-        platform_device_register(&mxc_scc_device);
+	platform_device_register(&mxc_scc_device);
 }
 #else
 static inline void mxc_init_scc(void)

@@ -273,11 +273,12 @@ static int mxc_scc_probe(struct platform_device *pdev)
 
 		/* See whether there is an SCC available */
 		if (0 && !SCC_ENABLED()) {
-			pr_debug
+			printk
 			    ("SCC: Fuse for SCC is set to disabled.  Exiting.\n");
 		} else {
 			/* Map the SCC (SCM and SMN) memory on the internal bus into
 			   kernel address space */
+			
 			scc_base = ioremap_nocache(SCC_BASE, SCC_ADDRESS_RANGE);
 
 			/* If that worked, we can try to use the SCC */
@@ -351,7 +352,7 @@ static int mxc_scc_probe(struct platform_device *pdev)
 		 */
 		if (scc_availability == SCC_STATUS_CHECKING ||
 		    scc_availability == SCC_STATUS_UNIMPLEMENTED) {
-			scc_cleanup();
+			mxc_scc_remove(pdev);
 		} else {
 			return_value = 0;	/* All is well */
 		}
@@ -371,7 +372,7 @@ static int mxc_scc_probe(struct platform_device *pdev)
 }				/* mxc_scc_probe */
 
 /*****************************************************************************/
-/* fn scc_cleanup()                                                          */
+/* fn mxc_scc_remove()                                                          */
 /*****************************************************************************/
 /*!
  * Perform cleanup before driver/module is unloaded by setting the machine
