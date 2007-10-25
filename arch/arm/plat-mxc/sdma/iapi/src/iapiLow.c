@@ -123,8 +123,8 @@ iapi_ChangeCallbackISR (channelDescriptor * cd_p,
 void
 iapi_lowSynchChannel (unsigned char channel)
 {
-  //while (! ( (1UL << channel) & iapi_SDMAIntr ) ) ;
-  GOTO_SLEEP(channel);
+  while (! ( (1UL << channel) & iapi_SDMAIntr ) ) ;
+  //GOTO_SLEEP(channel);
   iapi_SDMAIntr &= ~(1UL << channel);
 }
 
