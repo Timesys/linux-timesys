@@ -74,7 +74,7 @@ med3(char *a, char *b, char *c, int (*cmp)(const void *, const void *))
               :(cmp(b, c) > 0 ? b : (cmp(a, c) < 0 ? a : c ));
 }
 
-#define min(a,b) (((a) < (b)) ? (a) : (b))
+#define yaffs_min(a,b) (((a) < (b)) ? (a) : (b))
 void
 qsort(void *aa, size_t n, size_t es, int (*cmp)(const void *, const void *))
 {
@@ -140,9 +140,9 @@ loop:	SWAPINIT(a, es);
 	}
 
 	pn = (char *)a + n * es;
-	r = min(pa - (char *)a, pb - pa);
+	r = yaffs_min(pa - (char *)a, pb - pa);
 	vecswap(a, pb - r, r);
-	r = min((long)(pd - pc), (long)(pn - pd - es));
+	r = yaffs_min((long)(pd - pc), (long)(pn - pd - es));
 	vecswap(pb, pn - r, r);
 	if ((r = pb - pa) > es)
 		qsort(a, r / es, es, cmp);
