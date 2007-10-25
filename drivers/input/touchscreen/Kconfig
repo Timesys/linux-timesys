@@ -113,6 +113,18 @@ config TOUCHSCREEN_HP600
 	  To compile this driver as a module, choose M here: the
 	  module will be called hp680_ts_input.
 
+config TOUCHSCREEN_MXC
+	tristate "MXC touchscreen input driver"
+	depends on MXC_MC13783_ADC
+	help
+	  Say Y here if you have an MXC based board with touchscreen
+	  attached to it.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called mxc_ts.
+
 config TOUCHSCREEN_PENMOUNT
 	tristate "Penmount serial touchscreen"
 	select SERIO
