@@ -270,7 +270,10 @@ static int vpu_ioctl(struct inode *inode, struct file *filp, u_int cmd,
 
 			codec_done = 0;
 			break;
-		}
+
+ 		}
+/* RMW: this is not portable across platforms */
+#ifdef CONFIG_ARCH_MX27
 		/* set/clear LHD (Latency Hiding Disable) bit in ESDCFG0 reg. 
 		   Tends to fix MPEG4 issue on MX27 TO2 */
 	case VPU_IOC_LHD:
@@ -296,6 +299,7 @@ static int vpu_ioctl(struct inode *inode, struct file *filp, u_int cmd,
 
 			break;
 		}
+#endif
 	case VPU_IOC_VL2CC_FLUSH:
 		if (cpu_is_mx32()) {
 			vl2cc_flush();
