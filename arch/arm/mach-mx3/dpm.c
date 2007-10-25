@@ -120,7 +120,9 @@ static int mxc_dpm_set_opt(struct dpm_opt *cur, struct dpm_opt *new)
 				    md_new->cpu / 1000);
 	}
 #ifdef CONFIG_PM
+#ifdef CONFIG_MXC_DVFS
 	mxc_pm_dvfs(md_new->cpu, md_new->ahb, md_new->ip);
+#endif
 	curr_mode = md_new->mode;
 #endif
 
