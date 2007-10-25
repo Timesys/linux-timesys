@@ -1182,7 +1182,7 @@ sah_Link *sah_Make_Links(sah_Link * ptr, sah_Link ** tail)
 	/* Now we can walk through the list of pages in the buffer */
 	if (status == FSL_RETURN_OK_S) {
 
-#if defined(FLUSH_SPECIFIC_DATA_ONLY) && !defined(CONFIG_CPU_CACHE_L210)
+#if defined(FLUSH_SPECIFIC_DATA_ONLY) && !defined(CONFIG_OUTER_CACHE)
 		/*
 		 * Now that pages are wired, clear user data from cache lines.  When
 		 * there is just an L1 cache, clean based on user virtual for ARM.
@@ -1264,7 +1264,7 @@ sah_Link *sah_Make_Links(sah_Link * ptr, sah_Link ** tail)
 					     sah_Link_Get_Data(ptr) &
 					     ~PAGE_MASK);
 				}
-#if defined(FLUSH_SPECIFIC_DATA_ONLY) && defined(CONFIG_CPU_CACHE_L210)
+#if defined(FLUSH_SPECIFIC_DATA_ONLY) && defined(CONFIG_OUTER_CACHE)
 				/*
 				 * When there is an L2 cache, clean based on kernel
 				 * virtual..
@@ -1280,7 +1280,7 @@ sah_Link *sah_Make_Links(sah_Link * ptr, sah_Link ** tail)
 
 				/* Fill in link information */
 				link->len = buffer_length;
-#if !defined(CONFIG_CPU_CACHE_L210)
+#if !defined(CONFIG_OUTER_CACHE)
 				/* use original virtual */
 				link->original_data = ptr->data;
 #else
@@ -1320,7 +1320,7 @@ sah_Link *sah_Make_Links(sah_Link * ptr, sah_Link ** tail)
 					buffer_length -= prev_link->len;
 					buffer_start += prev_link->len;
 
-#if !defined(CONFIG_CPU_CACHE_L210)
+#if !defined(CONFIG_OUTER_CACHE)
 					/* use original virtual */
 					link->original_data = ptr->data;
 #else
