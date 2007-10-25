@@ -678,7 +678,6 @@ static sensor_interface *ov2640_config(int *frame_rate, int high_quality)
 		PRINTK("%s:REGU_GPO3 power on ok\n", __func__);
 	}
 	PRINTK("%s:OV2640 power on ok\n", __func__);
-	gpio_sensor_active();
 
 	if (high_quality) {
 		out_width = 1600;
@@ -722,9 +721,21 @@ static sensor_interface *ov2640_config(int *frame_rate, int high_quality)
 	return interface_param;
 }
 
+static void ov2640_get_control_params(int *ae, int *awb, int *flicker)
+{
+	*ae = 0;
+	*awb = 0;
+	*flicker = 0;
+}
+
 static sensor_interface *ov2640_reset(void)
 {
 	return ov2640_config(&reset_frame_rate, 0);
+}
+
+static int ov2640_get_status(void)
+{
+	return 0;
 }
 
 struct camera_sensor camera_sensor_if = {
@@ -732,8 +743,10 @@ struct camera_sensor camera_sensor_if = {
 	.get_color = ov2640_get_color,
 	.set_ae_mode = ov2640_set_ae_mode,
 	.get_ae_mode = ov2640_get_ae_mode,
+	.get_control_params = ov2640_get_control_params,
 	.config = ov2640_config,
 	.reset = ov2640_reset,
+	.get_status = ov2640_get_status,
 };
 
 EXPORT_SYMBOL(camera_sensor_if);
@@ -746,6 +759,8 @@ EXPORT_SYMBOL(camera_sensor_if);
 static __init int ov2640_init(void)
 {
 	u8 err;
+
+	gpio_sensor_active();
 
 	err = i2c_add_driver(&ov2640_i2c_driver);
 
