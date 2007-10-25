@@ -36,9 +36,9 @@ static int g_uart_activated[MXC_UART_NR] = { 0, 0, 0, 0, 0, 0 };
  * Setup GPIO for a UART port to be active
  *
  * @param  port         a UART port
- * @param  no_irda      indicates if the port is used for SIR
+ * @param  ir_mode      indicates if the port is used for SIR
  */
-void gpio_uart_active(int port, int no_irda)
+void gpio_uart_active(int port, int ir_mode)
 {
 	if (port < 0 || port >= MXC_UART_NR) {
 		pr_info("Wrong port number: %d\n", port);
@@ -70,8 +70,11 @@ void gpio_uart_active(int port, int no_irda)
 		gpio_request_mux(MX27_PIN_UART3_CTS, GPIO_MUX_PRIMARY);
 		gpio_request_mux(MX27_PIN_UART3_RTS, GPIO_MUX_PRIMARY);
 
-		/* Enable IRDA in CPLD */
-		__raw_writew(PBC_BCTRL2_IRDA_EN, PBC_BCTRL2_CLEAR_REG);
+		/* enable or disable the IrDA transceiver based on ir_mode */
+		if (ir_mode == IRDA)
+			__raw_writew(PBC_BCTRL2_IRDA_EN, PBC_BCTRL2_CLEAR_REG);
+		else
+			__raw_writew(PBC_BCTRL2_IRDA_EN, PBC_BCTRL2_SET_REG);
 		break;
 	case 3:
 		gpio_request_mux(MX27_PIN_USBH1_TXDM, GPIO_MUX_ALT);
@@ -100,9 +103,9 @@ void gpio_uart_active(int port, int no_irda)
  * Setup GPIO for a UART port to be inactive
  *
  * @param  port         a UART port
- * @param  no_irda      indicates if the port is used for SIR
+ * @param  ir_mode      indicates if the port is used for SIR
  */
-void gpio_uart_inactive(int port, int no_irda)
+void gpio_uart_inactive(int port, int ir_mode)
 {
 	if (port < 0 || port >= MXC_UART_NR) {
 		pr_info("Wrong port number: %d\n", port);
@@ -133,9 +136,6 @@ void gpio_uart_inactive(int port, int no_irda)
 		gpio_free_mux(MX27_PIN_UART3_RXD);
 		gpio_free_mux(MX27_PIN_UART3_CTS);
 		gpio_free_mux(MX27_PIN_UART3_RTS);
-
-		/* Disable IRDA in CPLD */
-		__raw_writew(PBC_BCTRL2_IRDA_EN, PBC_BCTRL2_SET_REG);
 		break;
 	case 3:
 		gpio_free_mux(MX27_PIN_USBH1_TXDM);
