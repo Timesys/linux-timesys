@@ -25,15 +25,14 @@
  * @ingroup MXC_Security
  */
 
-#include "mxc_rtic.h"
-#include <asm/arch/clock.h>
-#include <asm/io.h>
-
 #include <linux/platform_device.h>
 #include <linux/clk.h>
 #ifdef CONFIG_MXC_RTIC_TEST_DEBUG
 #include <linux/module.h>
 #endif				/* CONFIG_MXC_RTIC_TEST_DEBUG */
+#include <asm/io.h>
+#include <asm/arch/clock.h>
+#include "mxc_rtic.h"
 
 /*!
  * The following api is used to enable the RTIC IP CLK and RTIC HCLK.

@@ -40,10 +40,8 @@
 #include <linux/kernel.h>	/* General kernel system calls */
 #include <linux/sched.h>	/* for interrupt.h */
 #include <linux/spinlock.h>
-
-#include <asm/io.h>		/* ioremap() */
 #include <linux/interrupt.h>	/* IRQ / interrupt definitions */
-
+#include <asm/io.h>		/* ioremap() */
 #include <asm/arch/mxc_scc_driver.h>
 
 /* Get handle on certain per-platform symbols */

@@ -11,10 +11,10 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 #include <linux/init.h>
+#include <linux/device.h>
 #include <asm/dma.h>
 #include <asm/arch/hardware.h>
 
-#include <linux/device.h>
 #include "serial.h"
 
 #define MXC_MMC_BUFFER_ACCESS     0x38

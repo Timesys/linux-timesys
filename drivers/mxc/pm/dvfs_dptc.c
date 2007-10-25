@@ -37,12 +37,12 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
-#include <asm/uaccess.h>
 #include <linux/workqueue.h>
 #include <linux/proc_fs.h>
-#include <asm/semaphore.h>
 #include <linux/jiffies.h>
 #include <linux/vmalloc.h>
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/pmic_external.h>
 

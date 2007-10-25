@@ -39,18 +39,18 @@
 #include <linux/fs.h>
 #include <linux/interrupt.h>
 #include <linux/clk.h>
-#include <asm/uaccess.h>
 #include <linux/workqueue.h>
 #include <linux/proc_fs.h>
-#include <asm/semaphore.h>
 #include <linux/jiffies.h>
 #include <linux/device.h>
 #include <linux/delay.h>
+#include <linux/dma-mapping.h>
+
+#include <asm/uaccess.h>
+#include <asm/semaphore.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/gpio.h>
 #include <asm/arch/sdma.h>
-#include <linux/dma-mapping.h>
-
 #include <asm/arch/dvfs.h>
 
 #include "iomux.h"

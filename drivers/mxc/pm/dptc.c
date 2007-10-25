@@ -37,13 +37,13 @@
 #include <linux/init.h>
 #include <linux/fs.h>
 #include <linux/interrupt.h>
-#include <asm/uaccess.h>
-#include <asm/hardware.h>
 #include <linux/workqueue.h>
 #include <linux/proc_fs.h>
-#include <asm/semaphore.h>
 #include <linux/jiffies.h>
 #include <linux/platform_device.h>
+#include <asm/uaccess.h>
+#include <asm/hardware.h>
+#include <asm/semaphore.h>
 #include <asm/arch/sdma.h>
 #include <asm/arch/pmic_power.h>
 

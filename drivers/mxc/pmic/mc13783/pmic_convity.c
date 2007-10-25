@@ -34,12 +34,12 @@
  * @ingroup PMIC_CONNECTIVITY
  */
 
-#include <asm/arch/pmic_convity.h>	/* For PMIC Connectivity driver interface. */
-#include <asm/arch/pmic_adc.h>	/* For PMIC ADC driver interface.          */
-
 #include <linux/interrupt.h>	/* For tasklet interface.                  */
 #include <linux/platform_device.h>	/* For kernel module interface.            */
 #include <linux/spinlock.h>	/* For spinlock interface.                 */
+#include <asm/arch/pmic_convity.h>	/* For PMIC Connectivity driver interface. */
+#include <asm/arch/pmic_adc.h>	/* For PMIC ADC driver interface.          */
+
 #include "../core/pmic_config.h"
 
 /*

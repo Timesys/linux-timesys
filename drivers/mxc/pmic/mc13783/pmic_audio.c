@@ -49,13 +49,13 @@
  */
 
 #include <linux/module.h>
-#include <asm/arch/pmic_audio.h>	/* For PMIC Audio driver interface.    */
-#include <asm/arch/pmic_adc.h>	/* For PMIC ADC driver interface.      */
-
 #include <linux/interrupt.h>	/* For tasklet interface.              */
 #include <linux/platform_device.h>	/* For kernel module interface.        */
 #include <linux/init.h>
 #include <linux/spinlock.h>	/* For spinlock interface.             */
+#include <asm/arch/pmic_audio.h>	/* For PMIC Audio driver interface.    */
+#include <asm/arch/pmic_adc.h>	/* For PMIC ADC driver interface.      */
+
 #include "../core/pmic_config.h"
 
 /*

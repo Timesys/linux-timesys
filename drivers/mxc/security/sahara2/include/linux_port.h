@@ -57,19 +57,10 @@
 #include <linux/sched.h>	/* for interrupt.h */
 #include <linux/fs.h>		/* for inode */
 #include <linux/random.h>
-
-#include <asm/io.h>		/* ioremap() */
-#include <asm/irq.h>
-
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
-
 #include <linux/slab.h>		/* kmalloc */
-
-#include <asm/uaccess.h>	/* copy_to_user(), copy_from_user() */
-
-#include <stdarg.h>
 
 #if  LINUX_VERSION_CODE < KERNEL_VERSION(2,6,11)
 #include <linux/device.h>	/* used in dynamic power management */
@@ -85,6 +76,10 @@
 
 #include <linux/dmapool.h>
 #include <linux/dma-mapping.h>
+
+#include <asm/io.h>		/* ioremap() */
+#include <asm/irq.h>
+#include <asm/uaccess.h>	/* copy_to_user(), copy_from_user() */
 #include <asm/cacheflush.h>
 
 #ifndef TRUE

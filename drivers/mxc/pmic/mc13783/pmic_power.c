@@ -21,8 +21,9 @@
 /*
  * Includes
  */
-#include <asm/ioctl.h>
+
 #include <linux/platform_device.h>
+#include <asm/ioctl.h>
 #include <asm/arch/pmic_power.h>
 
 #include "../core/pmic_config.h"

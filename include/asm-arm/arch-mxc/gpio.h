@@ -24,8 +24,8 @@
  * @ingroup GPIO
  */
 
-#include <asm/sizes.h>
 #include <linux/interrupt.h>
+#include <asm/sizes.h>
 #include <asm/hardware.h>
 
 /* gpio related defines */

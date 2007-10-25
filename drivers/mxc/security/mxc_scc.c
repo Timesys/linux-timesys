@@ -48,10 +48,12 @@
  * @ingroup MXCSCC
  */
 
-#include "mxc_scc_internals.h"
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/clk.h>
+#include "mxc_scc_internals.h"
+
+
 /******************************************************************************
  *
  *  Global / Static Variables
