@@ -95,10 +95,6 @@ typedef struct {
  * This is used to indicate if we want echo cancellation in the Irda mode.
  */
 static int echo_cancel;
-/*!
- * This stores the port number of the UART used as a console.
- */
-static int console_index = 0;
 extern void gpio_uart_active(int port, int no_irda);
 extern void gpio_uart_inactive(int port, int no_irda);
 extern void config_uartdma_event(int port);
@@ -1650,7 +1646,6 @@ static int __init mxcuart_console_setup(struct console *co, char *options)
 	if (co->index >= MXC_UART_NR) {
 		co->index = 0;
 	}
-	console_index = co->index;
 	umxc = mxc_ports[co->index];
 
 	if (umxc == NULL) {
@@ -1718,26 +1713,6 @@ static int __init mxcuart_console_init(void)
 
 console_initcall(mxcuart_console_init);
 
-#define MXC_CONSOLE     &mxc_console
-#else
-#define MXC_CONSOLE     NULL
-#endif				/* CONFIG_SERIAL_MXC_CONSOLE */
-
-/*!
- * This structure contains the information such as the name of the UART driver
- * that appears in the /dev folder, major and minor numbers etc. This structure
- * is passed to the serial_core.c file.
- */
-static struct uart_driver mxc_reg = {
-	.owner = THIS_MODULE,
-	.driver_name = "ttymxc",
-	.dev_name = "ttymxc",
-	.major = SERIAL_MXC_MAJOR,
-	.minor = SERIAL_MXC_MINOR,
-	.nr = MXC_UART_NR,
-	.cons = MXC_CONSOLE,
-};
-
 static int __init find_port(struct uart_port *p)
 {
 	int line;
@@ -1772,6 +1747,26 @@ int __init mxc_uart_start_console(struct uart_port *port, char *options)
 	}
 	return 0;
 }
+
+#define MXC_CONSOLE     &mxc_console
+#else
+#define MXC_CONSOLE     NULL
+#endif				/* CONFIG_SERIAL_MXC_CONSOLE */
+
+/*!
+ * This structure contains the information such as the name of the UART driver
+ * that appears in the /dev folder, major and minor numbers etc. This structure
+ * is passed to the serial_core.c file.
+ */
+static struct uart_driver mxc_reg = {
+	.owner = THIS_MODULE,
+	.driver_name = "ttymxc",
+	.dev_name = "ttymxc",
+	.major = SERIAL_MXC_MAJOR,
+	.minor = SERIAL_MXC_MINOR,
+	.nr = MXC_UART_NR,
+	.cons = MXC_CONSOLE,
+};
 
 /*!
  * This function is called to put the UART in a low power state. Refer to the
