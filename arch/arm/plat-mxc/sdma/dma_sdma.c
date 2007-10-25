@@ -43,7 +43,8 @@
 static mxc_dma_channel_t mxc_sdma_channels[MAX_DMA_CHANNELS];
 static mxc_dma_channel_private_t mxc_sdma_private[MAX_DMA_CHANNELS];
 
-#define DMA_SLEEP_STATE (0x6 << 12)
+#define SDMA_SLEEP_STATE (0x6 << 12)
+#define SDMA_STATE_MASK  (0xF << 12)
 
 /*!
  * To indicate whether SDMA engine is suspending
@@ -569,7 +570,7 @@ int mxc_dma_enable(int channel_num)
  */
 static int mxc_dma_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	if ((SDMA_ONCE_STAT & DMA_SLEEP_STATE) == DMA_SLEEP_STATE) {
+	if ((SDMA_ONCE_STAT & SDMA_STATE_MASK) == SDMA_SLEEP_STATE) {
 		suspend_flag = 1;
 		clk_disable(mxc_sdma_ahb_clk);
 		clk_disable(mxc_sdma_ipg_clk);
