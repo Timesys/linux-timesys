@@ -172,6 +172,11 @@ int mxc_snoop_get_status(u32 num, u32 * statl, u32 * stath);
 
 #define DPTC_WP_SUPPORTED	17
 
+#ifndef IS_MEM_DEVICE_NONSHARED
+/* all peripherals on MXC so far are below 0x80000000 but leave L2CC alone */
+#define IS_MEM_DEVICE_NONSHARED(x)  ((x) < 0x80000000 && (x) != L2CC_BASE_ADDR)
+#endif
+
 #ifndef __ASSEMBLY__
 #include <linux/types.h>
 struct dptc_wp {

@@ -205,6 +205,8 @@
 #define PCMCIA_IO_ADDRESS(x) \
         (((x) - X_MEMC_BASE_ADDR) + X_MEMC_BASE_ADDR_VIRT)
 
+#define IS_MEM_DEVICE_NONSHARED(x)		0
+
 /*
  *  MX27 ADS Interrupt numbers
  */

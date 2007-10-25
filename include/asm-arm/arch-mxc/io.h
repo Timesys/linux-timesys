@@ -14,7 +14,7 @@
 /*!
  * @file arch-mxc/io.h
  * @brief This file contains some memory mapping macros.
- * @note There is no real ISA or PCI buses. But have to define these macros
+ * @note We don't have a PCI bus, but we have to define these macros
  * for some drivers to compile.
  *
  * @ingroup MSL_MX27 MSL_MX31
@@ -34,7 +34,6 @@
 #define __io(a)			((void __iomem *)(a))
 
 #define __mem_pci(a)		(a)
-#define __mem_isa(a)		(a)
 
 /*!
  * Validate the pci memory address for ioremap.
@@ -50,7 +49,7 @@ extern void __iomem *__mxc_ioremap(unsigned long cookie, size_t size,
 				   unsigned int mtype);
 extern void __mxc_iounmap(void __iomem *addr);
 
-#define __arch_ioremap(a, s, f) __mxc_ioremap(a, s, f)
-#define __arch_iounmap(a)	 __mxc_iounmap(a)
+#define __arch_ioremap(a, s, f)	__mxc_ioremap(a, s, f)
+#define __arch_iounmap(a)	__mxc_iounmap(a)
 
 #endif
