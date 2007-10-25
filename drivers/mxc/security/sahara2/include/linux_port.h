@@ -877,7 +877,7 @@ inline static os_lock_t os_lock_alloc_init(void)
 	if (lockp) {
 		_raw_spin_lock_init(lockp);
 	} else {
-		printk("OS: lock init failedn");
+		printk("OS: lock init failed\n");
 	}
 
 	return lockp;
@@ -897,7 +897,7 @@ inline static os_lock_t os_lock_alloc_init(void)
 	if (lockp) {
 		spin_lock_init(lockp);
 	} else {
-		printk("OS: lock init failedn");
+		printk("OS: lock init failed\n");
 	}
 
 	return lockp;
