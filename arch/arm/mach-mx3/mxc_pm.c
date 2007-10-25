@@ -39,6 +39,7 @@
 #include <asm/arch/dvfs.h>
 
 #include "crm_regs.h"
+#include "../drivers/mxc/ipu/ipu_regs.h"
 
 /* Local defines */
 #define FREQ_COMP_TOLERANCE      200	/* tolerance percentage times 100 */
@@ -285,12 +286,11 @@ int mxc_pm_pllscale(long arm_freq, long max_freq, long ip_freq)
  */
 void mxc_pm_lowpower(int mode)
 {
-	unsigned int lpm;
-	int enable_flag;
+	unsigned int lpm, ipu_conf;
 	unsigned long reg;
 
 	local_irq_disable();
-	enable_flag = 0;
+	ipu_conf = __raw_readl(IPU_CONF);
 
 	switch (mode) {
 	case DOZE_MODE:
@@ -300,17 +300,18 @@ void mxc_pm_lowpower(int mode)
 	case STOP_MODE:
 		/* State Retention mode */
 		lpm = 2;
-		/* Disable timer interrupt */
-		disable_irq(INT_GPT);
-		enable_flag = 1;
+		__raw_writel(INT_GPT, AVIC_INTDISNUM);
+
+		/* work-around for SR mode after camera related test */
+		mxc_clks_enable(CSI_BAUD);
+		__raw_writel(0x51, IPU_CONF);
 		break;
 
 	case DSM_MODE:
 		/* Deep Sleep Mode */
 		lpm = 3;
 		/* Disable timer interrupt */
-		disable_irq(INT_GPT);
-		enable_flag = 1;
+		__raw_writel(INT_GPT, AVIC_INTDISNUM);
 		/* Enabled Well Bias
 		 * SBYCS = 0, MCU clock source is disabled*/
 		mxc_ccm_modify_reg(MXC_CCM_CCMR,
@@ -327,15 +328,18 @@ void mxc_pm_lowpower(int mode)
 	reg = __raw_readl(MXC_CCM_CCMR);
 	reg = (reg & (~MXC_CCM_CCMR_LPM_MASK)) | lpm << MXC_CCM_CCMR_LPM_OFFSET;
 	__raw_writel(reg, MXC_CCM_CCMR);
+
 	/* Executing CP15 (Wait-for-Interrupt) Instruction */
 	/* wait for interrupt */
 	__asm__ __volatile__("mcr	p15, 0, r1, c7, c0, 4\n"
 			     "nop\n" "nop\n" "nop\n" "nop\n" "nop\n"::);
 
-	if (enable_flag) {
-		/* Enable timer interrupt */
-		enable_irq(INT_GPT);
-	}
+	/* work-around for SR mode after camera related test */
+	__raw_writel(ipu_conf, IPU_CONF);
+	mxc_clks_disable(CSI_BAUD);
+
+	__raw_writel(INT_GPT, AVIC_INTENNUM);
+
 	local_irq_enable();
 }
 
