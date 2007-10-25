@@ -50,8 +50,8 @@
 #define MXC_CSPICTRL_MAXDATRATE	0x10
 #define MXC_CSPICTRL_DATAMASK	0x1F
 #define MXC_CSPICTRL_DATASHIFT 	14
-/* This adjustment in the shift is valid only for even states only(i.e. divide 
-   ratio of 2). SDHC_SPIEN is not set by default. If SDHC_SPIEN bit is set in 
+/* This adjustment in the shift is valid only for even states only(i.e. divide
+   ratio of 2). SDHC_SPIEN is not set by default. If SDHC_SPIEN bit is set in
    MXC_CSPICTRL, then divide ratio is 3, this shift adjustment is invalid. */
 #define MXC_CSPICTRL_ADJUST_SHIFT(x) ((x) = ((x) - 1) * 2)
 
@@ -115,6 +115,8 @@
 
 #define MXC_CSPITEST_LBC	(1 << 14)
 
+#define MXC_CSPIRESET_START	1
+
 /*!
  * @struct mxc_spi_unique_def
  * @brief This structure contains information that differs with
@@ -142,7 +144,7 @@ struct mxc_spi_unique_def {
 	 */
 	unsigned int drctrl_shift;
 	/*!
-	 * Transfer Complete shift. 
+	 * Transfer Complete shift.
 	 */
 	unsigned int xfer_complete;
 	/*!

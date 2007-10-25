@@ -113,6 +113,8 @@
 
 #define MXC_CSPITEST_LBC	(1 << 14)
 
+#define MXC_CSPIRESET_START	1
+
 /*!
  * @struct mxc_spi_unique_def
  * @brief This structure contains information that differs with
@@ -140,7 +142,7 @@ struct mxc_spi_unique_def {
 	 */
 	unsigned int drctrl_shift;
 	/*!
-	 * Transfer Complete shift. 
+	 * Transfer Complete shift.
 	 */
 	unsigned int xfer_complete;
 	/*!

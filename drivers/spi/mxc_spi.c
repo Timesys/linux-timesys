@@ -668,6 +668,9 @@ static int mxc_spi_probe(struct platform_device *pdev)
 	clk_enable(master_drv_data->clk);
 	master_drv_data->spi_ipg_clk = clk_get_rate(master_drv_data->clk);
 
+	__raw_writel(MXC_CSPIRESET_START,
+		     master_drv_data->base + MXC_CSPIRESET);
+	udelay(1);
 	__raw_writel(MXC_CSPICTRL_ENABLE | MXC_CSPICTRL_MASTER,
 		     master_drv_data->base + MXC_CSPICTRL);
 	__raw_writel(MXC_CSPIPERIOD_32KHZ,
