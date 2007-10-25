@@ -80,8 +80,6 @@ config USB
 
 source "drivers/usb/core/Kconfig"
 
-source "drivers/usb/otg/Kconfig"
-
 source "drivers/usb/host/Kconfig"
 
 source "drivers/usb/class/Kconfig"

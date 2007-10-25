@@ -39,51 +39,52 @@ config MXC_FB_IRAM
 	depends on ARCH_MXC
 
 config ISP1504_MXC
-	bool "ISP1504 transceiver support"
-	depends on USB_ARCH_HAS_EHCI
-	help
-	  Support for the ISP1504 USB transceiver on MXC platforms.
+	bool
+	select ISP1504_MXC_OTG if USB_GADGET && USB_EHCI_HCD && USB_OTG
+	default y if USB_EHCI_FSL_1504 || USB_EHCI_ARC_H2 || USB_GADGET_FSL_1504
 
-choice
-	prompt "Select serial USB transceiver"
-	depends on USB_EHCI_ARC_OTGFS || USB_GADGET_ARC_OTGFS
+config ISP1504_MXC_OTG
+	tristate
+	help
+	  Support for USB OTG pin detect using the ISP1504 transceiver on MXC platforms.
 
 config ISP1301_MXC
-	bool "ISP1301 transceiver support"
+	bool
+	default y if USB_EHCI_FSL_1301 || USB_GADGET_FSL_1301
 	select I2C_MXC
-	help
-	  Support for the ISP1301 USB transceiver on MXC platforms.
 
 config MC13783_MXC
-	bool "MC13783 transceiver support"
+	bool
+	default y if USB_EHCI_FSL_MC13783 || USB_GADGET_FSL_MC13783
 	select SPI_MXC
-	help
-	  Support for the MC13783 USB transceiver on MXC platforms.
-endchoice
 
 choice
-	prompt "Select serial USB mode"
+	prompt "Select serial USB transceiver mode"
 	depends on ISP1301_MXC || MC13783_MXC
-
-config MXC_USB_SB3
-	bool "USB Single End Bidirection Mode"
-	help
-	  If you say yes to this option, the serial tranceiver is on SB3 mode
+	default MXC_USB_SU6
 
 config MXC_USB_SU6
-	bool "USB Single End Unidirection Mode"
+	bool "Single Ended Unidirectional Mode"
 	help
-	  If you say yes to this option, the serial tranceiver is on SU6 mode
+	  If you say yes to this option, the serial tranceiver operates in SU6 mode.
+	  This option will work for either the Freescale MC13783 or Philips ISP1301
+	  transceiver.
 
-config MXC_USB_DB4
-	bool "USB Differential Bidirection Mode"
+config MXC_USB_SB3
+	bool "Single Ended Bidirectional Mode"
 	help
-	  If you say yes to this option, the serial tranceiver is on DB4 mode
+	  If you say yes to this option, the serial tranceiver operates in SB3 mode.
+	  Not recommended for the Freescale MC13783.
 
 config MXC_USB_DU6
-	bool "USB Differential Unidirection Mode"
+	bool "Differential Unidirectional Mode"
 	help
-	  If you say yes to this option, the serial tranceiver is on DU6 mode
+	  If you say yes to this option, the serial tranceiver operates in DU6 mode.
+
+config MXC_USB_DB4
+	bool "Differential Bidirectional Mode"
+	help
+	  If you say yes to this option, the serial tranceiver operates in DB4 mode.
 
 endchoice
 

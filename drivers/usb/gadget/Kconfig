@@ -198,14 +198,12 @@ config USB_OMAP
 	select USB_GADGET_SELECTED
 
 config USB_GADGET_ARC
-	boolean "ARC USB Device Controller"
+	boolean "Freescale USB Device Controller"
 	depends on ARCH_MXC
-	select USB_GADGET_DUALSPEED
-	select USB_GADGET_ARC_OTGHS if USB_EHCI_ARC_OTGHS
-	select USB_GADGET_ARC_OTGFS if USB_EHCI_ARC_OTGFS
+	select USB_GADGET_DUALSPEED if USB_GADGET_FSL_1504
 	help
-	   Some Freescale processors have an ARC High Speed
-	   USBOTG controller, which supports device mode.
+	   Some Freescale processors have a USBOTG controller,
+	   which supports device mode.
 
 	   Say "y" to link the driver statically, or "m" to build a
 	   dynamically linked module called "arc_udc" and force all
@@ -272,7 +270,8 @@ endchoice
 config USB_OTG
 	boolean "OTG Support"
 	depends on (USB_GADGET_OMAP && ARCH_OMAP_OTG && USB_OHCI_HCD) || \
-		   (USB_GADGET_ARC && (ARCH_MX3 || ARCH_MX27) && USB_EHCI_HCD)
+		   ((USB_GADGET_ARC && (ARCH_MX3 || ARCH_MX27) && \
+		   (USB_GADGET_FSL_MC13783 || USB_GADGET_FSL_1504) && USB_EHCI_HCD))
 	help
 	   The most notable feature of USB OTG is support for a
 	   "Dual-Role" device, which can act as either a device
@@ -290,35 +289,46 @@ config USB_GADGET_DUALSPEED
 	  and code to handle dual-speed controllers.
 
 config USB_GADGET_ARC_OTG
-	bool "Support for OTG prepheral port on ARC controller"
+	bool "Support for OTG peripheral port on Freescale controller"
 	depends on USB_GADGET_ARC
 	default y
-	---help---
-	  Enable support for the USB OTG port in HS/FS prepheral mode.
+	help
+	  Enable support for the Freescale OTG port in peripheral mode.
 
 choice
-	prompt "Select transceiver"
+	prompt "Select OTG transceiver"
 	depends on USB_GADGET_ARC_OTG
-
-config USB_GADGET_ARC_OTGFS
-	bool "Full Speed"
-	depends on !USB_EHCI_ARC_OTGHS
 	help
-	  The ARC OTG controller can be connected to either a FS or
-	  a HS transceiver.
+	  Choose the transceiver to use with the Freescale OTG port.
 
-	  Enable this configuration option if you want to use the FS
-	  transceiver.
+config USB_GADGET_FSL_MC13783
+	bool "Freescale MC13783"
+	depends on !USB_EHCI_FSL_1301 && !USB_EHCI_FSL_1504
+	---help---
+	  Enable support for the Full Speed Freescale MC13783 transceiver.
 
-config USB_GADGET_ARC_OTGHS
-	bool "High Speed"
-	depends on !USB_EHCI_ARC_OTGFS
-	help
-	  The ARC OTG controller can be connected to either a FS or
-	  a HS transceiver.
+	  The mx27ads, mx31ads and mx32ads boards require modifications
+	  to support this transceiver.
 
-	  Enable this configuration option if you want to use the HS
-	  transceiver.
+config USB_GADGET_FSL_1301
+	bool "Philips ISP1301"
+	depends on !USB_EHCI_FSL_MC13783 && !USB_EHCI_FSL_1504
+	---help---
+	  Enable support for the Full Speed Philips ISP1301 transceiver.
+
+	  This is the factory default for the mx27ads board.
+	  The mx31ads and mx32ads boards require modifications
+	  to support this transceiver.
+
+config USB_GADGET_FSL_1504
+	bool "Philips ISP1504"
+	depends on !USB_EHCI_FSL_MC13783 && !USB_EHCI_FSL_1301
+	---help---
+	  Enable support for the High Speed Philips ISP1504 transceiver.
+
+	  This is the factory default for the mx31ads and mx32ads boards.
+	  The mx27ads board requires modifications to support this transceiver.
+
 endchoice
 
 #

@@ -30,50 +30,69 @@ config USB_EHCI_HCD
 	  module will be called ehci-hcd.
 
 config USB_EHCI_ARC
-	bool "Support for ARC controller"
+	bool "Support for Freescale controller"
 	depends on USB_EHCI_HCD && ARCH_MXC
 	---help---
-	   Some Freescale processors have an ARC High Speed
+	   Some Freescale processors have an integrated High Speed
 	   USBOTG controller, which supports EHCI host mode.
 
 	   Say "y" here to add support for this controller
 	   to the EHCI HCD driver.
 
 config USB_EHCI_ARC_H1
-	bool "Support for Host1 port on ARC controller"
+	bool "Support for Host1 port on Freescale controller"
 	depends on USB_EHCI_ARC	&& (ARCH_MX27 || ARCH_MX3)
 	---help---
 	  Enable support for the USB Host1 port.
 
 config USB_EHCI_ARC_H2
-	bool "Support for Host2 port on ARC controller"
+	bool "Support for Host2 port on Freescale controller"
 	depends on USB_EHCI_ARC	&& (ARCH_MX27 || ARCH_MX3)
 	---help---
 	  Enable support for the USB Host2 port.
 
 config USB_EHCI_ARC_OTG
-	bool "Support for OTG host port on ARC controller"
+	bool "Support for OTG host port on Freescale controller"
 	depends on USB_EHCI_ARC
 	default y
 	---help---
 	  Enable support for the USB OTG port in HS/FS Host mode.
 
 choice
-	prompt "Select transceiver speed"
+	prompt "Select OTG transceiver"
 	depends on USB_EHCI_ARC_OTG
-	default USB_EHCI_ARC_OTGHS
-	default USB_EHCI_ARC_OTGFS if ARCH_MX27
-
-config USB_EHCI_ARC_OTGHS
-	bool "High Speed"
+	default USB_EHCI_FSL_1504 if ARCH_MX3
+	default USB_EHCI_FSL_1301 if ARCH_MX27
 	---help---
-	  Enable support for the USB OTG port in HS Host mode.
+	  Choose the transceiver to use with the Freescale OTG port.
 
-config USB_EHCI_ARC_OTGFS
-	bool "Full Speed"
+config USB_EHCI_FSL_MC13783
+	bool "Freescale MC13783"
 	---help---
-	  Enable support for the USB OTG port in FS Host mode.
+	  Enable support for the Full Speed Freescale MC13783 transceiver.
+
+	  The mx27ads, mx31ads and mx32ads boards require modifications
+	  to support this transceiver.
+
+config USB_EHCI_FSL_1301
+	bool "Philips ISP1301"
+	---help---
+	  Enable support for the Full Speed Philips ISP1301 transceiver.
+
+	  This is the factory default for the mx27ads board.
+	  The mx31ads and mx32ads boards require modifications
+	  to support this transceiver.
+
+config USB_EHCI_FSL_1504
+	bool "Philips ISP1504"
+	---help---
+	  Enable support for the High Speed Philips ISP1504 transceiver.
+
+	  This is the factory default for the mx31ads and mx32ads boards.
+	  The mx27ads board requires modifications to support this transceiver.
+
 endchoice
+
 
 config USB_EHCI_SPLIT_ISO
 	bool "Full speed ISO transactions (EXPERIMENTAL)"
