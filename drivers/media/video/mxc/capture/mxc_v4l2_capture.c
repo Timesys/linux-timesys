@@ -40,7 +40,8 @@
 
 static int csi_mclk_flag_backup;
 static int video_nr = -1;
-static cam_data *g_cam;
+cam_data *g_cam;
+EXPORT_SYMBOL(g_cam);
 
 #define MXC_V4L2_CAPTURE_NUM_OUTPUTS        2
 static struct v4l2_output mxc_capture_outputs[MXC_V4L2_CAPTURE_NUM_OUTPUTS] = {

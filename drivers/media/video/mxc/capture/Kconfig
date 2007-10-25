@@ -8,7 +8,7 @@ config VIDEO_MXC_IPU_CAMERA
 
 config VIDEO_MXC_EMMA_CAMERA
 	tristate "MX27 eMMA support"
-	depends on VIDEO_MXC_CAMERA && MXC_EMMA && FB_MXC_SYNC_PANEL && (MXC_CAMERA_MICRON111 || MXC_CAMERA_MC521DA) 
+	depends on VIDEO_MXC_CAMERA && MXC_EMMA && FB_MXC_SYNC_PANEL && (MXC_CAMERA_MICRON111 || MXC_CAMERA_MC521DA || MXC_CAMERA_OV2640)
 	select VIDEO_MXC_OPL
 	default y
 
@@ -27,20 +27,25 @@ choice
 	default MXC_CAMERA_MICRON111
 	depends on (VIDEO_MXC_CAMERA && I2C_MXC)
 
+config MXC_CAMERA_MICRON111
+	tristate "Micron mt9v111 camera support"
+	---help---
+	  If you plan to use the mt9v111 Camera with your MXC system, say Y here.
+
 config MXC_CAMERA_MC521DA
 	tristate "Magnachip mc521da camera support"
 	---help---
 	  If you plan to use the mc521da Camera with your MXC system, say Y here.
 
-config MXC_CAMERA_MICRON111
-	tristate "Micron mt9v111 camera support"
+config MXC_CAMERA_OV2640
+	tristate "OmniVision ov2640 camera support"
 	---help---
-	  If you plan to use the mt9v111 Camera with your MXC system, say Y here.
+	  If you plan to use the ov2640 Camera with your MXC system, say Y here.
 endchoice
 
 config MXC_IPU_PRP_VF_SDC
 	tristate "Pre-Processor VF SDC library"
-	depends on (VIDEO_MXC_IPU_CAMERA && FB_MXC_SYNC_PANEL && (MXC_CAMERA_MC521DA || MXC_CAMERA_MICRON111))
+	depends on (VIDEO_MXC_IPU_CAMERA && FB_MXC_SYNC_PANEL && (MXC_CAMERA_MICRON111 || MXC_CAMERA_MC521DA || MXC_CAMERA_OV2640))
 	default y
 	---help---
 	  Use case PRP_VF_SDC:
@@ -53,7 +58,7 @@ config MXC_IPU_PRP_VF_SDC
 
 config MXC_IPU_PRP_VF_ADC
 	tristate "Pre-Processor VF ADC library"
-	depends on (VIDEO_MXC_IPU_CAMERA && FB_MXC_ASYNC_PANEL && (MXC_CAMERA_MC521DA || MXC_CAMERA_MICRON111))
+	depends on (VIDEO_MXC_IPU_CAMERA && FB_MXC_ASYNC_PANEL && (MXC_CAMERA_MICRON111 || MXC_CAMERA_MC521DA || MXC_CAMERA_OV2640))
 	default y
 	---help---
 	  Use case PRP_VF_ADC:
@@ -63,7 +68,7 @@ config MXC_IPU_PRP_VF_ADC
 
 config MXC_IPU_PRP_ENC
 	tristate "Pre-processor Encoder library"
-	depends on (VIDEO_MXC_IPU_CAMERA && (MXC_CAMERA_MC521DA || MXC_CAMERA_MICRON111))
+	depends on (VIDEO_MXC_IPU_CAMERA && (MXC_CAMERA_MICRON111 || MXC_CAMERA_MC521DA || MXC_CAMERA_OV2640))
 	default y
 	---help---
 	  Use case PRP_ENC:
