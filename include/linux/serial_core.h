@@ -133,6 +133,9 @@
 
 #define PORT_S3C2412	73
 
+/* Freescale Semiconductor MXC fmaily */
+#define PORT_MXC        74
+
 /* Xilinx uartlite */
 #define PORT_UARTLITE	74
 
