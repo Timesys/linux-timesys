@@ -436,9 +436,7 @@ static inline void mxc_init_mmc(void)
 		mxcsdhc1_device.resource[2].start = cd_irq;
 		mxcsdhc1_device.resource[2].end = cd_irq;
 	}
-	cd_irq = 0;
-	/* set cd_irq = 0 here to disable sdhc2 */
-	/* cd_irq = sdhc_init_card_det(1); */
+	cd_irq = sdhc_init_card_det(1);
 	if (cd_irq) {
 		mxcsdhc2_device.resource[2].start = cd_irq;
 		mxcsdhc2_device.resource[2].end = cd_irq;
