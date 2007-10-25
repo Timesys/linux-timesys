@@ -72,7 +72,7 @@ extern void fsl_platform_set_vbus_power(struct fsl_usb2_platform_data *pdata,
 static int usb_hcd_fsl_probe(const struct hc_driver *driver,
 			     struct platform_device *pdev)
 {
-	struct fsl_usb2_platform_data *pdata;
+	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
 	struct usb_hcd *hcd;
 	struct resource *res;
 	int irq;
@@ -81,7 +81,6 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
 	pr_debug("initializing FSL-SOC USB Controller\n");
 
 	/* Need platform data for setup */
-	pdata = (struct fsl_usb2_platform_data *)pdev->dev.platform_data;
 	if (!pdata) {
 		dev_err(&pdev->dev,
 			"No platform data for %s.\n", pdev->dev.bus_id);
@@ -132,7 +131,7 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
 	 */
 	fsl_platform_set_host_mode(hcd);
 
-	retval = usb_add_hcd(hcd, irq, 0);
+	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
 	if (retval != 0) {
 		pr_debug("failed with usb_add_hcd\n");
 		goto err2;
@@ -149,9 +148,6 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
 		if (ehci->transceiver) {
 			retval = otg_set_host(ehci->transceiver,
 					      &ehci_to_hcd(ehci)->self);
-			dev_dbg(ehci->transceiver->dev,
-				"init %s transceiver, retval %d\n",
-				ehci->transceiver->label, retval);
 			if (retval) {
 				if (ehci->transceiver)
 					put_device(ehci->transceiver->dev);
@@ -180,8 +176,7 @@ static void usb_hcd_fsl_remove(struct usb_hcd *hcd,
 			       struct platform_device *pdev)
 {
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-	struct fsl_usb2_platform_data *pdata;
-	pdata = (struct fsl_usb2_platform_data *)pdev->dev.platform_data;
+	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
 
 	dbg("%s  hcd=0x%p\n", __FUNCTION__, hcd);
 
@@ -189,12 +184,12 @@ static void usb_hcd_fsl_remove(struct usb_hcd *hcd,
 	fsl_platform_set_vbus_power(pdata, 0);
 
 	usb_remove_hcd(hcd);
-	usb_put_hcd(hcd);
 
 	if (ehci->transceiver) {
 		(void)otg_set_host(ehci->transceiver, 0);
 		put_device(ehci->transceiver->dev);
 	}
+	usb_put_hcd(hcd);
 
 	/*
 	 * do platform specific un-initialization:
@@ -219,10 +214,10 @@ static int ehci_fsl_setup(struct usb_hcd *hcd)
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
 	int retval;
 
-	/* EHCI registers start at offset 0x00 */
+	/* EHCI registers start at offset 0x100 */
 	ehci->caps = hcd->regs + 0x100;
 	ehci->regs = hcd->regs + 0x100 +
-	    HC_LENGTH(readl(&ehci->caps->hc_capbase));
+	    HC_LENGTH(ehci_readl(ehci, &ehci->caps->hc_capbase));
 
 	vdbg("%s(): ehci->caps=0x%p  ehci->regs=0x%p\n", __FUNCTION__,
 	     ehci->caps, ehci->regs);
@@ -231,7 +226,7 @@ static int ehci_fsl_setup(struct usb_hcd *hcd)
 	dbg_hcc_params(ehci, "reset");
 
 	/* cache this readonly data; minimize chip reads */
-	ehci->hcs_params = readl(&ehci->caps->hcs_params);
+	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
 
 	retval = ehci_halt(ehci);
 	if (retval)
@@ -309,21 +304,26 @@ static int ehci_arc_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-	struct fsl_usb2_platform_data *pdata =
-	    (struct fsl_usb2_platform_data *)pdev->dev.platform_data;
+	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
 	u32 cmd;
 
-	dbg("%s pdev=0x%p  pdata=0x%p  ehci=0x%p  hcd=0x%p\n",
-	    __FUNCTION__, pdev, pdata, ehci, hcd);
-	dbg("%s ehci->regs=0x%p  hcd->regs=0x%p  hcd->state=%d\n",
-	    __FUNCTION__, ehci->regs, hcd->regs, hcd->state);
-	dbg("%s pdata->usbmode=0x%x\n", __FUNCTION__, pdata->usbmode);
+	pr_debug("%s pdev=0x%p  ehci=0x%p  hcd=0x%p\n",
+		 __FUNCTION__, pdev, ehci, hcd);
+	pr_debug("%s ehci->regs=0x%p  hcd->regs=0x%p  hcd->state=%d\n",
+		 __FUNCTION__, ehci->regs, hcd->regs, hcd->state);
 
-	hcd->state = HC_STATE_HALT;	/* ignore non-host interrupts */
+	hcd->state = HC_STATE_SUSPENDED;
+	pdev->dev.power.power_state = PMSG_SUSPEND;
 
-	cmd = readl(&ehci->regs->command);
+	if (hcd->driver->suspend)
+		return hcd->driver->suspend(hcd, state);
+
+	/* ignore non-host interrupts */
+	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+
+	cmd = ehci_readl(ehci, &ehci->regs->command);
 	cmd &= ~CMD_RUN;
-	writel(cmd, &ehci->regs->command);
+	ehci_writel(ehci, cmd, &ehci->regs->command);
 
 	memcpy((void *)&usb_ehci_regs, ehci->regs, sizeof(struct ehci_regs));
 	usb_ehci_regs.port_status[0] &=
@@ -338,25 +338,34 @@ static int ehci_arc_resume(struct platform_device *pdev)
 {
 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-	u32 cmd;
-	struct fsl_usb2_platform_data *pdata =
-	    (struct fsl_usb2_platform_data *)pdev->dev.platform_data;
+	u32 tmp;
+	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
 
 	dbg("%s pdev=0x%p  pdata=0x%p  ehci=0x%p  hcd=0x%p\n",
 	    __FUNCTION__, pdev, pdata, ehci, hcd);
+
 	vdbg("%s ehci->regs=0x%p  hcd->regs=0x%p  usbmode=0x%x\n",
 	     __FUNCTION__, ehci->regs, hcd->regs, pdata->usbmode);
 
-	writel(USBMODE_CM_HOST, pdata->usbmode);
+	tmp = USBMODE_CM_HOST;
+	if (ehci_big_endian_mmio(ehci))
+		tmp |= USBMODE_BE;
+
+	ehci_writel(ehci, tmp, (u32 *)pdata->usbmode);
+
 	memcpy(ehci->regs, (void *)&usb_ehci_regs, sizeof(struct ehci_regs));
 
+	set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 	hcd->state = HC_STATE_RUNNING;
+	pdev->dev.power.power_state = PMSG_ON;
 
-	cmd = readl(&ehci->regs->command);
-	cmd |= CMD_RUN;
-	writel(cmd, &ehci->regs->command);
+	tmp = ehci_readl(ehci, &ehci->regs->command);
+	tmp |= CMD_RUN;
+	ehci_writel(ehci, tmp, &ehci->regs->command);
 
 	fsl_platform_set_vbus_power(pdata, 1);
+
+	usb_hcd_resume_root_hub(hcd);
 
 	return 0;
 }

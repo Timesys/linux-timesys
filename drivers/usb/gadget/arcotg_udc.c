@@ -62,7 +62,7 @@
 extern void gpio_usbotg_hs_active(void);
 extern void gpio_usbotg_fs_active(void);
 
-static void Ep0Stall(struct arcotg_udc *);
+static void ep0stall(struct arcotg_udc *);
 static int ep0_prime_status(struct arcotg_udc *, int);
 
 static int timeout;
@@ -115,11 +115,11 @@ static const struct usb_endpoint_descriptor arcotg_ep0_desc = {
 };
 
 static int udc_suspend(struct arcotg_udc *udc);
-static int arcotg_udc_suspend(struct device *dev, pm_message_t state);
-static int arcotg_udc_resume(struct device *dev);
+static int fsl_udc_suspend(struct device *dev, pm_message_t state);
+static int fsl_udc_resume(struct device *dev);
 
 /********************************************************************
- * 	Internal Used Function
+ *	Internal Used Function
 ********************************************************************/
 
 #ifdef DUMP_QUEUES
@@ -372,10 +372,12 @@ static void dr_controller_run(struct arcotg_udc *udc)
 	/* Clear stopped bit */
 	udc->stopped = 0;
 
+#if 0 // DDD only do this  after reset, already done in dr_controller_setup
 	/* Set the controller as device mode */
 	tmp = le32_to_cpu(usb_slave_regs->usbmode);
 	tmp |= USB_MODE_CTRL_MODE_DEVICE;
 	usb_slave_regs->usbmode = cpu_to_le32(tmp);
+#endif
 
 	/* Set controller to Run */
 	tmp = le32_to_cpu(usb_slave_regs->usbcmd);
@@ -1104,7 +1106,7 @@ static int arcotg_ep_queue(struct usb_ep *_ep, struct usb_request *_req,
 		    udc->ep0_state != DATA_STATE_RECV &&
 		    (udc->local_setup_buff).wLength == 0) {
 			if (ep0_prime_status(udc, EP_DIR_IN))
-				Ep0Stall(udc);
+				ep0stall(udc);
 			else
 				return 0;
 		}
@@ -1482,7 +1484,7 @@ static const struct usb_gadget_ops arcotg_gadget_ops = {
 	.pullup = arcotg_pullup,
 };
 
-static void Ep0Stall(struct arcotg_udc *udc)
+static void ep0stall(struct arcotg_udc *udc)
 {
 	u32 tmp;
 
@@ -1559,7 +1561,7 @@ static int udc_reset_ep_queue(struct arcotg_udc *udc, u8 pipe)
 
 	return 0;
 }
-static void ch9SetAddress(struct arcotg_udc *udc, u16 value, u16 index,
+static void ch9setaddress(struct arcotg_udc *udc, u16 value, u16 index,
 			  u16 length)
 {
 	pr_debug("udc: new address=%d\n", value);
@@ -1572,10 +1574,10 @@ static void ch9SetAddress(struct arcotg_udc *udc, u16 value, u16 index,
 
 	/* Status phase */
 	if (ep0_prime_status(udc, EP_DIR_IN))
-		Ep0Stall(udc);
+		ep0stall(udc);
 }
 
-static void ch9GetStatus(struct arcotg_udc *udc, u16 value, u16 index,
+static void ch9getstatus(struct arcotg_udc *udc, u16 value, u16 index,
 			 u16 length)
 {
 	u16 usb_status = 0;	/* fix me to give correct status */
@@ -1605,7 +1607,7 @@ static void ch9GetStatus(struct arcotg_udc *udc, u16 value, u16 index,
 
 	if (status) {
 		printk(KERN_ERR "Can't respond to getstatus request \n");
-		Ep0Stall(udc);
+		ep0stall(udc);
 	} else {
 		udc->ep0_state = DATA_STATE_XMIT;
 		pr_debug("udc: ep0_state now DATA_STATE_XMIT\n");
@@ -1618,10 +1620,10 @@ static void ch9GetStatus(struct arcotg_udc *udc, u16 value, u16 index,
 	return;
 
       stall:
-	Ep0Stall(udc);
+	ep0stall(udc);
 }
 
-static void ch9SetConfig(struct arcotg_udc *udc, u16 value, u16 index,
+static void ch9setconfig(struct arcotg_udc *udc, u16 value, u16 index,
 			 u16 length)
 {
 	pr_debug("udc: 1 calling gadget driver->setup\n");
@@ -1638,8 +1640,8 @@ static void setup_received_irq(struct arcotg_udc *udc,
 			       struct usb_ctrlrequest *setup)
 {
 	u16 ptc = 0;		/* port test control */
-	int handled = 1;	/* set to zero if we do not handle the message, */
-	/* and should pass it to the gadget driver */
+	int handled = 1;	/* set to zero if we do not handle the message,
+				   and should pass it to the gadget driver */
 
 	pr_debug("udc: request=0x%x\n", setup->bRequest);
 	/* Fix Endian (udc->local_setup_buff is cpu Endian now) */
@@ -1681,7 +1683,7 @@ static void setup_received_irq(struct arcotg_udc *udc,
 			     bRequestType & (USB_DIR_IN | USB_TYPE_STANDARD))
 			    != (USB_DIR_IN | USB_TYPE_STANDARD))
 				break;
-			ch9GetStatus(udc, setup->wValue, setup->wIndex,
+			ch9getstatus(udc, setup->wValue, setup->wIndex,
 				     setup->wLength);
 			break;
 
@@ -1690,7 +1692,7 @@ static void setup_received_irq(struct arcotg_udc *udc,
 			    (USB_DIR_OUT | USB_TYPE_STANDARD |
 			     USB_RECIP_DEVICE))
 				break;
-			ch9SetAddress(udc, setup->wValue, setup->wIndex,
+			ch9setaddress(udc, setup->wValue, setup->wIndex,
 				      setup->wLength);
 			break;
 
@@ -1700,7 +1702,7 @@ static void setup_received_irq(struct arcotg_udc *udc,
 			     USB_RECIP_DEVICE))
 				break;
 			/* gadget layer take over the status phase */
-			ch9SetConfig(udc, setup->wValue, setup->wIndex,
+			ch9setconfig(udc, setup->wValue, setup->wIndex,
 				     setup->wLength);
 			break;
 		case USB_REQ_SET_INTERFACE:
@@ -1773,7 +1775,7 @@ static void setup_received_irq(struct arcotg_udc *udc,
 				if (rc == 0) {
 					/* send status only if _arcotg_ep_set_halt success */
 					if (ep0_prime_status(udc, EP_DIR_IN))
-						Ep0Stall(udc);
+						ep0stall(udc);
 				}
 				break;
 			}
@@ -1789,7 +1791,7 @@ static void setup_received_irq(struct arcotg_udc *udc,
 	if (!handled) {
 		if (udc->driver->setup(&udc->gadget, &udc->local_setup_buff)
 		    != 0) {
-			Ep0Stall(udc);
+			ep0stall(udc);
 		} else if (setup->bRequestType & USB_DIR_IN) {
 			udc->ep0_state = DATA_STATE_XMIT;
 			pr_debug("udc: ep0_state now DATA_STATE_XMIT\n");
@@ -1828,7 +1830,7 @@ static void ep0_req_complete(struct arcotg_udc *udc, struct arcotg_ep *ep0,
 		done(ep0, req, 0);
 		/* receive status phase */
 		if (ep0_prime_status(udc, EP_DIR_OUT))
-			Ep0Stall(udc);
+			ep0stall(udc);
 		break;
 
 	case DATA_STATE_RECV:
@@ -1836,7 +1838,7 @@ static void ep0_req_complete(struct arcotg_udc *udc, struct arcotg_ep *ep0,
 		done(ep0, req, 0);
 		/* send status phase */
 		if (ep0_prime_status(udc, EP_DIR_IN))
-			Ep0Stall(udc);
+			ep0stall(udc);
 		break;
 
 	case WAIT_FOR_OUT_STATUS:
@@ -1850,7 +1852,7 @@ static void ep0_req_complete(struct arcotg_udc *udc, struct arcotg_ep *ep0,
 		break;
 
 	default:
-		Ep0Stall(udc);
+		ep0stall(udc);
 		break;
 	}
 }
@@ -2292,8 +2294,8 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 
 	if (!driver || (driver->speed != USB_SPEED_FULL
 			&& driver->speed != USB_SPEED_HIGH)
-	    || !driver->bind || !driver->unbind ||
-	    !driver->disconnect || !driver->setup)
+	    		|| !driver->bind || !driver->unbind ||
+	    		!driver->disconnect || !driver->setup)
 		return -EINVAL;
 
 	if (udc->driver)
@@ -2321,9 +2323,9 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 		udc_suspend(udc);
 		pr_debug("udc: suspend udc for OTG auto detect \n");
 
-		/* export udc suspend/resume call to OTG */
-		udc->gadget.dev.parent->driver->suspend = arcotg_udc_suspend;
-		udc->gadget.dev.parent->driver->resume = arcotg_udc_resume;
+		/* Export udc suspend/resume call to OTG */
+		udc->gadget.dev.parent->driver->suspend = fsl_udc_suspend;
+		udc->gadget.dev.parent->driver->resume = fsl_udc_resume;
 
 		/* connect to bus through transceiver */
 		retval = otg_set_peripheral(udc->transceiver, &udc->gadget);
@@ -2352,6 +2354,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 
 EXPORT_SYMBOL(usb_gadget_register_driver);
 
+/* Disconnect from gadget driver */
 int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 {
 	struct arcotg_ep *loop_ep;
@@ -2406,7 +2409,6 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 	       driver->driver.name);
 	return 0;
 }
-
 EXPORT_SYMBOL(usb_gadget_unregister_driver);
 
 /*-------------------------------------------------------------------------
@@ -2418,7 +2420,7 @@ EXPORT_SYMBOL(usb_gadget_unregister_driver);
 
 static const char proc_filename[] = "driver/arcotg_udc";
 
-static int arcotg_proc_read(char *page, char **start, off_t off, int count,
+static int fsl_proc_read(char *page, char **start, off_t off, int count,
 			    int *eof, void *_dev)
 {
 	char *buf = page;
@@ -2657,7 +2659,7 @@ s = "Host Controller"; break; default:
 }
 
 #define create_proc_file()	create_proc_read_entry(proc_filename, \
-				0, NULL, arcotg_proc_read, NULL)
+				0, NULL, fsl_proc_read, NULL)
 
 #define remove_proc_file()	remove_proc_entry(proc_filename, NULL)
 
@@ -2679,7 +2681,7 @@ s = "Host Controller"; break; default:
  * release method, or the kernel prints out scary complaints
  * @param dev device controller pointer
  */
-static void arcotg_gadget_release(struct device *dev)
+static void fsl_udc_release(struct device *dev)
 {
 	struct device *udc_dev = dev->parent;
 
@@ -2842,7 +2844,7 @@ static int board_init(struct platform_device *pdev)
   * @param dev device controller pointer
   * @return Returns zero on success , or a negative error code
   */
-static int __devinit arcotg_udc_probe(struct platform_device *pdev)
+static int __devinit fsl_udc_probe(struct platform_device *pdev)
 {
 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
 	struct arcotg_udc *udc;
@@ -2912,7 +2914,7 @@ static int __devinit arcotg_udc_probe(struct platform_device *pdev)
 
 	/* request irq and disable DR  */
 	tmp_status = request_irq(pdev->resource[1].start, arcotg_udc_irq,
-				 0, driver_name, udc);
+				 IRQF_SHARED, driver_name, udc);
 	if (tmp_status != 0) {
 		printk(KERN_ERR "cannot request irq %d err %d \n",
 		       (int)pdev->resource[1].start, tmp_status);
@@ -2946,7 +2948,7 @@ static int __devinit arcotg_udc_probe(struct platform_device *pdev)
 
 	strcpy(udc->gadget.dev.bus_id, "gadget");
 
-	udc->gadget.dev.release = arcotg_gadget_release;
+	udc->gadget.dev.release = fsl_udc_release;
 	udc->gadget.dev.parent = &pdev->dev;
 
 	if (udc->transceiver) {
@@ -2981,7 +2983,7 @@ static int __devinit arcotg_udc_probe(struct platform_device *pdev)
  * @param dev device controller pointer
  * @return Returns zero on success , or a negative error code
  */
-static int __devexit arcotg_udc_remove(struct platform_device *pdev)
+static int __devexit fsl_udc_remove(struct platform_device *pdev)
 {
 	struct arcotg_udc *udc =
 	    (struct arcotg_udc *)platform_get_drvdata(pdev);
@@ -3057,7 +3059,7 @@ static int udc_suspend(struct arcotg_udc *udc)
  * @param state current state
  * @return The function returns 0 on success or -1 if failed
  */
-static int arcotg_udc_suspend(struct device *dev, pm_message_t state)
+static int fsl_udc_suspend(struct device *dev, pm_message_t state)
 {
 	struct arcotg_udc *udc = (struct arcotg_udc *)dev_get_drvdata(dev);
 	pr_debug("udc: Suspend. state=%d\n", state.event);
@@ -3083,7 +3085,7 @@ static int udc_resume(struct arcotg_udc *udc)
  * @param dev device controller pointer
  * @return The function returns 0 on success or -1 if failed
  */
-static int arcotg_udc_resume(struct device *dev)
+static int fsl_udc_resume(struct device *dev)
 {
 	struct arcotg_udc *udc = (struct arcotg_udc *)dev_get_drvdata(dev);
 	pr_debug("udc: Resume dev=0x%p udc=0x%p\n", dev, udc);
@@ -3095,8 +3097,8 @@ static int arcotg_udc_resume(struct device *dev)
  * Register entry point for the peripheral controller driver
  */
 static struct platform_driver udc_driver = {
-	.probe = arcotg_udc_probe,
-	.remove = __exit_p(arcotg_udc_remove),
+	.probe = fsl_udc_probe,
+	.remove = __exit_p(fsl_udc_remove),
 	.driver = {
 		   .name = driver_name,
 		   },

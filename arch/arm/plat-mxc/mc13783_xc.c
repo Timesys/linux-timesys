@@ -123,16 +123,11 @@ static inline void mc13783_set_peripheral(void)
 	}
 }
 
-void mc13783_set_vbus_power(u32 * view, int on)
-{
-}
-
 static struct fsl_xcvr_ops mc13783_ops_otg = {
 	.name = "mc13783",
 	.xcvr_type = PORTSC_PTS_SERIAL,
 	.set_host = mc13783_set_host,
 	.set_device = mc13783_set_peripheral,
-	.set_vbus_power = mc13783_set_vbus_power,
 };
 
 extern void fsl_usb_xcvr_register(struct fsl_xcvr_ops *xcvr_ops);

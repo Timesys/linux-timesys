@@ -13,12 +13,12 @@ struct fsl_xcvr_ops {
 	char *name;
 	u32 xcvr_type;
 
-	void (*init) (struct fsl_xcvr_ops * ops);
-	void (*uninit) (struct fsl_xcvr_ops * ops);
-	void (*set_host) (void);
-	void (*set_device) (void);
-	void (*set_vbus_power) (u32 * view, int on);
-	void (*set_remote_wakeup) (u32 * view);
+	void (*init)(struct fsl_xcvr_ops *ops);
+	void (*uninit)(struct fsl_xcvr_ops *ops);
+	void (*set_host)(void);
+	void (*set_device)(void);
+	void (*set_vbus_power) (u32 *view, int on);
+	void (*set_remote_wakeup)(u32 *view);
 };
 
 #endif
