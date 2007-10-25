@@ -48,6 +48,9 @@ extern void nand_wait_ready(struct mtd_info *mtd);
 #define NAND_MAX_OOBSIZE	64
 #define NAND_MAX_PAGESIZE	2048
 
+#define NAND_PAGESIZE_512B 	512
+#define NAND_PAGESIZE_2KB 	2048
+
 /*
  * Constants for hardware specific CLE/ALE/NCE function
  *

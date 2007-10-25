@@ -50,9 +50,16 @@ __xipram cfi_read_pri(struct map_info *map, __u16 adr, __u16 size, const char* n
 	local_irq_disable();
 #endif
 
-	/* Switch it into Query Mode */
-	cfi_send_gen_cmd(0x98, 0x55, base, map, cfi, cfi->device_type, NULL);
-
+	/* Switch it into Query Mode.  Some chips want address 0x55, some
+	 * want 0x555.
+	 */
+	if ((cfi->mfr == CFI_MFR_AMD) && (cfi->id == 0x227E))
+		cfi_send_gen_cmd(0x98, 0x555, base, map, cfi, cfi->device_type,
+				NULL);
+	else
+		cfi_send_gen_cmd(0x98, 0x55, base, map, cfi, cfi->device_type,
+				NULL);
+	
 	/* Read in the Extended Query Table */
 	for (i=0; i<size; i++) {
 		((unsigned char *)extp)[i] =

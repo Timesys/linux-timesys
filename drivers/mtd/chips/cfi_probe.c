@@ -27,7 +27,8 @@ static void print_cfi_ident(struct cfi_ident *);
 
 static int cfi_probe_chip(struct map_info *map, __u32 base,
 			  unsigned long *chip_map, struct cfi_private *cfi);
-static int cfi_chip_setup(struct map_info *map, struct cfi_private *cfi);
+static int cfi_chip_setup(struct map_info *map, struct cfi_private *cfi,
+		int amd555);
 
 struct mtd_info *cfi_probe(struct map_info *map);
 
@@ -50,12 +51,12 @@ do { \
 	xip_allowed(base, map); \
 } while (0)
 
-#define xip_disable_qry(base, map, cfi) \
+#define xip_disable_qry(base, map, cfi, amd555) \
 do { \
 	xip_disable(); \
 	cfi_send_gen_cmd(0xF0, 0, base, map, cfi, cfi->device_type, NULL); \
 	cfi_send_gen_cmd(0xFF, 0, base, map, cfi, cfi->device_type, NULL); \
-	cfi_send_gen_cmd(0x98, 0x55, base, map, cfi, cfi->device_type, NULL); \
+	cfi_send_gen_cmd(0x98, amd555 ? 0x555 : 0x55, base, map, cfi, cfi->device_type, NULL);\
 } while (0)
 
 #else
@@ -63,7 +64,7 @@ do { \
 #define xip_disable()			do { } while (0)
 #define xip_allowed(base, map)		do { } while (0)
 #define xip_enable(base, map, cfi)	do { } while (0)
-#define xip_disable_qry(base, map, cfi) do { } while (0)
+#define xip_disable_qry(base, map, cfi, amd555) do { } while (0)
 
 #endif
 
@@ -102,6 +103,7 @@ static int __xipram cfi_probe_chip(struct map_info *map, __u32 base,
 				   unsigned long *chip_map, struct cfi_private *cfi)
 {
 	int i;
+	int amd555 = 0;
 
 	if ((base + 0) >= map->size) {
 		printk(KERN_NOTICE
@@ -122,14 +124,20 @@ static int __xipram cfi_probe_chip(struct map_info *map, __u32 base,
 	cfi_send_gen_cmd(0x98, 0x55, base, map, cfi, cfi->device_type, NULL);
 
 	if (!qry_present(map,base,cfi)) {
-		xip_enable(base, map, cfi);
-		return 0;
+	cfi_send_gen_cmd(0x98, 0x555, base, map, cfi, cfi->device_type,
+			NULL);
+		if (!qry_present(map,base,cfi)) {
+			xip_enable(base, map, cfi);
+			return 0;
+		}
+	
+		amd555 = 1;
 	}
 
 	if (!cfi->numchips) {
 		/* This is the first time we're called. Set up the CFI
 		   stuff accordingly and return */
-		return cfi_chip_setup(map, cfi);
+		return cfi_chip_setup(map, cfi, amd555);
 	}
 
 	/* Check each previous chip to see if it's an alias */
@@ -189,7 +197,7 @@ static int __xipram cfi_probe_chip(struct map_info *map, __u32 base,
 }
 
 static int __xipram cfi_chip_setup(struct map_info *map,
-				   struct cfi_private *cfi)
+				   struct cfi_private *cfi, int amd555)
 {
 	int ofs_factor = cfi->interleave*cfi->device_type;
 	__u32 base = 0;
@@ -214,7 +222,7 @@ static int __xipram cfi_chip_setup(struct map_info *map,
 	cfi->cfi_mode = CFI_MODE_CFI;
 
 	/* Read the CFI info structure */
-	xip_disable_qry(base, map, cfi);
+	xip_disable_qry(base, map, cfi, amd555);
 	for (i=0; i<(sizeof(struct cfi_ident) + num_erase_regions * 4); i++)
 		((unsigned char *)cfi->cfiq)[i] = cfi_read_query(map,base + (0x10 + i)*ofs_factor);
 
