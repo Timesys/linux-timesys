@@ -23,6 +23,7 @@
 #include <linux/string.h>
 #include <linux/fb.h>
 #include <linux/pci.h>
+#include <asm/cacheflush.h>
 #include <asm/io.h>
 #include <asm/irq.h>
 
@@ -830,7 +831,7 @@ static void rotation(unsigned long private)
 	 * Similarly we don't flush the data after SW rotation/mirroring.
 	 */
 	if (size < 320 * 240 * 2)
-		consistent_sync(src, size, DMA_FROM_DEVICE);
+		dmac_inv_range(src, src + size);
 	switch (cam->rotation) {
 	case V4L2_MXC_ROTATE_VERT_FLIP:
 		opl_vmirror_u16(src, s_stride, width, height, dst, d_stride);
