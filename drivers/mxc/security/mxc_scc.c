@@ -189,18 +189,34 @@ static int mxc_scc_resume(struct platform_device *pdev)
 	return 0;
 }
 
+static int mxc_scc_probe(struct platform_device *pdev);
+static int mxc_scc_remove(struct platform_device *pdev);
 /*!
  * This structure contains pointers to the power management callback functions.
  */
 static struct platform_driver mxc_scc_driver = {
 	.driver = {
 		   .name = "mxc_scc",
+  		   .bus = &platform_bus_type,
+                   .owner = THIS_MODULE,
 		   },
+	.probe = mxc_scc_probe,
+        .remove = mxc_scc_remove,
 	.suspend = mxc_scc_suspend,
 	.resume = mxc_scc_resume,
 };
 
 #undef static
+/*!
+ * Registering the SCC driver 
+ *
+ */
+static int scc_init(void)
+{
+	int ret;
+	ret =  platform_driver_register(&mxc_scc_driver);
+	return ret;
+}
 
 /******************************************************************************
  *
@@ -209,7 +225,7 @@ static struct platform_driver mxc_scc_driver = {
  *****************************************************************************/
 
 /*****************************************************************************/
-/* fn scc_init()                                                             */
+/* fn mxc_scc_probe()                                                             */
 /*****************************************************************************/
 /*!
  *  Initialize the driver at boot time or module load time.
@@ -227,23 +243,15 @@ static struct platform_driver mxc_scc_driver = {
  *
  *  The availability fuse may be checked, depending on platform.
  */
-static int scc_init(void)
+static int mxc_scc_probe(struct platform_device *pdev)
 {
 	uint32_t smn_status;
 	int i;
-	int ret;
 	int return_value = -EIO;	/* assume error */
 	/* Enable the SCC clocks  */
 	pr_debug(KERN_ALERT "SCC: Enabling the SCC CLK ... \n");
 	scc_clk = clk_get(NULL, "scc_clk");
 	clk_enable(scc_clk);
-
-	ret = platform_driver_register(&mxc_scc_driver);
-
-	if (ret != 0) {
-		return return_value;
-	}
-
 	if (scc_availability == SCC_STATUS_INITIAL) {
 
 		/* Set this until we get an initial reading */
@@ -360,7 +368,7 @@ static int scc_init(void)
 		       SCC_STATUS_FAILED) ? "FAILED" : "UNKNOWN");
 
 	return return_value;
-}				/* scc_init */
+}				/* mxc_scc_probe */
 
 /*****************************************************************************/
 /* fn scc_cleanup()                                                          */
@@ -379,11 +387,10 @@ static int scc_init(void)
  * pointers).  Deregister the interrupt handler(s).  Unmap SCC registers.
  *
  */
-static void scc_cleanup(void)
+static int mxc_scc_remove(struct platform_device *pdev)
 {
 	int i;
 
-	platform_driver_unregister(&mxc_scc_driver);
 	/* Mark the driver / SCC as unusable. */
 	scc_availability = SCC_STATUS_UNIMPLEMENTED;
 
@@ -423,21 +430,20 @@ static void scc_cleanup(void)
 #endif
 	}
 	pr_debug("SCC driver cleaned up.\n");
+	return 0;
 
-}				/* scc_cleanup */
+}				/* mxc_scc_remove */
+
+static void scc_cleanup(void)
+{
+	 platform_driver_unregister(&mxc_scc_driver);
+}
 
 /*****************************************************************************/
 /* fn scc_get_configuration()                                                */
 /*****************************************************************************/
 scc_config_t *scc_get_configuration(void)
 {
-	/*
-	 * If some other driver calls scc before the kernel does, make sure that
-	 * this driver's initialization is performed.
-	 */
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
     /**
      * If there is no SCC, yet the driver exists, the value -1 will be in
@@ -454,9 +460,6 @@ scc_return_t scc_zeroize_memories(void)
 	scc_return_t return_status = SCC_RET_FAIL;
 	uint32_t status;
 
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
 	if (scc_availability == SCC_STATUS_OK) {
 		unsigned long irq_flags;	/* for IRQ save/restore */
@@ -510,9 +513,6 @@ scc_crypt(unsigned long count_in_bytes, uint8_t * data_in,
 {
 	scc_return_t return_code = SCC_RET_FAIL;
 
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
 	(void)scc_update_state();	/* in case no interrupt line from SMN */
 
@@ -641,9 +641,6 @@ scc_crypt(unsigned long count_in_bytes, uint8_t * data_in,
 void scc_set_sw_alarm(void)
 {
 
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
 	/* Update scc_availability based on current SMN status.  This might
 	 * perform callbacks.
@@ -675,9 +672,6 @@ scc_return_t scc_monitor_security_failure(void callback_func(void))
 	scc_return_t return_status = SCC_RET_TOO_MANY_FUNCTIONS;
 	int function_stored = FALSE;
 
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
 	/* Acquire lock of callbacks table.  Could be spin_lock_irq() if this
 	 * routine were just called from base (not interrupt) level
@@ -716,9 +710,6 @@ void scc_stop_monitoring_security_failure(void callback_func(void))
 	unsigned long irq_flags;	/* for IRQ save/restore */
 	int i;
 
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
 	/* Acquire lock of callbacks table.  Could be spin_lock_irq() if this
 	 * routine were just called from base (not interrupt) level
@@ -748,9 +739,6 @@ scc_return_t scc_read_register(int register_offset, uint32_t * value)
 	uint32_t smn_status;
 	uint32_t scm_status;
 
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
 	/* First layer of protection -- completely unaccessible SCC */
 	if (scc_availability != SCC_STATUS_UNIMPLEMENTED) {
@@ -789,9 +777,6 @@ scc_return_t scc_write_register(int register_offset, uint32_t value)
 	uint32_t smn_status;
 	uint32_t scm_status;
 
-	if (scc_availability == SCC_STATUS_INITIAL) {
-		scc_init();
-	}
 
 	/* First layer of protection -- completely unaccessible SCC */
 	if (scc_availability != SCC_STATUS_UNIMPLEMENTED) {

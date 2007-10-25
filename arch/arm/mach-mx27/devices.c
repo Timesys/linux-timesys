@@ -122,7 +122,24 @@ static inline void mxc_init_wdt(void)
 {
 }
 #endif
+/*!
+ * This is platform device structure for adding SCC
+ */
+#if defined(CONFIG_MXC_SECURITY_SCC) || defined(CONFIG_MXC_SECURITY_SCC_MODULE)
+static struct platform_device mxc_scc_device = {
+        .name = "mxc_scc",
+        .id = 0,
+};
 
+static void mxc_init_scc(void)
+{
+        platform_device_register(&mxc_scc_device);
+}
+#else
+static inline void mxc_init_scc(void)
+{
+}
+#endif
 /* MMC device data */
 
 #if defined(CONFIG_MMC_MXC) || defined(CONFIG_MMC_MXC_MODULE)
@@ -588,6 +605,7 @@ static int __init mxc_init_devices(void)
 	mxc_init_spi();
 	mxc_init_i2c();
 	mxc_init_rtc();
+	mxc_init_scc();
 	mxc_init_owire();
 	mxc_init_vpu();
 #ifndef CONFIG_MX27_DPTC
