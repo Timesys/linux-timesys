@@ -298,8 +298,8 @@ PTE_BIT_FUNC(mkyoung,   |= L_PTE_YOUNG);
 /* Extended config for non-shared device attributes */
 #define pgprot_nonshareddev(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED)
 /* Extended configurations for inner writeback cacheable */
-#define pgprot_writealloc(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED & ~L_PTE_CACHEABLE)
-#define pgprot_outer_wrthru(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED & ~L_PTE_BUFFERABLE)
+#define pgprot_writealloc(prot) __pgprot((pgprot_val(prot) | L_PTE_EXTENDED) & ~L_PTE_CACHEABLE)
+#define pgprot_outer_wrthru(prot) __pgprot((pgprot_val(prot) | L_PTE_EXTENDED) & ~L_PTE_BUFFERABLE)
 #define pgprot_outer_noncached(prot) __pgprot(pgprot_val(prot) | L_PTE_EXTENDED & ~(L_PTE_CACHEABLE | L_PTE_BUFFERABLE))
 
 

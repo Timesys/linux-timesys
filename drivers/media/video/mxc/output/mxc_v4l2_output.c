@@ -26,6 +26,7 @@
 #include <linux/fs.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
+#include <asm/cacheflush.h>
 #include <asm/io.h>
 #include <asm/semaphore.h>
 #include <linux/dma-mapping.h>
@@ -1194,12 +1195,18 @@ mxc_v4l2out_do_ioctl(struct inode *inode, struct file *file,
 			unsigned long lock_flags;
 
 			if ((buf->type != V4L2_BUF_TYPE_VIDEO_OUTPUT) ||
-			    (index >= vout->buffer_cnt) || (buf->flags != 0)) {
+			    (index >= vout->buffer_cnt)) {
 				retval = -EINVAL;
 				break;
 			}
 
 			dev_dbg(vdev->dev, "VIDIOC_QBUF: %d\n", buf->index);
+
+			/* mmapped buffers are L1 WB cached,
+			 * so we need to clean them */
+			if (buf->flags & V4L2_BUF_FLAG_MAPPED) {
+				flush_cache_all();
+			}
 
 			spin_lock_irqsave(&g_lock, lock_flags);
 
@@ -1473,6 +1480,7 @@ static int mxc_v4l2out_mmap(struct file *file, struct vm_area_struct *vma)
 	struct video_device *vdev = video_devdata(file);
 	unsigned long size = vma->vm_end - vma->vm_start;
 	int res = 0;
+	int i;
 	vout_data *vout = video_get_drvdata(vdev);
 
 	dev_dbg(vdev->dev, "pgoff=0x%lx, start=0x%lx, end=0x%lx\n",
@@ -1482,9 +1490,21 @@ static int mxc_v4l2out_mmap(struct file *file, struct vm_area_struct *vma)
 	if (down_interruptible(&vout->busy_lock))
 		return -EINTR;
 
-	/* make buffers write-thru cacheable */
-	vma->vm_page_prot = __pgprot(pgprot_val(vma->vm_page_prot) &
-				     ~L_PTE_BUFFERABLE);
+	for (i = 0; i < vout->buffer_cnt; i++) {
+		if ((vout->v4l2_bufs[i].m.offset ==
+		     (vma->vm_pgoff << PAGE_SHIFT)) &&
+		    (vout->v4l2_bufs[i].length >= size)) {
+			vout->v4l2_bufs[i].flags |= V4L2_BUF_FLAG_MAPPED;
+			break;
+		}
+	}
+	if (i == vout->buffer_cnt) {
+		res = -ENOBUFS;
+		goto mxc_mmap_exit;
+	}
+
+	/* make buffers inner write-back, outer write-thru cacheable */
+	vma->vm_page_prot = pgprot_outer_wrthru(vma->vm_page_prot);
 
 	if (remap_pfn_range(vma, vma->vm_start,
 			    vma->vm_pgoff, size, vma->vm_page_prot)) {
