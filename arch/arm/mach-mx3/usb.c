@@ -130,7 +130,7 @@ static struct resource usbh2_resources[] = {
 #if defined(CONFIG_USB_EHCI_ARC_OTG) || defined(CONFIG_USB_GADGET_ARC) || defined(CONFIG_OTG_BTC_ARC)
 #if defined(CONFIG_MC13783_MXC)
 static struct fsl_usb2_platform_data mxc_serial_host_config = {
-	.name              = "OTG serial host",
+	.name              = "OTG",
 	.platform_init     = usbotg_init,
 	.platform_uninit   = usbotg_uninit,
 	.usbmode           = (u32) &UOG_USBMODE,
@@ -144,7 +144,7 @@ static struct fsl_usb2_platform_data mxc_serial_host_config = {
 };
 #elif defined(CONFIG_ISP1301_MXC)
 static struct fsl_usb2_platform_data mxc_serial_host_config = {
-	.name              = "OTG serial host",
+	.name              = "OTG",
 	.platform_init     = usbotg_init,
 	.platform_uninit   = usbotg_uninit,
 	.usbmode           = (u32) &UOG_USBMODE,
@@ -159,7 +159,7 @@ static struct fsl_usb2_platform_data mxc_serial_host_config = {
 #endif
 #if defined(CONFIG_ISP1504_MXC)
 static struct fsl_usb2_platform_data mxc_isp1504_config = {
-	.name              = "OTG ULPI host",
+	.name              = "OTG",
 	.platform_init     = usbotg_init,
 	.platform_uninit   = usbotg_uninit,
 	.usbmode           = (u32) &UOG_USBMODE,
@@ -300,6 +300,8 @@ static struct platform_device fsl_device = {
 
 static int __init mx31_usb_init(void)
 {
+	struct fsl_usb2_platform_data __attribute__((unused)) *pdata;
+
 	pr_debug("%s: \n", __FUNCTION__);
 
 #ifdef CONFIG_USB_EHCI_ARC_H1
@@ -324,9 +326,11 @@ static int __init mx31_usb_init(void)
 
 #if defined(CONFIG_USB_GADGET_ARC) || defined(CONFIG_OTG_BTC_ARC)
 	if (platform_device_register(&otg_udc_device)) {
-		printk(KERN_ERR "usb: can't register OTG Gadget\n");
+		printk(KERN_ERR "usb: can't register OTG gadget\n");
 	} else {
-		printk(KERN_INFO "usb: OTG Gadget registered\n");
+		pdata = otg_udc_device.dev.platform_data;
+		printk(KERN_INFO "usb: OTG gadget (%s) registered\n",
+		       pdata->transceiver);
 	}
 #endif
 
