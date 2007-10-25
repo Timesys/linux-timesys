@@ -40,6 +40,15 @@
 #include <asm/system.h>
 #include <asm/mach/time.h>
 
+#ifdef CONFIG_CODETEST
+/*
+ * CodeTEST mods
+ */
+extern void ct_isr_enter(int irq);
+extern void ct_isr_exit(int irq);
+
+#endif /* CONFIG_CODETEST */
+
 /*
  * No architecture-specific irq_finish function defined in arm/arch/irqs.h.
  */
@@ -122,12 +131,19 @@ asmlinkage void __exception asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
 
 	irq_enter();
 
+#ifdef CONFIG_CODETEST
+	ct_isr_enter(irq);
+#endif /* CONFIG_CODETEST */
+
 	desc_handle_irq(irq, desc);
 
 	/* AT91 specific workaround */
 	irq_finish(irq);
 
 	irq_exit();
+#ifdef CONFIG_CODETEST
+	ct_isr_exit(irq);
+#endif /* CONFIG_CODETEST */
 	set_irq_regs(old_regs);
 }
 
