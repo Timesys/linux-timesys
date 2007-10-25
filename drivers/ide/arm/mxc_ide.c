@@ -1000,11 +1000,12 @@ static int __init mxc_ide_init(void)
 	printk(KERN_INFO
 	       "MXC: IDE driver, (c) 2004-2006 Freescale Semiconductor\n");
 
-	ata_clk = clk_get(NULL, "ata_clk");
-	clk_enable(ata_clk);
-
 	/* Configure the pads */
 	gpio_ata_active();
+
+	/* Enable the clock before disabling ATA_RESET to prevent hang */
+	ata_clk = clk_get(NULL, "ata_clk.0");
+	clk_enable(ata_clk);
 
 	/* Deassert the reset bit to enable the interface */
 	ATA_RAW_WRITE(MXC_IDE_CTRL_ATA_RST_B, MXC_IDE_ATA_CONTROL);

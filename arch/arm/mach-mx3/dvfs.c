@@ -116,6 +116,11 @@ pmcr0 = ((pmcr0 & ~MXC_CCM_PMCR0_VSCNT_MASK) | x << MXC_CCM_PMCR0_VSCNT_OFFSET)
 
 dvfs_states_table *dvfs_states_tbl;
 
+static struct clk *pll_clk;
+static struct clk *cpu_clk;
+static struct clk *ckih_clk;
+static struct clk *ckil_clk;
+
 /*!
  * The dvfs_dptc_params structure holds all the internal DPTC driver parameters
  * (current working point, current frequency, translation table and DPTC
@@ -441,16 +446,10 @@ unsigned long dvfs_get_clock(unsigned long reg, unsigned long pdr0)
 	unsigned long pll, ret_val = 0;
 	signed long mcu_pdf;
 	signed long pdf, mfd, mfi, mfn, ref_clk;
-	struct clk *pll_clk;
-	struct clk *parent_clk;
-
-	pll_clk = clk_get(NULL, "mcu_pll");
-	parent_clk = clk_get(NULL, "ckih");
-	if (parent_clk == clk_get_parent(pll_clk)) {
-		ref_clk = clk_get_rate(parent_clk);
+	if (ckih_clk == clk_get_parent(pll_clk)) {
+		ref_clk = clk_get_rate(ckih_clk);
 	} else {		/* parent is ckil/fpm */
-		parent_clk = clk_get(NULL, "ckil");
-		ref_clk = clk_get_rate(parent_clk) * 1024;
+		ref_clk = clk_get_rate(ckil_clk) * 1024;
 	}
 
 	pdf = (signed long)
@@ -490,6 +489,11 @@ int __init init_dvfs_controller(dvfs_dptc_params_s * params)
 {
 	int i;
 	int res = 0;
+
+	pll_clk = clk_get(NULL, "mcu_pll");
+	cpu_clk = clk_get(NULL, "cpu_pll");
+	ckih_clk = clk_get(NULL, "ckih");
+	ckil_clk = clk_get(NULL, "ckil");
 
 	/* Configure 2 MC13783 DVFS pins */
 	mxc_request_iomux(MX31_PIN_DVFS0, OUTPUTCONFIG_FUNC, INPUTCONFIG_NONE);
@@ -797,8 +801,9 @@ void set_freq(dvfs_dptc_params_s * params, int fsvai)
 	}
 
 	pr_debug(KERN_INFO "ARM frequency: %dMHz CKIH frequency: %dMHz(%d)\n",
-		 (int)mxc_get_clocks(CPU_CLK) / 1000000,
-		 (int)mxc_get_clocks(CKIH_CLK) / 1000000, (int)jiffies);
+		 (int)clk_get_rate(cpu_clk) / 1000000,
+		 (int)clk_get_rate(ckih_clk) / 1000000, 
+		 (int)jiffies);
 }
 
 /*!

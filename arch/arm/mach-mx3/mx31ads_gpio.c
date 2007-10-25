@@ -1001,9 +1001,6 @@ void gpio_ata_active(void)
 	 */
 	mxc_iomux_set_pad(MX31_PIN_USBH2_STP, PAD_CTL_PKE_NONE);	// ATA_DMARQ
 	mxc_iomux_set_pad(MX31_PIN_USBH2_CLK, PAD_CTL_PKE_NONE);	// ATA_INTRQ
-
-	printk(KERN_DEBUG "gpio_ata_active: Enable clocks\n");
-	mxc_clks_enable(ATA_CLK);
 }
 
 EXPORT_SYMBOL(gpio_ata_active);
@@ -1014,9 +1011,6 @@ EXPORT_SYMBOL(gpio_ata_active);
  */
 void gpio_ata_inactive(void)
 {
-	printk(KERN_DEBUG "gpio_ata_inactive: Disable clocks\n");
-	mxc_clks_disable(ATA_CLK);
-
 	/*
 	 * Turn off ATA group B signals
 	 */
