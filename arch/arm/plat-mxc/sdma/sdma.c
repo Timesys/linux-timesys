@@ -366,7 +366,6 @@ static unsigned short sdma_get_pc(sdma_periphT peripheral_type,
 	}
 
 	return res;
-
 }
 
 /*!

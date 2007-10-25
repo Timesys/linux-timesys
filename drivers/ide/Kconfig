@@ -866,7 +866,7 @@ config BLK_DEV_IDE_BAST
 
 config BLK_DEV_IDE_MXC
         tristate "Freescale MXC IDE support"
-        depends on ARM && ( ARCH_MX3 || ARCH_MX27)
+        depends on ARM && (ARCH_MX3 || ARCH_MX27)
         help
           Say Y here if you want to support the IDE controller on the
           Freescale iMX3 processor.

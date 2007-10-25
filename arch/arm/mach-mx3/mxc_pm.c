@@ -304,7 +304,6 @@ void mxc_pm_lowpower(int mode)
 		__raw_writel(INT_GPIO1, AVIC_INTDISNUM);
 
 		/* work-around for SR mode after camera related test */
-		mxc_clks_enable(CSI_BAUD);
 		__raw_writel(0x51, IPU_CONF);
 		break;
 
@@ -337,7 +336,6 @@ void mxc_pm_lowpower(int mode)
 
 	/* work-around for SR mode after camera related test */
 	__raw_writel(ipu_conf, IPU_CONF);
-	mxc_clks_disable(CSI_BAUD);
 
 	__raw_writel(INT_GPT, AVIC_INTENNUM);
 	__raw_writel(INT_GPIO1, AVIC_INTENNUM);

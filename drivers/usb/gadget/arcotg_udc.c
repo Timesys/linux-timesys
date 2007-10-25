@@ -2890,8 +2890,9 @@ static int __devinit fsl_udc_probe(struct platform_device *pdev)
 	rsrc_start = pdev->resource[0].start;
 	rsrc_len = pdev->resource[0].end - pdev->resource[0].start + 1;
 
-	pr_debug("start=0x%x   end=0x%x\n",
-		 pdev->resource[0].start, pdev->resource[0].end);
+	pr_debug("start=0x%lx   end=0x%lx\n",
+		 (unsigned long)pdev->resource[0].start,
+		 (unsigned long)pdev->resource[0].end);
 	pr_debug("rsrc_start=0x%llx  rsrc_len=0x%llx\n", rsrc_start, rsrc_len);
 
 #if 0				/* DDD */
@@ -3062,7 +3063,7 @@ static int udc_suspend(struct arcotg_udc *udc)
 static int fsl_udc_suspend(struct device *dev, pm_message_t state)
 {
 	struct arcotg_udc *udc = (struct arcotg_udc *)dev_get_drvdata(dev);
-	pr_debug("udc: Suspend. state=%d\n", state.event);
+	pr_debug("udc: Suspend.\n");
 	return udc_suspend(udc);
 }
 

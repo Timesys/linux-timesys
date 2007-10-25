@@ -38,10 +38,6 @@ endif
 
 EXTRA_CFLAGS += -Idrivers/mxc/security/sahara2/include
 
-# handle buggy BSP -- uncomment if these are undefined during build
-#EXTRA_CFLAGS += -DSAHARA_BASE_ADDR=HAC_BASE_ADDR -DINT_SAHARA=INT_HAC_RTIC
-
-
 obj-$(CONFIG_MXC_SAHARA) += sahara.o
 
 sahara-objs := $(SOURCES:.c=.o) $(API_SOURCES:.c=.o)
