@@ -41,6 +41,8 @@ struct mmc_command {
 #define MMC_RSP_R1B	(MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE|MMC_RSP_BUSY)
 #define MMC_RSP_R2	(MMC_RSP_PRESENT|MMC_RSP_136|MMC_RSP_CRC)
 #define MMC_RSP_R3	(MMC_RSP_PRESENT)
+#define MMC_RSP_R4	(MMC_RSP_PRESENT)
+#define MMC_RSP_R5	(MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
 #define MMC_RSP_R6	(MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
 #define MMC_RSP_R7	(MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
 
@@ -54,12 +56,19 @@ struct mmc_command {
 	unsigned int		retries;	/* max number of retries */
 	unsigned int		error;		/* command error */
 
-#define MMC_ERR_NONE	0
-#define MMC_ERR_TIMEOUT	1
-#define MMC_ERR_BADCRC	2
-#define MMC_ERR_FIFO	3
-#define MMC_ERR_FAILED	4
-#define MMC_ERR_INVALID	5
+/*
+ * Standard errno values are used for errors, but some have specific
+ * meaning in the MMC layer:
+ *
+ * ETIMEDOUT    Card took too long to respond
+ * EILSEQ       Basic format problem with the received or sent data
+ *              (e.g. CRC check failed, incorrect opcode in response
+ *              or bad end bit)
+ * EINVAL       Request cannot be performed because of restrictions
+ *              in hardware and/or the driver
+ * ENOMEDIUM    Host can determine that the slot is empty and is
+ *              actively failing requests
+ */
 
 	struct mmc_data		*data;		/* data segment associated with cmd */
 	struct mmc_request	*mrq;		/* associated request */
@@ -106,7 +115,18 @@ extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
 
 extern void mmc_set_data_timeout(struct mmc_data *, const struct mmc_card *, int);
 
-extern void mmc_claim_host(struct mmc_host *host);
+extern int __mmc_claim_host(struct mmc_host *host, atomic_t *abort);
 extern void mmc_release_host(struct mmc_host *host);
+
+/**
+ *	mmc_claim_host - exclusively claim a host
+ *	@host: mmc host to claim
+ *
+ *	Claim a host for a set of operations.
+ */
+static inline void mmc_claim_host(struct mmc_host *host)
+{
+	__mmc_claim_host(host, NULL);
+}
 
 #endif
