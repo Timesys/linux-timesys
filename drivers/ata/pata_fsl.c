@@ -473,13 +473,9 @@ static int __devexit pata_fsl_remove(struct platform_device *pdev)
 					     pdev->dev.platform_data;
 	u8 *ata_regs = priv->fsl_ata_regs;
 
-	/* Disable interrupts. */
-	__raw_writel(0, ata_regs + FSL_ATA_INT_EN);
+	__raw_writel(0, ata_regs + FSL_ATA_INT_EN); /* Disable interrupts */
 	mb();
 
-	/* 
-	 * Clean up and free everything.
-	 */
 	ata_host_detach(host);
 
 	if (plat->exit)
@@ -490,9 +486,61 @@ static int __devexit pata_fsl_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int pata_fsl_suspend(struct platform_device *pdev, pm_message_t state)
+{
+	struct ata_host *host = dev_get_drvdata(&pdev->dev);
+	struct pata_fsl_priv *priv = host->private_data;
+	struct fsl_ata_platform_data *plat = (struct fsl_ata_platform_data *)
+					     pdev->dev.platform_data;
+	u8 *ata_regs = priv->fsl_ata_regs;
+
+	/* Disable interrupts. */
+	__raw_writel(0, ata_regs + FSL_ATA_INT_EN);
+	mb();
+
+	if (plat->exit)
+		plat->exit();
+
+	return 0;
+}
+
+static int pata_fsl_resume(struct platform_device *pdev)
+{
+	struct ata_host *host = dev_get_drvdata(&pdev->dev);
+	struct pata_fsl_priv *priv = host->private_data;
+	struct fsl_ata_platform_data *plat = (struct fsl_ata_platform_data *)
+					     pdev->dev.platform_data;
+	u8 *ata_regs = priv->fsl_ata_regs;
+
+	if (plat->init && plat->init(pdev)) {
+		return -ENODEV;
+	}
+
+	/* Deassert the reset bit to enable the interface */
+	__raw_writel(FSL_ATA_CTRL_ATA_RST_B, ata_regs + FSL_ATA_CONTROL);
+	mb();
+
+	/* Set initial timing and mode */
+	set_ata_bus_timing(XFER_PIO_4, pdev);
+
+	/*
+	 * Enable hardware interrupts.
+	 */
+	__raw_writel(FSL_ATA_INTR_ATA_INTRQ2, ata_regs + FSL_ATA_INT_EN);
+	mb();
+
+	return 0;
+}
+#endif
+
 static struct platform_driver pata_fsl_driver = {
 	.probe		= pata_fsl_probe,
 	.remove		= __devexit_p(pata_fsl_remove),
+#ifdef CONFIG_PM
+	.suspend	= pata_fsl_suspend,
+	.resume		= pata_fsl_resume,
+#endif
 	.driver = {
 		.name		= DRV_NAME,
 		.owner		= THIS_MODULE,
