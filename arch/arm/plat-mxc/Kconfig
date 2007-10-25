@@ -1,0 +1,90 @@
+if ARCH_MXC
+
+menu "Freescale MXC Implementations"
+
+choice
+	prompt "MXC/iMX System Type"
+	default ARCH_MX3
+
+config ARCH_MX3
+	bool "MX31-based"
+	select CPU_V6
+	select CACHE_L2X0
+	select USB_ARCH_HAS_EHCI
+	help
+	  This enables support for systems based on Freescale i.MX31
+
+config ARCH_MX27
+	bool "MX27-based"
+	select CPU_ARM926T
+	select MXC_EMMA
+	select USB_ARCH_HAS_EHCI
+	help
+	  This enables support for systems based on Freescale i.MX27
+
+endchoice
+
+source "arch/arm/mach-mx27/Kconfig"
+
+source "arch/arm/mach-mx3/Kconfig"
+
+endmenu
+
+config MXC_EMMA
+	bool
+	depends on ARCH_MXC
+
+config MXC_FB_IRAM
+	bool
+	depends on ARCH_MXC
+
+config ISP1504_MXC
+	bool "ISP1504 transceiver support"
+	depends on USB_ARCH_HAS_EHCI
+	help
+	  Support for the ISP1504 USB transceiver on MXC platforms.
+
+choice
+	prompt "Select serial USB transceiver"
+	depends on USB_EHCI_ARC_OTGFS || USB_GADGET_ARC_OTGFS
+
+config ISP1301_MXC
+	bool "ISP1301 transceiver support"
+	select I2C_MXC
+	help
+	  Support for the ISP1301 USB transceiver on MXC platforms.
+
+config MC13783_MXC
+	bool "MC13783 transceiver support"
+	select SPI_MXC
+	help
+	  Support for the MC13783 USB transceiver on MXC platforms.
+endchoice
+
+choice
+	prompt "Select serial USB mode"
+	depends on ISP1301_MXC || MC13783_MXC
+
+config MXC_USB_SB3
+	bool "USB Single End Bidirection Mode"
+	help
+	  If you say yes to this option, the serial tranceiver is on SB3 mode
+
+config MXC_USB_SU6
+	bool "USB Single End Unidirection Mode"
+	help
+	  If you say yes to this option, the serial tranceiver is on SU6 mode
+
+config MXC_USB_DB4
+	bool "USB Differential Bidirection Mode"
+	help
+	  If you say yes to this option, the serial tranceiver is on DB4 mode
+
+config MXC_USB_DU6
+	bool "USB Differential Unidirection Mode"
+	help
+	  If you say yes to this option, the serial tranceiver is on DU6 mode
+
+endchoice
+
+endif
