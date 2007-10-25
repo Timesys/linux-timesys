@@ -20,13 +20,29 @@
 #ifndef __ARCH_MXC_MTD_XIP_H__
 #define __ARCH_MXC_MTD_XIP_H__
 
+#include <linux/clocksource.h>
 #include <asm/hardware.h>
 #include <asm/arch/system.h>
+
 #define xip_irqpending()        \
-        (~(__raw_readl(AVIC_NIVECSR) & __raw_readl(AVIC_FIVECSR)))
-#define xip_currtime()          get_cycles()
-#define xip_elapsed_since(x)    \
-        (signed)(((xip_currtime() - (x)) * USEC_PER_SEC) / LATCH)
+        ((__raw_readl(AVIC_NIVECSR) & __raw_readl(AVIC_FIVECSR)) != 0xFFFFFFFF)
+
+extern struct clocksource *mtd_xip_clksrc;
+
+#define xip_currtime()  (unsigned long)clocksource_read(mtd_xip_clksrc)
+
+#if CLOCK_TICK_RATE > 1000000
+#define NUMERATOR	1
+#define DENOMINATOR	(CLOCK_TICK_RATE/1000000 + 1)
+#else
+#define NUMERATOR	(1000000/CLOCK_TICK_RATE)
+#define DENOMINATOR	1
+#endif
+
+static inline unsigned long xip_elapsed_since(unsigned long x)
+{
+	return (((xip_currtime() - x) * NUMERATOR) / DENOMINATOR);
+}
 
 /*
  * Wait For Interrupt command for XIP kernel to put CPU in Idle mode

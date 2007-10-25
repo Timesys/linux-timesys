@@ -22,6 +22,7 @@
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/map.h>
 #include <linux/mtd/partitions.h>
+#include <linux/clocksource.h>
 #include <asm/mach-types.h>
 #include <asm/mach/flash.h>
 
@@ -30,6 +31,8 @@
 #ifdef CONFIG_MTD_PARTITIONS
 static const char *part_probes[] = { "RedBoot", "cmdlinepart", NULL };
 #endif
+
+struct clocksource *mtd_xip_clksrc;
 
 struct mxcflash_info {
 	struct mtd_partition *parts;
@@ -74,6 +77,8 @@ static int __devinit mxcflash_probe(struct platform_device *pdev)
 	info->map.phys = res->start;
 	info->map.size = size;
 	info->map.bankwidth = flash->width;
+
+	mtd_xip_clksrc = clocksource_get_next();
 
 	simple_map_init(&info->map);
 	info->mtd = do_map_probe(flash->map_name, &info->map);

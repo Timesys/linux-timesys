@@ -36,6 +36,7 @@
 #include <linux/io.h>
 #include <linux/clocksource.h>
 #include <linux/clockchips.h>
+#include <linux/mtd/xip.h>
 #include <asm/hardware.h>
 #include <asm/mach/time.h>
 
@@ -161,7 +162,7 @@ static struct irqaction timer_irq = {
 	.handler = mxc_timer_interrupt,
 };
 
-static cycle_t mxc_gpt_read(void)
+static cycle_t __xipram mxc_gpt_read(void)
 {
 	return __raw_readl(MXC_GPT_GPTCNT);
 }
