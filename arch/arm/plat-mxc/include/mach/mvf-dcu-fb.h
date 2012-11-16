@@ -14,16 +14,12 @@
 #define __MVF_DCU_FB_H__
 
 #include <linux/types.h>
+#include <linux/mvf-fb.h>
 
 struct mvf_dcu_platform_data {
 	char *mode_str;
 	int default_bpp;
 	int (*init) (int);
-};
-
-struct mfb_alpha {
-	int enable;
-	int alpha;
 };
 
 struct dfb_chroma_key {
@@ -36,59 +32,13 @@ struct dfb_chroma_key {
 	__u8  blue_min;
 };
 
-struct layer_display_offset {
-	int x_layer_d;
-	int y_layer_d;
-};
-
 #define DCU_LCD_ENABLE_PIN	30
 
 #define MFB_SET_CHROMA_KEY	_IOW('M', 1, struct mfb_chroma_key)
 #define MFB_SET_BRIGHTNESS	_IOW('M', 3, __u8)
 
-#define MFB_SET_ALPHA           0x80014d00
-#define MFB_GET_ALPHA           0x40014d00
-#define MFB_SET_LAYER		0x80084d04
-#define MFB_GET_LAYER		0x40084d04
-
-#define FBIOGET_GWINFO		0x46E0
-#define FBIOPUT_GWINFO		0x46E1
-
 #ifdef __KERNEL__
 #include <linux/spinlock.h>
-
-/*
- * These are the fields of control descriptor for every layer
- */
-struct dcu_layer_desc {
-	u32 layer_num;
-	u32 width;
-	u32 height;
-	u32 posx;
-	u32 posy;
-	u32 addr;
-	u32 blend;
-	u32 chroma_key_en;
-	u32 lut_offset;
-	u32 rle_en;
-	u32 bpp;
-	u32 trans;
-	u32 safety_en;
-	u32 data_sel_clut;
-	u32 tile_en;
-	u32 en;
-	u32 ck_r_min;
-	u32 ck_r_max;
-	u32 ck_g_min;
-	u32 ck_g_max;
-	u32 ck_b_min;
-	u32 ck_b_max;
-	u32 tile_width;
-	u32 tile_height;
-	u32 trans_fgcolor;
-	u32 trans_bgcolor;
-} __packed;
-
 
 /* DCU registers */
 #define DCU_CTRLDESCCURSOR1		0x0000

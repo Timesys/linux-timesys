@@ -35,6 +35,7 @@ header-y += mxc_si4702.h
 header-y += mxc_sim_interface.h
 header-y += mxc_v4l2.h
 header-y += mxcfb.h
+header-y += mvf-fb.h
 header-y += pmic_adc.h
 header-y += pmic_battery.h
 header-y += pmic_external.h
