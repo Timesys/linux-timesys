@@ -38,8 +38,8 @@ int __init mvf_dcu_init(int id)
 }
 
 const struct mvf_dcu_data mvfa5_dcu_data[] __initconst = {
-	mvf_dcu_data_entry_single(MVF, 0, SZ_4K, mvf_dcu_init),
-	mvf_dcu_data_entry_single(MVF, 1, SZ_4K, mvf_dcu_init),
+	mvf_dcu_data_entry_single(MVF, 0, SZ_8K, mvf_dcu_init),
+	mvf_dcu_data_entry_single(MVF, 1, SZ_8K, mvf_dcu_init),
 };
 
 struct platform_device *__init mvf_add_dcu(
