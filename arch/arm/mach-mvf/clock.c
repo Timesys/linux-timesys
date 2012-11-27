@@ -1652,7 +1652,34 @@ static struct clk i2c_clk[] = {
 		.id = 0,
 		.parent = &ipg_clk,
 		.enable_reg = MXC_CCM_CCGR4,
-		.enable_shift = MXC_CCM_CCGRx_CG9_OFFSET,
+		.enable_shift = MXC_CCM_CCGRx_CG6_OFFSET,
+		.enable = _clk_enable,
+		.disable = _clk_disable,
+	},
+	{
+		__INIT_CLK_DEBUG(i2c_clk_1)
+		.id = 1,
+		.parent = &ipg_clk,
+		.enable_reg = MXC_CCM_CCGR4,
+		.enable_shift = MXC_CCM_CCGRx_CG7_OFFSET,
+		.enable = _clk_enable,
+		.disable = _clk_disable,
+	},
+	{
+		__INIT_CLK_DEBUG(i2c_clk_2)
+		.id = 2,
+		.parent = &ipg_clk,
+		.enable_reg = MXC_CCM_CCGR10,
+		.enable_shift = MXC_CCM_CCGRx_CG6_OFFSET,
+		.enable = _clk_enable,
+		.disable = _clk_disable,
+	},
+	{
+		__INIT_CLK_DEBUG(i2c_clk_3)
+		.id = 3,
+		.parent = &ipg_clk,
+		.enable_reg = MXC_CCM_CCGR10,
+		.enable_shift = MXC_CCM_CCGRx_CG7_OFFSET,
 		.enable = _clk_enable,
 		.disable = _clk_disable,
 	},
@@ -1897,7 +1924,7 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK(NULL, "cpu_clk", cpu_clk), /* arm core clk */
 	_REGISTER_CLOCK(NULL, "periph_clk", periph_clk), /* platform bus clk */
 	_REGISTER_CLOCK(NULL, "ipg_clk", ipg_clk),
-	_REGISTER_CLOCK(NULL, "audio ext clk", audio_external_clk),
+//	_REGISTER_CLOCK(NULL, "audio ext clk", audio_external_clk),
 	_REGISTER_CLOCK(NULL, "mvf-uart.0", uart_clk[0]),
 	_REGISTER_CLOCK(NULL, "mvf-uart.1", uart_clk[0]),
 	_REGISTER_CLOCK(NULL, "mvf-uart.2", uart_clk[0]),
@@ -1911,8 +1938,9 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK("imx2-wdt.0", NULL, dummy_clk),
 	_REGISTER_CLOCK("sdhci-esdhc-imx.1", NULL, esdhc1_clk),
 	_REGISTER_CLOCK("mvf-dcu.0", NULL, dcu0_clk),
-	_REGISTER_CLOCK("mvf-sai.0", NULL, sai2_clk),
-	_REGISTER_CLOCK(NULL, "i2c_clk", i2c_clk[0]),
+//	_REGISTER_CLOCK("mvf-sai.0", NULL, sai2_clk),
+//	_REGISTER_CLOCK(NULL, "i2c_clk", i2c_clk[2]),
+	_REGISTER_CLOCK("imx-i2c.2", NULL, i2c_clk[2]),
 	_REGISTER_CLOCK(NULL, "usb-clk", usb_clk),
 	_REGISTER_CLOCK(NULL, "mvf-usb.0", usb_phy0_clk),
 	_REGISTER_CLOCK(NULL, "mvf-usb.1", usb_phy1_clk),

@@ -37,15 +37,17 @@
 #define DRIVER_NAME	"mvf-dcu"
 
 static struct fb_videomode __devinitdata mvf_dcu_default_mode = {
-	.xres		= 480,
-	.yres		= 272,
-	.left_margin	= 2,
-	.right_margin	= 2,
-	.upper_margin	= 1,
-	.lower_margin	= 1,
-	.hsync_len	= 41,
+	.pixclock	= 31250,
+	.xres		= 800,
+	.yres		= 480,
+	.left_margin	= 42,
+	.right_margin	= 86,
+	.upper_margin	= 10,
+	.lower_margin	= 33,
+	.hsync_len	= 128,
 	.vsync_len	= 2,
-	.sync		= FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
+	.sync		= FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT |
+			  FB_SYNC_HOR_HIGH_ACT,
 	.vmode		= FB_VMODE_NONINTERLACED,
 };
 
@@ -63,6 +65,22 @@ static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
 		.sync		= FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
 		.vmode		= FB_VMODE_NONINTERLACED,
 	},
+        {
+                .name           = "pm070wl4",
+		.pixclock	= 31250,
+                .xres           = 800,
+                .yres           = 480,
+                .left_margin    = 42,
+                .right_margin   = 86,
+                .upper_margin   = 10,
+                .lower_margin   = 33,
+                .hsync_len      = 128,
+                .vsync_len      = 2,
+                .sync           = FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT |
+				  FB_SYNC_HOR_HIGH_ACT,
+                .vmode          = FB_VMODE_NONINTERLACED,
+        },
+
 };
 
 static DEFINE_SPINLOCK(dcu_lock);
@@ -1001,7 +1019,7 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 
 	gpio_request_one(DCU_LCD_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "DCU");
 	msleep(2);
-	gpio_set_value(DCU_LCD_ENABLE_PIN, 1);
+	gpio_set_value(DCU_LCD_ENABLE_PIN, 0);
 
 	writel(0x20000000, MVF_IO_ADDRESS(MVF_TCON0_BASE_ADDR));
 

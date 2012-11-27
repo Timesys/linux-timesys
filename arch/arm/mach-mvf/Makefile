@@ -8,3 +8,4 @@ obj-y += l2switch.o
 
 obj-$(CONFIG_ARCH_MVFA5) += clock.o mvf_suspend.o
 obj-$(CONFIG_MACH_MVFA5_TWR_VF700) += board-twr-vf700.o
+obj-$(CONFIG_MACH_PCM052) += board-pcm052.o
