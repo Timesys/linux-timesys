@@ -32,7 +32,7 @@ struct dfb_chroma_key {
 	__u8  blue_min;
 };
 
-#define DCU_LCD_ENABLE_PIN	30
+#define DCU_LCD_ENABLE_PIN	25
 
 #define MFB_SET_CHROMA_KEY	_IOW('M', 1, struct mfb_chroma_key)
 #define MFB_SET_BRIGHTNESS	_IOW('M', 3, __u8)

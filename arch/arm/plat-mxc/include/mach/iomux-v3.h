@@ -116,7 +116,8 @@ typedef u64 iomux_v3_cfg_t;
 #define PAD_CTL_SRE_SLOW		(0 << 0)
 
 #elif defined(CONFIG_ARCH_MVF)
-#define PAD_CTL_SPEED_LOW		(1 << 12)
+/* FIXED: (1 << 12) is also MED (100 MHz according to TRM) */
+#define PAD_CTL_SPEED_LOW		(0 << 12)
 #define PAD_CTL_SPEED_MED		(2 << 12)
 #define PAD_CTL_SPEED_HIGH		(3 << 12)
 
