@@ -28,10 +28,10 @@ int __init mvf_dcu_init(int id)
 
 	ret = gpio_request_one(DCU_LCD_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "DCU");
 	if (ret)
-		printk(KERN_ERR "DCU: failed to request GPIO 30\n");
+		printk(KERN_ERR "DCU: failed to request GPIO 25\n");
 
 	msleep(2);
-	gpio_set_value(DCU_LCD_ENABLE_PIN, 1);
+	gpio_set_value(DCU_LCD_ENABLE_PIN, 0);
 
 	writel(0x20000000, MVF_IO_ADDRESS(MVF_TCON0_BASE_ADDR));
 	return ret;
