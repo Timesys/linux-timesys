@@ -356,8 +356,8 @@ typedef enum iomux_config {
 
 /* Touch Screen */
 #define MVF600_PAD32_PTB10_TS_IRQ			\
-		IOMUX_PAD(0x0080, 0x0080, 0, 0x0000, 0, \
-				MVF600_GPIO_GENERAL_CTRL | PAD_CTL_IBE_ENABLE)
+	IOMUX_PAD(0x0080, 0x0080, 0, 0x0000, 0, \
+			PAD_CTL_SPEED_MED | PAD_CTL_IBE_ENABLE)
 
 /*QSPI*/
 #define MVF600_PAD79_PTD0_QSPI0_A_SCK                           \

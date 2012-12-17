@@ -436,7 +436,7 @@ static struct stmpe_ts_platform_data pba_ts_stm_pdata = {
 
 static struct stmpe_platform_data pba_stm_pdata = {
         .blocks = STMPE_BLOCK_GPIO | STMPE_BLOCK_TOUCHSCREEN,
-        .irq_base = NR_IRQS,
+        .irq_base = STMPE_IRQ_BASE,
         .irq_trigger = IRQF_TRIGGER_RISING,
         .irq_invert_polarity = true,
         .gpio = &pba_gpio_stm_data,
@@ -457,7 +457,7 @@ static struct i2c_board_info pcm052_i2c2_board_info[] __initdata = {
 	},
 	{
 		I2C_BOARD_INFO("stmpe811", 0x41),
-		.irq = PCM052_TS_IRQ,
+		.irq = gpio_to_irq(PCM052_TS_IRQ),
 		.platform_data = &pba_stm_pdata,
 	},
 };

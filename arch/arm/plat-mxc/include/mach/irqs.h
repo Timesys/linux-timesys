@@ -74,7 +74,14 @@
 #define MX5_IPU_IRQS 0
 #endif
 
+#ifdef CONFIG_MACH_PCM052
+#define STMPE_IRQ_BASE		(MXC_IPU_IRQ_START)
+#define STMPE_MAX_GPIOS		24
+#define STMPE_IRQ_END		(STMPE_IRQ_BASE + STMPE_MAX_GPIOS)
+#define NR_IRQS			(STMPE_IRQ_END)
+#else
 #define NR_IRQS	(MXC_IPU_IRQ_START + MX3_IPU_IRQS + MX5_IPU_IRQS)
+#endif
 
 extern int imx_irq_set_priority(unsigned char irq, unsigned char prio);
 
