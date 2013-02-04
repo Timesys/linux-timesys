@@ -195,16 +195,19 @@ typedef enum iomux_config {
 				MVF600_ENET_PAD_CTRL | PAD_CTL_OBE_ENABLE)
 
 /*USB0/1 VBUS, using the GPIO*/
-#define MVF600_PAD134_PTA7__USB0_VBUS_EN			\
+#define MVF600_PAD134_PTA7__USB_VBUS_EN			\
 		IOMUX_PAD(0x0218, 0x0218, 0, 0x0000, 0, \
-				MVF600_GPIO_GENERAL_CTRL | PAD_CTL_OBE_ENABLE)
+					PAD_CTL_PKE | PAD_CTL_PUE | \
+					PAD_CTL_PUS_22K_UP | PAD_CTL_DSE_25ohm | \
+					PAD_CTL_SPEED_LOW | PAD_CTL_OBE_ENABLE)
 #define MVF600_PAD6_PTA16__USB0_VBUS_EN				\
 		IOMUX_PAD(0x0018, 0x0018, 0, 0x0000, 0, \
-				MVF600_GPIO_GENERAL_CTRL | PAD_CTL_OBE_ENABLE)
-
+                                        PAD_CTL_PKE | PAD_CTL_PUE | \
+                                        PAD_CTL_PUS_22K_UP | PAD_CTL_DSE_25ohm | \
+                                        PAD_CTL_SPEED_LOW | PAD_CTL_OBE_ENABLE)
 #define MVF600_PAD7_PTA17__USB_OC_N				\
 		IOMUX_PAD(0x001C, 0x001C, 2, 0x0000, 0, \
-				PAD_CTL_DSE_20ohm | PAD_CTL_IBE_ENABLE)
+				PAD_CTL_HYS | PAD_CTL_IBE_ENABLE)
 
 /*ESAI0(share with FEC1)*/
 #define MVF600_PAD54_PTC9__ESAI_SCKT				\
