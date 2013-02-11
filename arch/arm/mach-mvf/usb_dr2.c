@@ -32,8 +32,8 @@
 #include "regs-anadig.h"
 #include "usb.h"
 
-static int usbotg2_init_ext(struct platform_device *pdev);
-static void usbotg2_uninit_ext(struct platform_device *pdev);
+static int usbotg_init_ext(struct platform_device *pdev);
+static void usbotg_uninit_ext(struct platform_device *pdev);
 static void usbotg_clock_gate(bool on);
 static void _dr_discharge_line(bool enable);
 static void usbotg_wakeup_event_clear(void);
@@ -49,9 +49,9 @@ static u8 otg2_used;
  * - operating_mode plugged at run time
  */
 static struct fsl_usb2_platform_data dr_utmi_config = {
-	.name              = "DR",
-	.init              = usbotg2_init_ext,
-	.exit              = usbotg2_uninit_ext,
+	.name              = "DR2",
+	.init              = usbotg_init_ext,
+	.exit              = usbotg_uninit_ext,
 	.phy_mode          = FSL_USB2_PHY_UTMI_WIDE,
 	.power_budget      = 500,		/* 500 mA max power */
 	.usb_clock_for_pm  = usbotg_clock_gate,
@@ -120,7 +120,7 @@ static int usb_phy_enable(struct fsl_usb2_platform_data *pdata)
 	return 0;
 }
 /* Notes: configure USB clock*/
-static int usbotg2_init_ext(struct platform_device *pdev)
+static int usbotg_init_ext(struct platform_device *pdev)
 {
 	struct clk *usb_clk;
 	u32 ret;
@@ -148,7 +148,7 @@ static int usbotg2_init_ext(struct platform_device *pdev)
 	return ret;
 }
 
-static void usbotg2_uninit_ext(struct platform_device *pdev)
+static void usbotg_uninit_ext(struct platform_device *pdev)
 {
 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
 
@@ -287,7 +287,7 @@ static void usbotg_wakeup_event_clear(void)
 	int wakeup_req = USBC1_CTRL & UCTRL_OWIR;
 
 	if (wakeup_req != 0) {
-		pr_debug("Unknown wakeup.(OTGSC 0x%x)\n", UOG_OTGSC);
+		pr_debug("Unknown wakeup.(OTGSC 0x%x)\n", UOG2_OTGSC);
 		/* Disable OWIE to clear OWIR, wait 3 clock
 		 * cycles of standly clock(32KHz)
 		 */
@@ -398,12 +398,12 @@ void __init mvf_usb_dr2_init(void)
 	dr_utmi_config.wakeup_pdata = &dr_wakeup_config;
 	dr_utmi_config.wakeup_handler = host_wakeup_handler;
 
-	pdev = mvf_add_fsl_ehci_otg(&dr_utmi_config);
+	pdev = mvf_add_fsl_ehci_otg(1, &dr_utmi_config);
 
 	dr_wakeup_config.usb_pdata[1] = pdev->dev.platform_data;
 
 	/* register wakeup device */
-	pdev_wakeup = mvf_add_fsl_usb2_ehci_otg_wakeup(&dr_wakeup_config);
+	pdev_wakeup = mvf_add_fsl_usb2_ehci_otg_wakeup(1, &dr_wakeup_config);
 	if (pdev != NULL)
 		((struct fsl_usb2_platform_data *)
 			(pdev->dev.platform_data))->wakeup_pdata =
@@ -446,7 +446,7 @@ void __init mvf_usb_dr2_init(void)
 }
 
 /* USB HIGH_SPEED disconnect detect on/off */
-void fsl_platform_set_usb_phy_dis(struct fsl_usb2_platform_data *pdata,
+void fsl_platform_set_usb1_phy_dis(struct fsl_usb2_platform_data *pdata,
 		bool enable)
 {
 	u32 reg;

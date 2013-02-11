@@ -486,8 +486,8 @@ static void __init pcm052_init_usb(void)
 	msleep(2);
 	gpio_set_value(USB_VBUS_ENABLE_PIN, 1);
 
-//	mvf_usb_dr_init();
 #ifdef CONFIG_USB_EHCI_ARC
+	mvf_usb_dr_init();
 	mvf_usb_dr2_init();
 #endif
 }
