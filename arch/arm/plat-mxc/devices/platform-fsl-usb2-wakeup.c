@@ -17,6 +17,13 @@
 		.irq_core = soc ## _INT_USB_ ## hs,				\
 	}
 
+#define mvf_fsl_usb2_wakeup_data_entry_single(arch, _id)			\
+	{								\
+		.id = _id,						\
+		.irq_phy = arch ## _INT_USB ## _id,			\
+		.irq_core = arch ## _INT_USB ## _id,			\
+	}
+
 #ifdef CONFIG_SOC_IMX6Q
 const struct imx_fsl_usb2_wakeup_data imx6q_fsl_otg_wakeup_data __initconst =
 	imx_fsl_usb2_wakeup_data_entry_single(MX6Q, 0, OTG);
@@ -28,6 +35,10 @@ const struct imx_fsl_usb2_wakeup_data imx6q_fsl_hs_wakeup_data[] __initconst = {
 #endif /* ifdef CONFIG_SOC_IMX6Q */
 #ifdef CONFIG_SOC_MVFA5
 const struct imx_fsl_usb2_wakeup_data mvf_fsl_otg_wakeup_data[] __initconst = {
+#ifdef CONFIG_MACH_PCM052
+       mvf_fsl_usb2_wakeup_data_entry_single(MVF, 0),
+       mvf_fsl_usb2_wakeup_data_entry_single(MVF, 1),
+#else
 	{
 		.id = 0,
 		.irq_phy = MVF_INT_USBOTG0,
@@ -38,6 +49,7 @@ const struct imx_fsl_usb2_wakeup_data mvf_fsl_otg_wakeup_data[] __initconst = {
 		.irq_phy = MVF_INT_USB2,
 		.irq_core = MVF_INT_USB2,
 	}
+#endif
 };
 
 #endif

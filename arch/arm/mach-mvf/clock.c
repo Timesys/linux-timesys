@@ -670,10 +670,12 @@ static int _clk_pll3_usb_otg_set_rate(struct clk *clk, unsigned long rate)
 	else
 		return -EINVAL;
 
+#ifndef CONFIG_MACH_PCM052
 	reg = __raw_readl(PLL3_480_USB1_BASE_ADDR);
 	reg &= ~ANADIG_PLL_480_DIV_SELECT_MASK;
 	reg |= div;
 	__raw_writel(reg, PLL3_480_USB1_BASE_ADDR);
+#endif
 
 	return 0;
 }
