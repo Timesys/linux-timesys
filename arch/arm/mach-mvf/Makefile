@@ -3,7 +3,7 @@
 #
 
 # Object file lists.
-obj-y   := cpu.o mm.o system.o devices.o dummy_gpio.o irq.o bus_freq.o mvf_fec.o usb_dr.o usb_dr2.o pm.o
+obj-y   := cpu.o mm.o system.o devices.o dummy_gpio.o irq.o bus_freq.o mvf_fec.o usb_dr.o usb_dr2.o pm.o mvf_sema4.o
 obj-y += l2switch.o
 
 obj-$(CONFIG_ARCH_MVFA5) += clock.o mvf_suspend.o
