@@ -42,6 +42,11 @@ extern void fsl_platform_set_usb_phy_dis(struct fsl_usb2_platform_data *pdata,
 #ifdef CONFIG_ARCH_MVF
 #define MVF_USB_HOST_HACK
 #include <linux/fsl_devices.h>
+
+extern void fsl_platform_set_usb0_phy_dis(struct fsl_usb2_platform_data *pdata,
+					 bool enable);
+extern void fsl_platform_set_usb1_phy_dis(struct fsl_usb2_platform_data *pdata,
+					 bool enable);
 #endif
 /* if we are in debug mode, always announce new devices */
 #ifdef DEBUG
@@ -1669,7 +1674,14 @@ void usb_disconnect(struct usb_device **pdev)
 			udev->devnum);
 #ifdef MVF_USB_HOST_HACK
 	if (udev->speed == USB_SPEED_HIGH && udev->level == 1)
+#ifdef CONFIG_MACH_PCM052
+       {
+               fsl_platform_set_usb0_phy_dis(NULL, 0);
+               fsl_platform_set_usb1_phy_dis(NULL, 0);
+       }
+#else
 		fsl_platform_set_usb_phy_dis(NULL, 0);
+#endif
 #endif
 	usb_lock_device(udev);
 
@@ -2917,7 +2929,14 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 	}
 #ifdef MVF_USB_HOST_HACK
 	if (udev->speed == USB_SPEED_HIGH && udev->level == 1)
+#ifdef CONFIG_MACH_PCM052
+       {
+               fsl_platform_set_usb0_phy_dis(NULL, 1);
+               fsl_platform_set_usb1_phy_dis(NULL, 1);
+       }
+#else
 		fsl_platform_set_usb_phy_dis(NULL, 1);
+#endif
 #endif
 	/* Why interleave GET_DESCRIPTOR and SET_ADDRESS this way?
 	 * Because device hardware and firmware is sometimes buggy in

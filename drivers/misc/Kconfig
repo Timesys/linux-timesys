@@ -490,6 +490,16 @@ config PCH_PHUB
 	  To compile this driver as a module, choose M here: the module will
 	  be called pch_phub.
 
+config MVF_ADC
+	tristate "Vybrid board adc Driver"
+	depends on ARCH_MVF
+	help
+	  If you say yes here you get support for the Vybrid board
+	  analog-to-digital converter.
+	  This driver is for Vybrid board.
+	  To compile this driver as a module, choose M here: the module will
+	  be called mvf_adc.
+
 config MXS_PERFMON
 	tristate "i.MX Performance Monitor"
 	depends on ARCH_MX50 || ARCH_MX6

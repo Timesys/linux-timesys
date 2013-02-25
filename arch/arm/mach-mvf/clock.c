@@ -670,10 +670,12 @@ static int _clk_pll3_usb_otg_set_rate(struct clk *clk, unsigned long rate)
 	else
 		return -EINVAL;
 
+#ifndef CONFIG_MACH_PCM052
 	reg = __raw_readl(PLL3_480_USB1_BASE_ADDR);
 	reg &= ~ANADIG_PLL_480_DIV_SELECT_MASK;
 	reg |= div;
 	__raw_writel(reg, PLL3_480_USB1_BASE_ADDR);
+#endif
 
 	return 0;
 }
@@ -1613,6 +1615,14 @@ static struct clk clko2_clk = {
 	.get_rate = _clk_clko2_get_rate,
 	.round_rate = _clk_clko_round_rate,
 };
+static struct clk caam_clk = {
+	__INIT_CLK_DEBUG(caam_clk)
+	.parent = &ipg_clk,
+	.enable_reg = MXC_CCM_CCGR11,
+	.enable_shift = MXC_CCM_CCGRx_CG0_OFFSET,
+	.enable = _clk_enable,
+	.disable = _clk_disable,
+};
 
 static struct clk pit_clk = {
 	__INIT_CLK_DEBUG(pit_clk)
@@ -1624,6 +1634,18 @@ static struct clk pit_clk = {
 	.disable = _clk_disable,
 #endif
 	 .get_rate = _clk_uart_get_rate,
+};
+
+static struct clk adc_clk[] = {
+	{
+		__INIT_CLK_DEBUG(adc_clk)
+		.id = 0,
+		.parent = &ipg_clk,
+		.enable_reg = MXC_CCM_CCGR1,
+		.enable_shift = MXC_CCM_CCGRx_CG11_OFFSET,
+		.enable = _clk_enable,
+		.disable = _clk_disable,
+	},
 };
 
 static struct clk i2c_clk[] = {
@@ -1845,6 +1867,29 @@ static struct clk qspi1_clk = {
 	.get_rate = _clk_qspi1_get_rate,
 };
 
+static int _clk_asrc_serial_set_rate(struct clk *clk, unsigned long rate)
+{
+	return 0;
+}
+
+static struct clk asrc_clk[] = {
+	{
+		__INIT_CLK_DEBUG(asrc_clk)
+		.id = 0,
+		.parent = &ipg_clk,
+		.enable_reg = MXC_CCM_CCGR4,
+		.enable_shift = MXC_CCM_CCGRx_CG1_OFFSET,
+		.enable = _clk_enable,
+		.disable = _clk_disable,
+	},
+	{
+		__INIT_CLK_DEBUG(asrc_serial_clk)
+		.id = 1,
+		.parent = &audio_external_clk,
+		.set_rate = _clk_asrc_serial_set_rate,
+	},
+};
+
 static struct clk dummy_clk = {
 	.id = 0,
 };
@@ -1890,6 +1935,7 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK("pit", NULL, pit_clk),
 	_REGISTER_CLOCK("fec.0", NULL, enet_clk[0]),
 	_REGISTER_CLOCK("fec.1", NULL, enet_clk[1]),
+	_REGISTER_CLOCK("mvf-adc.0", NULL, adc_clk[0]),
 	_REGISTER_CLOCK("switch.0", NULL, enet_clk[0]),
 	_REGISTER_CLOCK("imx2-wdt.0", NULL, dummy_clk),
 	_REGISTER_CLOCK("sdhci-esdhc-imx.1", NULL, esdhc1_clk),
@@ -1902,10 +1948,12 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK(NULL, "mvf-usb.1", usb_phy1_clk),
 	_REGISTER_CLOCK(NULL, "pwm", ftm_pwm_clk),
 	_REGISTER_CLOCK("mvf-qspi.0", NULL, qspi0_clk),
+	_REGISTER_CLOCK(NULL, "asrc_clk", asrc_clk[0]),
+	_REGISTER_CLOCK(NULL, "asrc_serial_clk", asrc_clk[1]),
+ 	_REGISTER_CLOCK(NULL, "caam_clk", caam_clk),
 };
 
 static void clk_tree_init(void)
-
 {
 	unsigned int reg = 0xffffffff;
 

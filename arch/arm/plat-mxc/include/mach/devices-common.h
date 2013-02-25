@@ -89,6 +89,15 @@ struct imx_imx2_wdt_data {
 struct platform_device *__init imx_add_imx2_wdt(
 		const struct imx_imx2_wdt_data *data);
 
+struct mvf_adc_data {
+	int id;
+	resource_size_t iobase;
+	resource_size_t iosize;
+	resource_size_t irq;
+};
+struct platform_device *__init mvf_add_adcdev(
+		const struct mvf_adc_data *data);
+
 struct imx_imxdi_rtc_data {
 	resource_size_t iobase;
 	resource_size_t irq;
@@ -672,3 +681,20 @@ struct imx_rngb_data {
 
 struct platform_device *__init imx_add_rngb(
 		const struct imx_rngb_data *data);
+
+struct mvf_caam_jr_data {
+	resource_size_t offset_jr;
+	resource_size_t irq_jr;
+};
+
+struct mvf_caam_data {
+	resource_size_t iobase_caam;	/* entirety of CAAM register map */
+	resource_size_t iobase_caam_sm;	/* base of secure memory */
+	resource_size_t iobase_snvs;	/* base of SNVS */
+	resource_size_t irq_sec_vio;	/* SNVS security violation */
+	resource_size_t irq_snvs;	/* SNVS consolidated (incl. RTC) */
+	struct mvf_caam_jr_data jr[4];	/* offset+IRQ for each possible ring */
+};
+
+struct platform_device *__init mvf_add_caam(
+		const struct mvf_caam_data *data);

@@ -54,6 +54,7 @@ config MACH_MVFA5_TWR_VF700
 	select IMX_HAVE_PLATFORM_MVF_DCU
 	select IMX_HAVE_PLATFORM_MVF_SAI
 	select IMX_HAVE_PLATFORM_MXC_NAND
+	select IMX_HAVE_PLATFORM_MVF_CAAM
 	help
 	  Include support for MVF TWR-VF700 platform. This includes specific
 	  configurations for the board and its peripherals.

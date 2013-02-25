@@ -670,28 +670,7 @@ static int ehci_fsl_drv_suspend(struct platform_device *pdev,
 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
 
 	printk(KERN_DEBUG "USB Host suspend begins\n");
-#ifdef CONFIG_ARCH_MVF
-	if (pdata->suspended) {
-		pr_debug("%s: already suspended, leaving early\n", __func__);
-		pdata->already_suspended = 1;
-		return 0;
-	}
 
-	pr_debug("%s: suspending...\n", __func__);
-
-	hcd->state = HC_STATE_SUSPENDED;
-	pdev->dev.power.power_state = PMSG_SUSPEND;
-
-	/* ignore non-host interrupts */
-	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
-
-	/* stop the controller */
-	tmp = ehci_readl(ehci, &ehci->regs->command);
-	tmp &= ~CMD_RUN;
-	ehci_writel(ehci, tmp, &ehci->regs->command);
-
-	pdata->suspended = 1;
-#else
 	/* Only handles OTG mode switch event, system suspend event will be done in bus suspend */
 	if (pdata->pmflags == 0) {
 		printk(KERN_DEBUG "%s, pm event\n", __func__);
@@ -706,7 +685,7 @@ static int ehci_fsl_drv_suspend(struct platform_device *pdev,
 		printk(KERN_DEBUG "host suspend ends\n");
 		return 0;
 	}
-
+#ifndef CONFIG_ARCH_MVF
 	/* only the otg host can go here */
 	/* wait for all usb device on the hcd dettached */
 	usb_lock_device(roothub);
@@ -740,7 +719,7 @@ static int ehci_fsl_drv_suspend(struct platform_device *pdev,
 		fsl_usb_clk_gate(hcd->self.controller->platform_data, true);
 		set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 	}
-#endif
+
 	port_status = ehci_readl(ehci, &ehci->regs->port_status[0]);
 	/* save EHCI registers */
 	pdata->pm_command = ehci_readl(ehci, &ehci->regs->command);
@@ -772,6 +751,7 @@ static int ehci_fsl_drv_suspend(struct platform_device *pdev,
 	}
 	pdata->pmflags = 0;
 	printk(KERN_DEBUG "host suspend ends\n");
+#endif
 	return 0;
 }
 
@@ -786,27 +766,13 @@ static int ehci_fsl_drv_resume(struct platform_device *pdev)
 	struct fsl_usb2_wakeup_platform_data *wake_up_pdata = pdata->wakeup_pdata;
 	/* Only handles OTG mode switch event */
 	printk(KERN_DEBUG "ehci fsl drv resume begins: %s\n", pdata->name);
-#ifdef CONFIG_ARCH_MVF
-	if (pdata->already_suspended) {
-		pr_debug("already suspended, leaving early\n");
-		pdata->already_suspended = 0;
-		return 0;
-	}
 
-	if (!pdata->suspended) {
-		pr_debug("not suspended, leaving early\n");
-		return 0;
-	}
-
-	pdata->suspended = 0;
-
-	pr_debug("%s resuming...\n", __func__);
-#else
 	if (pdata->pmflags == 0) {
 		printk(KERN_DEBUG "%s,pm event, wait for wakeup irq if needed\n", __func__);
 		wait_event_interruptible(wake_up_pdata->wq, !wake_up_pdata->usb_wakeup_is_pending);
 		return 0;
 	}
+#ifndef CONFIG_ARCH_MVF
 	if (!test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags)) {
 		set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
 		fsl_usb_clk_gate(hcd->self.controller->platform_data, true);
@@ -815,7 +781,7 @@ static int ehci_fsl_drv_resume(struct platform_device *pdev)
 		fsl_usb_lowpower_mode(pdata, false);
 		spin_unlock_irqrestore(&ehci->lock, flags);
 	}
-#endif
+
 	spin_lock_irqsave(&ehci->lock, flags);
 	/* set host mode */
 	fsl_platform_set_host_mode(hcd);
@@ -837,19 +803,16 @@ static int ehci_fsl_drv_resume(struct platform_device *pdev)
 	ehci_writel(ehci, tmp, &ehci->regs->command);
 	spin_unlock_irqrestore(&ehci->lock, flags);
 
-#ifdef CONFIG_ARCH_MVF
-	usb_hcd_resume_root_hub(hcd);
-#else
 	if ((hcd->state & HC_STATE_SUSPENDED)) {
 		printk(KERN_DEBUG "will resume roothub and its children\n");
 		usb_lock_device(roothub);
 		usb_resume(&roothub->dev, PMSG_USER_RESUME);
 		usb_unlock_device(roothub);
 	}
-#endif
+
 	pdata->pmflags = 0;
 	printk(KERN_DEBUG "ehci fsl drv resume ends: %s\n", pdata->name);
-
+#endif
 	return 0;
 }
 #endif

@@ -29,8 +29,9 @@
 /*-------------------------------------------------------------------------*/
 #include <linux/usb/otg.h>
 
-#ifdef CONFIG_ARCH_MX6
+#if defined(CONFIG_ARCH_MX6) || defined(CONFIG_ARCH_MVF)
 #define MX6_USB_HOST_HACK
+#define MVF_USB_HOST_HACK
 #include <linux/fsl_devices.h>
 #endif
 #define	PORT_WAKE_BITS	(PORT_WKOC_E|PORT_WKDISC_E|PORT_WKCONN_E)
@@ -1081,6 +1082,14 @@ static int ehci_hub_control (
 				pdata = hcd->self.controller->platform_data;
 				if (pdata->platform_suspend)
 					pdata->platform_suspend(pdata);
+#ifdef MVF_USB_HOST_HACK
+				/* workaround:
+				 * Toggle HW_USBPHY_PWD to flag controller
+				 * generating LS-SE0/LS-EOP after resume
+				 */
+				if (pdata->platform_resume)
+					pdata->platform_resume(pdata);
+#endif
 			}
 #endif
 			if (hostpc_reg) {

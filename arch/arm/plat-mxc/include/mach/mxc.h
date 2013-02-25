@@ -257,6 +257,15 @@ struct cpu_op {
 	u32 cpu_podf;
 };
 
+#ifdef CONFIG_SOC_MVFA5
+enum mvf_cpu_pwr_mode {
+	RUN_MODE,
+	LOW_POWER_RUN,
+	WAIT_MODE,
+	STOP_MODE,
+	LOW_POWER_STOP,
+};
+#else
 enum mxc_cpu_pwr_mode {
 	WAIT_CLOCKED,		/* wfi only */
 	WAIT_UNCLOCKED,		/* WAIT */
@@ -265,10 +274,15 @@ enum mxc_cpu_pwr_mode {
 	STOP_POWER_OFF,		/* STOP + SRPG */
 	ARM_POWER_OFF,		/* STOP + SRPG + ARM power off */
 };
+#endif
 
 int tzic_enable_wake(int is_idle);
 
+#ifdef CONFIG_SOC_MVFA5
+extern void mvf_cpu_lp_set(enum mvf_cpu_pwr_mode mode);
+#else
 extern void mxc_cpu_lp_set(enum mxc_cpu_pwr_mode mode);
+#endif
 extern int tzic_enable_wake(int is_idle);
 #endif
 

@@ -47,13 +47,17 @@ enum asrc_pair_index {
 enum asrc_inclk {
 	INCLK_NONE = 0x03,
 	INCLK_ESAI_RX = 0x00,
+	INCLK_SSI0_RX = 0x06,
 	INCLK_SSI1_RX = 0x01,
 	INCLK_SSI2_RX = 0x02,
+	INCLK_SSI3_RX = 0x07,
 	INCLK_SPDIF_RX = 0x04,
 	INCLK_MLB_CLK = 0x05,
 	INCLK_ESAI_TX = 0x08,
+	INCLK_SSI0_TX = 0xd,
 	INCLK_SSI1_TX = 0x09,
 	INCLK_SSI2_TX = 0x0a,
+	INCLK_SSI3_TX = 0x0b,
 	INCLK_SPDIF_TX = 0x0c,
 	INCLK_ASRCK1_CLK = 0x0f,
 };
@@ -61,13 +65,17 @@ enum asrc_inclk {
 enum asrc_outclk {
 	OUTCLK_NONE = 0x03,
 	OUTCLK_ESAI_TX = 0x00,
+	OUTCLK_SSI0_TX = 0x06,
 	OUTCLK_SSI1_TX = 0x01,
 	OUTCLK_SSI2_TX = 0x02,
+	OUTCLK_SSI3_TX = 0x0d,
 	OUTCLK_SPDIF_TX = 0x04,
 	OUTCLK_MLB_CLK = 0x05,
 	OUTCLK_ESAI_RX = 0x08,
+	OUTCLK_SSI0_RX = 0x07,
 	OUTCLK_SSI1_RX = 0x09,
 	OUTCLK_SSI2_RX = 0x0a,
+	OUTCLK_SSI3_RX = 0x0b,
 	OUTCLK_SPDIF_RX = 0x0c,
 	OUTCLK_ASRCK1_CLK = 0x0f,
 };
@@ -162,6 +170,15 @@ enum asrc_error_status {
 #define ASRC_ASRIDRLC_REG 	0x94
 #define ASRC_ASR76K_REG 	0x98
 #define ASRC_ASR56K_REG 	0x9C
+#define ASRC_ASRMCRA_REG	0xA0
+#define ASRC_ASRFSTA_REG	0xA4
+#define ASRC_ASRMCRB_REG	0xA8
+#define ASRC_ASRFSTB_REG	0xAC
+#define ASRC_ASRMCRC_REG	0xB0
+#define ASRC_ASRFSTC_REG	0xB4
+#define ASRC_ASRMCR1A_REG	0xC0
+#define ASRC_ASRMCR1B_REG	0xC4
+#define ASRC_ASRMCR1C_REG	0xC8
 
 struct dma_block {
 	unsigned int index;
@@ -183,8 +200,13 @@ struct asrc_pair_params {
 	unsigned int output_counter;
 	unsigned int input_queue_empty;
 	unsigned int output_queue_empty;
+#ifdef CONFIG_ARCH_MVF
+	unsigned long input_dma_channel;
+	unsigned long output_dma_channel;
+#else
 	struct dma_chan *input_dma_channel;
 	struct dma_chan *output_dma_channel;
+#endif
 	unsigned int input_buffer_size;
 	unsigned int output_buffer_size;
 	unsigned int buffer_num;

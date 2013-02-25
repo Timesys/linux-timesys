@@ -81,8 +81,7 @@ EXPORT_SYMBOL(mvf_revision);
 
 static int __init post_cpu_init(void)
 {
-
-	/*iram_init(MVF_IRAM_BASE_ADDR, MVF_IRAM_SIZE);*/
+	iram_init(MVF_IRAM_BASE_ADDR, MVF_IRAM_SIZE);
 
 	/* Move wait routine into iRAM */
 	ccm_base = MVF_IO_ADDRESS(MVF_CCM_BASE_ADDR);

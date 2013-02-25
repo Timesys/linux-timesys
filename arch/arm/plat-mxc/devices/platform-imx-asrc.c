@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright (C) 2011-2012 Freescale Semiconductor, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
@@ -38,6 +38,22 @@ const struct imx_imx_asrc_data imx6q_imx_asrc_data[] __initconst = {
 };
 #endif /* ifdef CONFIG_SOC_IMX6Q */
 
+#ifdef CONFIG_SOC_MVFA5
+const struct imx_imx_asrc_data mvf_imx_asrc_data[] __initconst = {
+	[0] = {
+		.id = 0,
+		.iobase = MVF_ASRC_BASE_ADDR,
+		.iosize = SZ_4K,
+		.irq = MVF_INT_ASRC,
+		.dmatx1 = DMA_MUX12_ASRC0_TX + 64,
+		.dmarx1 = DMA_MUX12_ASRC0_RX + 64,
+		.dmatx2 = DMA_MUX12_ASRC1_TX + 64,
+		.dmarx2 = DMA_MUX12_ASRC1_RX + 64,
+		.dmatx3 = DMA_MUX12_ASRC2_TX + 64,
+		.dmarx3 = DMA_MUX12_ASRC2_RX + 64,
+	},
+};
+#endif
 struct platform_device *__init imx_add_imx_asrc(
 		const struct imx_imx_asrc_data *data,
 		const struct imx_asrc_platform_data *pdata)

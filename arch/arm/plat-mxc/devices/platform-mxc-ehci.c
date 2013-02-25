@@ -16,6 +16,13 @@
 		.irq = soc ## _INT_USB_ ## hs,				\
 	}
 
+#define mvf_mxc_ehci_data_entry_single(arch, _id)			\
+	{								\
+		.id = _id,						\
+		.iobase = arch ## _USBC ## _id  ## _BASE_ADDR,		\
+		.irq = arch ## _INT_USB ## _id,			\
+	}
+
 #ifdef CONFIG_SOC_IMX25
 const struct imx_mxc_ehci_data imx25_mxc_ehci_otg_data __initconst =
 	imx_mxc_ehci_data_entry_single(MX25, 0, OTG);
@@ -59,12 +66,18 @@ const struct imx_mxc_ehci_data imx6q_mxc_ehci_hs_data[] __initconst = {
 #endif /* ifdef CONFIG_SOC_IMX6Q */
 
 #ifdef CONFIG_ARCH_MVF
+#ifdef CONFIG_MACH_PCM052
+const struct imx_mxc_ehci_data mvf_mxc_ehci_otg_data[] __initconst = {
+       mvf_mxc_ehci_data_entry_single(MVF, 0),
+       mvf_mxc_ehci_data_entry_single(MVF, 1),
+#else
 const struct imx_mxc_ehci_data mvf_mxc_ehci_otg_data __initconst = {
 	.id = 0,
 	.iobase = MVF_USBC1_BASE_ADDR,
 	.irq = MVF_INT_USB2,
-};
 #endif
+};
+#endif /* ifdef CONFIG_ARCH_MVF */
 
 struct platform_device *__init imx_add_mxc_ehci(
 		const struct imx_mxc_ehci_data *data,

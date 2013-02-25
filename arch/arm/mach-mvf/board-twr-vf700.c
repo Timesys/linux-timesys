@@ -72,6 +72,7 @@
 #include <mach/mipi_dsi.h>
 #include <mach/mipi_csi2.h>
 #include <mach/fsl_l2_switch.h>
+#include <mach/mxc.h>
 #include <asm/irq.h>
 #include <asm/setup.h>
 #include <asm/mach-types.h>
@@ -364,22 +365,20 @@ static void spi_device_init(void)
 				ARRAY_SIZE(mvf_spi_board_info));
 }
 
-#if 1
-static void vf700_suspend_enter(void)
+static void vf600_suspend_enter(void)
 {
 	/* suspend preparation */
 }
 
-static void vf700_suspend_exit(void)
+static void vf600_suspend_exit(void)
 {
 	/* resmue resore */
 }
-static const struct pm_platform_data mvf_vf700_pm_data __initconst = {
+static const struct pm_platform_data mvf_vf600_pm_data __initconst = {
 	.name = "mvf_pm",
-	.suspend_enter = vf700_suspend_enter,
-	.suspend_exit = vf700_suspend_exit,
+	.suspend_enter = vf600_suspend_enter,
+	.suspend_exit = vf600_suspend_exit,
 };
-#endif
 
 static struct mvf_dcu_platform_data mvf_dcu_pdata = {
 	.mode_str	= "480x272",
@@ -427,16 +426,26 @@ static struct led_pwm_platform_data mvf_led_data __initdata = {
 	.leds = &mvf_led,
 };
 
+static struct imx_asrc_platform_data imx_asrc_data = {
+	.channel_bits = 4,
+	.clk_map_ver = 3,
+};
+
 static void __init mvf_twr_init_usb(void)
 {
 	imx_otg_base = MVF_IO_ADDRESS(MVF_USBC0_BASE_ADDR);
 	/*mvf_set_otghost_vbus_func(mvf_twr_usbotg_vbus);*/
-#ifdef CONFIG_USB_GADGET_ARC
-	mvf_usb_dr_init();
-#endif
 #ifdef CONFIG_USB_EHCI_ARC
 	mvf_usb_dr2_init();
 #endif
+#ifdef CONFIG_USB_GADGET_ARC
+	mvf_usb_dr_init();
+#endif
+}
+
+static void __init mvf_init_adc(void)
+{
+	mvf_add_adc(0);
 }
 
 /*!
@@ -457,6 +466,12 @@ static void __init mvf_board_init(void)
 #endif
 
 	mvf_add_snvs_rtc();
+
+	mvf_init_adc();
+
+	mvf_add_pm_imx(0, &mvf_vf600_pm_data);
+
+	mvf700_add_caam();
 
 	mvf_add_sdhci_esdhc_imx(1, &mvfa5_sd1_data);
 
@@ -481,6 +496,10 @@ static void __init mvf_board_init(void)
 
 	mvf_add_mxc_pwm(0);
 	mvf_add_pwm_leds(&mvf_led_data);
+
+	imx_asrc_data.asrc_core_clk = clk_get(NULL, "asrc_clk");
+	imx_asrc_data.asrc_audio_clk = clk_get(NULL, "asrc_serial_clk");
+	mvf_add_asrc(&imx_asrc_data);
 
 }
 

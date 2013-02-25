@@ -62,5 +62,7 @@ obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_ASRC) += platform-imx-asrc.o
 obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_MIPI_DSI) += platform-imx-mipi_dsi.o
 obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_MIPI_CSI2) += platform-imx-mipi_csi2.o
 obj-$(CONFIG_IMX_HAVE_PLATFORM_MVF_SPI) += platform-mvf-spi.o
+obj-$(CONFIG_IMX_HAVE_PLATFORM_MVF_ADC) += platform-mvf-adc.o
 obj-$(CONFIG_IMX_HAVE_PLATFORM_MVF_DCU) += platform-mvf-dcu.o
 obj-$(CONFIG_IMX_HAVE_PLATFORM_MVF_SAI) += platform-mvf-sai.o
+obj-$(CONFIG_IMX_HAVE_PLATFORM_MVF_CAAM) += platform-mvf-caam.o

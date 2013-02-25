@@ -934,20 +934,11 @@ fsl_nfc_probe(struct platform_device *pdev)
 	/* Register device in MTD */
 	retval = parse_mtd_partitions(mtd, fsl_nfc_pprobes, &parts, 0);
 
-	if (retval < 0) {
-		printk(KERN_ERR DRV_NAME ": Error parsing MTD partitions!\n");
-		free_irq(prv->irq, mtd);
-		retval = -EINVAL;
-		goto error;
-	}
-
-	printk(KERN_DEBUG "parse partition: partnr = %d\n", retval);
-
-	retval = mtd_device_register(mtd, parts, retval);
-	if (retval) {
-		printk(KERN_ERR DRV_NAME ": Error adding MTD device!\n");
-		free_irq(prv->irq, mtd);
-		goto error;
+	if (retval > 0)
+		mtd_device_register(mtd, parts, retval);
+	else {
+		pr_info("Registering %s as whole device\n", mtd->name);
+		mtd_device_register(mtd, NULL, 0);
 	}
 
 	return 0;

@@ -740,8 +740,8 @@ static int mvf_dcu_open(struct fb_info *info, int user)
 	mfbi->index = info->node;
 	spin_lock(&dcu_lock);
 
-	// if first time any layer open (e.g., at boot time) reset all
-	if(total_open_layers == 0) {
+	/* if first time any layer open (e.g., at boot time) reset all */
+	if (total_open_layers == 0) {
 
 		writel(0, dcu->base + DCU_INT_STATUS);
 		writel(0, dcu->base + DCU_PARR_ERR_STA_1);
@@ -938,21 +938,17 @@ static void free_irq_local(int irq, struct mvf_dcu_fb_data *dcu)
 static int mvf_dcu_suspend(struct platform_device *pdev,
 		pm_message_t state)
 {
-	struct mvf_dcu_fb_data *dcu;
+	struct mvf_dcu_fb_data *dcu = dev_get_drvdata(&pdev->dev);
 
-	dcu = dev_get_drvdata(&pdev->dev);
-	disable_lcdc(dcu->mvf_dcu_info[0]);
-
+	clk_disable(dcu->clk);
 	return 0;
 }
 
 static int mvf_dcu_resume(struct platform_device *pdev)
 {
-	struct mvf_dcu_fb_data *dcu;
+	struct mvf_dcu_fb_data *dcu = dev_get_drvdata(&pdev->dev);
 
-	dcu = dev_get_drvdata(&pdev->dev);
-	enable_lcdc(dcu->mvf_dcu_info[0]);
-
+	clk_enable(dcu->clk);
 	return 0;
 }
 #else
@@ -1051,7 +1047,6 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 	}
 
 	dev_set_drvdata(&pdev->dev, dcu);
-
 	return 0;
 
 failed_install_fb:

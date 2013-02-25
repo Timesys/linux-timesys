@@ -1,7 +1,7 @@
 /*
  * CAAM Error Reporting code header
  *
- * Copyright 2009-2011 Freescale Semiconductor, Inc.
+ * Copyright 2012 Freescale Semiconductor, Inc.
  */
 
 #ifndef CAAM_ERROR_H

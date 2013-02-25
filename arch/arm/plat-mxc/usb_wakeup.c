@@ -36,7 +36,8 @@ struct wakeup_ctrl {
 	struct task_struct *thread;
 	struct completion  event;
 };
-static struct wakeup_ctrl *g_ctrl;
+static struct wakeup_ctrl *g_ctrl[2];
+static unsigned int g_ctrls;
 
 extern int usb_event_is_otg_wakeup(struct fsl_usb2_platform_data *pdata);
 extern void usb_debounce_id_vbus(void);
@@ -166,7 +167,7 @@ static int wakeup_dev_probe(struct platform_device *pdev)
 	int status;
 	unsigned long interrupt_flag;
 
-	printk(KERN_INFO "IMX usb wakeup probe\n");
+	printk(KERN_INFO "IMX usb wakeup probe. id=%d\n", pdev->id);
 
 	if (!pdev || !pdev->dev.platform_data)
 		return -ENODEV;
@@ -192,11 +193,12 @@ static int wakeup_dev_probe(struct platform_device *pdev)
 	if (status)
 		goto error1;
 
-	ctrl->thread = kthread_run(wakeup_event_thread, (void *)ctrl, "usb_wakeup thread");
+	ctrl->thread = kthread_run(wakeup_event_thread, (void *)ctrl,
+					"usb_wakeup:%d", pdev->id);
 	status = IS_ERR(ctrl->thread) ? -1 : 0;
 	if (status)
 		goto error2;
-	g_ctrl = ctrl;
+	g_ctrl[g_ctrls++] = ctrl;
 
 	printk(KERN_DEBUG "the wakeup pdata is 0x%p\n", pdata);
 	return 0;
@@ -209,12 +211,17 @@ error1:
 
 static int  wakeup_dev_exit(struct platform_device *pdev)
 {
-	if (g_ctrl->thread) {
-		complete(&g_ctrl->event);
-		kthread_stop(g_ctrl->thread);
+	int i;
+	for (i = 0; i < g_ctrls; i++) {
+		if (g_ctrl[i]->thread) {
+			complete(&g_ctrl[i]->event);
+			kthread_stop(g_ctrl[i]->thread);
+		}
+		free_irq(g_ctrl[i]->wakeup_irq, (void *)g_ctrl[i]);
+		kfree(g_ctrl[i]);
+		g_ctrl[i] = NULL;
+		g_ctrls = 0;
 	}
-	free_irq(g_ctrl->wakeup_irq, (void *)g_ctrl);
-	kfree(g_ctrl);
 	return 0;
 }
 static struct platform_driver wakeup_d = {

@@ -195,7 +195,7 @@ static iomux_v3_cfg_t pcm052_pads[] = {
 #ifdef PCM952_REV0
 	MVF600_PAD6_PTA16__USB0_VBUS_EN,
 #else
-	MVF600_PAD134_PTA7__USB0_VBUS_EN,
+	MVF600_PAD134_PTA7__USB_VBUS_EN,
 #endif
 	MVF600_PAD7_PTA17__USB_OC_N,
 
@@ -275,7 +275,7 @@ static struct switch_platform_data switch_data __initdata = {
 };
 
 static int pcm052_spi_cs[] = {
-	134,
+	41,
 };
 
 static const struct spi_mvf_master pcm052_spi_data __initconst = {
@@ -479,14 +479,15 @@ static struct led_pwm_platform_data mvf_led_data __initdata = {
 	.leds = &mvf_led,
 };
 
+#define USB_VBUS_ENABLE_PIN	134
 static void __init pcm052_init_usb(void)
 {
-	imx_otg_base = MVF_IO_ADDRESS(MVF_USBC0_BASE_ADDR);
-	/*mvf_set_otghost_vbus_func(pcm052_usbotg_vbus);*/
-#ifdef CONFIG_USB_GADGET_ARC
-	mvf_usb_dr_init();
-#endif
+	gpio_request_one(USB_VBUS_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "VBUS_EN");
+	msleep(2);
+	gpio_set_value(USB_VBUS_ENABLE_PIN, 1);
+
 #ifdef CONFIG_USB_EHCI_ARC
+	mvf_usb_dr_init();
 	mvf_usb_dr2_init();
 #endif
 }

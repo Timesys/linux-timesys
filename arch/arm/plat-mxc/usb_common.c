@@ -1049,6 +1049,9 @@ EXPORT_SYMBOL(usb_debounce_id_vbus);
 
 int usb_event_is_otg_wakeup(struct fsl_usb2_platform_data *pdata)
 {
+#ifdef CONFIG_ARCH_MVF
+	return false;
+#endif
 	return (USBCTRL & UCTRL_OWIR) ? true : false;
 }
 EXPORT_SYMBOL(usb_event_is_otg_wakeup);

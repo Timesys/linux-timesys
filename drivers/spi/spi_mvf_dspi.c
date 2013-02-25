@@ -1033,34 +1033,12 @@ static void spi_mvf_shutdown(struct platform_device *pdev)
 
 
 #ifdef CONFIG_PM
-static int suspend_devices(struct device *dev, void *pm_message)
-{
-	pm_message_t *state = pm_message;
-
-	if (dev->power.power_state.event != state->event) {
-		dev_warn(dev, "pm state does not match request\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 static int spi_mvf_suspend(struct platform_device *pdev,
 				pm_message_t state)
 {
 	struct spi_mvf_data *spi_mvf = platform_get_drvdata(pdev);
-	int ret = 0;
 
-	/* Check all childern for current power state */
-	if (device_for_each_child(&pdev->dev,
-		&state, suspend_devices) != 0) {
-		dev_warn(&pdev->dev, "suspend aborted\n");
-		return -1;
-	}
-
-	ret = stop_queue(spi_mvf);
-	if (ret != 0)
-		return ret;
+	clk_disable(spi_mvf->clk);
 
 	return 0;
 }
@@ -1068,14 +1046,8 @@ static int spi_mvf_suspend(struct platform_device *pdev,
 static int spi_mvf_resume(struct platform_device *pdev)
 {
 	struct spi_mvf_data *spi_mvf = platform_get_drvdata(pdev);
-	int ret = 0;
 
-	/* Start the queue running */
-	ret = start_queue(spi_mvf);
-	if (ret != 0) {
-		dev_err(&pdev->dev, "problem starting queue (%d)\n", ret);
-		return ret;
-	}
+	clk_enable(spi_mvf->clk);
 
 	return 0;
 }

@@ -3356,9 +3356,15 @@ static int fsl_udc_suspend(struct platform_device *pdev, pm_message_t state)
 			(udc_controller->usb_state > USB_STATE_POWERED) &&
 			(udc_controller->usb_state < USB_STATE_SUSPENDED)) {
 		return -EBUSY;/* keep the clk on */
-	} else
+	} else {
+		if (udc_controller->pdata->wake_up_enable)
+			udc_controller->pdata->wake_up_enable(
+						udc_controller->pdata, true);
 		ret = udc_suspend(udc_controller);
-	dr_clk_gate(false);
+	}
+
+	if (udc_controller->stopped)
+		dr_clk_gate(false);
 
 	printk(KERN_DEBUG "USB Gadget suspend ends\n");
 	return ret;
@@ -3408,6 +3414,8 @@ static int fsl_udc_resume(struct platform_device *pdev)
 	/* prevent the quirk interrupts from resuming */
 	disable_irq_nosync(udc_controller->irq);
 
+	if (pdata->wake_up_enable)
+		pdata->wake_up_enable(pdata, false);
 	/*
 	 * If the controller was stopped at suspend time, then
 	 * don't resume it now.

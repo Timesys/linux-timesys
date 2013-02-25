@@ -52,6 +52,15 @@ extern const struct imx_mxc_nand_data mvf_nand_data __initconst;
 #define mvf_add_nand(pdata)	\
 	imx_add_mxc_nand(&mvf_nand_data, pdata)
 
+#ifdef CONFIG_MACH_PCM052
+extern const struct imx_fsl_usb2_udc_data mvf_fsl_usb2_udc_data[] __initconst;
+#define mvf_add_fsl_usb2_udc(id, pdata)	\
+	imx_add_fsl_usb2_udc(&mvf_fsl_usb2_udc_data[id], pdata)
+
+extern const struct imx_mxc_ehci_data mvf_mxc_ehci_otg_data[] __initconst;
+#define mvf_add_fsl_ehci_otg(id, pdata)	\
+	imx_add_fsl_ehci(&mvf_mxc_ehci_otg_data[id], pdata)
+#else
 extern const struct imx_fsl_usb2_udc_data mvf_fsl_usb2_udc_data __initconst;
 #define mvf_add_fsl_usb2_udc(pdata)	\
 	imx_add_fsl_usb2_udc(&mvf_fsl_usb2_udc_data, pdata)
@@ -59,24 +68,43 @@ extern const struct imx_fsl_usb2_udc_data mvf_fsl_usb2_udc_data __initconst;
 extern const struct imx_mxc_ehci_data mvf_mxc_ehci_otg_data __initconst;
 #define mvf_add_fsl_ehci_otg(pdata)	\
 	imx_add_fsl_ehci(&mvf_mxc_ehci_otg_data, pdata)
+#endif
 
 extern const struct imx_mxc_ehci_data mvf_mxc_ehci_hs_data[] __initconst;
+#ifdef CONFIG_MACH_PCM052
+#define mvf_add_fsl_ehci_hs(id, pdata) \
+	imx_add_fsl_ehci(&mvf_mxc_ehci_hs_data[id], pdata)
+#else
 #define mvf_add_fsl_ehci_hs(id, pdata)	\
 	imx_add_fsl_ehci(&mvf_mxc_ehci_hs_data[id - 1], pdata)
+#endif
 
 extern const struct imx_fsl_usb2_otg_data mvf_fsl_usb2_otg_data __initconst;
 #define mvf_add_fsl_usb2_otg(pdata)	\
 	imx_add_fsl_usb2_otg(&mvf_fsl_usb2_otg_data, pdata)
 
 extern
-const struct imx_fsl_usb2_wakeup_data mvf_fsl_otg_wakeup_data __initconst;
-#define mvf_add_fsl_usb2_otg_wakeup(pdata)	\
-	imx_add_fsl_usb2_wakeup(&mvf_fsl_otg_wakeup_data, pdata)
+const struct imx_fsl_usb2_wakeup_data mvf_fsl_otg_wakeup_data[] __initconst;
+#ifdef CONFIG_MACH_PCM052
+#define mvf_add_fsl_usb2_ehci_otg_wakeup(id, pdata)	\
+	imx_add_fsl_usb2_wakeup(&mvf_fsl_otg_wakeup_data[id], pdata)
+#define mvf_add_fsl_usb2_udc_wakeup(id, pdata) \
+	imx_add_fsl_usb2_wakeup(&mvf_fsl_otg_wakeup_data[id], pdata)
+#else
+#define mvf_add_fsl_usb2_ehci_otg_wakeup(pdata)	\
+	imx_add_fsl_usb2_wakeup(&mvf_fsl_otg_wakeup_data[1], pdata)
+#define mvf_add_fsl_usb2_udc_wakeup(pdata) \
+	imx_add_fsl_usb2_wakeup(&mvf_fsl_otg_wakeup_data[0], pdata)
+#endif
 
 extern
 const struct imx_fsl_usb2_wakeup_data mvf_fsl_hs_wakeup_data[] __initconst;
+#ifdef CONFIG_MACH_PCM052
+#define mvf_add_fsl_usb2_hs_wakeup(id, pdata)  \
+	imx_add_fsl_usb2_wakeup(&mvf_fsl_hs_wakeup_data[id], pdata)
 #define mvf_add_fsl_usb2_hs_wakeup(id, pdata)	\
 	imx_add_fsl_usb2_wakeup(&mvf_fsl_hs_wakeup_data[id - 1], pdata)
+#endif
 
 extern const struct imx_imx_esai_data mvf_imx_esai_data[] __initconst;
 #define mvf_add_imx_esai(id, pdata) \
@@ -141,6 +169,10 @@ extern const struct imx_viim_data mvf_viim_data __initconst;
 extern const struct imx_imx2_wdt_data mvf_imx2_wdt_data[] __initconst;
 #define mvf_add_imx2_wdt(id, pdata)   \
 	imx_add_imx2_wdt(&mvf_imx2_wdt_data[id])
+
+extern const struct mvf_adc_data mvfa5_adc_data[] __initconst;
+#define mvf_add_adc(id)	\
+	mvf_add_adcdev(&mvfa5_adc_data[id])
 
 extern const struct imx_imx2_wdt_data fsl_imx2_wdt_data[] __initconst;
 #define mvf_add_wdt(id)   \
@@ -218,3 +250,7 @@ extern const struct imx_epdc_data mvf_epdc_data __initconst;
 
 #define mvf_add_pwm_leds(pdata) \
 	imx_add_platform_device("leds_pwm", 0, NULL, 0, pdata, sizeof(*pdata))
+
+extern const struct mvf_caam_data mvf_caam_data __initconst;
+#define  mvf700_add_caam() \
+	mvf_add_caam(&mvf_caam_data)
