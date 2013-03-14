@@ -147,14 +147,14 @@ static iomux_v3_cfg_t pcm052_pads[] = {
 #endif
 
 	/*SAI2*/
-//	MVF600_PAD6_PTA16_SAI2_TX_BCLK,
+	MVF600_PAD6_PTA16_SAI2_TX_BCLK,
 	MVF600_PAD8_PTA18_SAI2_TX_DATA,
-//	MVF600_PAD3_PTA10_SAI2_TX_SYNC, // originally PAD9_PTA19
-	MVF600_PAD11_PTA21_SAI2_RX_BCLK,
-//	MVF600_PAD23_PTB1_SAI2_RX_DATA,	// originally PAD12_PTA22
-//	MVF600_PAD13_PTA23_SAI2_RX_SYNC, // UNUSED
+	MVF600_PAD9_PTA19_SAI2_TX_SYNC,
+//	MVF600_PAD11_PTA21_SAI2_RX_BCLK,
+	MVF600_PAD23_PTB1_SAI2_RX_DATA,	// originally PAD12_PTA22
+//	MVF600_PAD24_PTB2_SAI2_RX_SYNC, // originally PAD13_PTA23
 //	MVF600_PAD40_PTB18_EXT_AUDIO_MCLK, // UNUSED
-//	MVF600_PAD33_PTB11__CKO2, // phyCORE MCLK
+	MVF600_PAD33_PTB11__CKO2, // phyCORE MCLK
 
 	/*DCU0*/
 	MVF600_PAD25_PTB3_LCD_ENABLE,
@@ -204,15 +204,15 @@ static iomux_v3_cfg_t pcm052_pads[] = {
 	 * FTM0 CH0~3 are connected to demo LED0~3
 	 * PAD30 mux with LCD enable signal
 	 */
-	MVF600_PAD22_PTB0_FTM0CH0,
-	MVF600_PAD23_PTB1_FTM0CH1,
-	MVF600_PAD24_PTB2_FTM0CH2,
+//	MVF600_PAD22_PTB0_FTM0CH0,
+//	MVF600_PAD23_PTB1_FTM0CH1,
+//	MVF600_PAD24_PTB2_FTM0CH2,
 //	MVF600_PAD25_PTB3_FTM0CH3,
 
-	MVF600_PAD28_PTB6_FTM0CH6,
-	MVF600_PAD29_PTB7_FTM0CH7,
+//	MVF600_PAD28_PTB6_FTM0CH6,
+//	MVF600_PAD29_PTB7_FTM0CH7,
 	/*MVF600_PAD30_PTB8_FTM1CH0,*/
-	MVF600_PAD31_PTB9_FTM1CH1,
+//	MVF600_PAD31_PTB9_FTM1CH1,
 
 	/* Touch Screen */
 	MVF600_PAD32_PTB10_TS_IRQ,
@@ -236,7 +236,7 @@ static struct mxc_audio_platform_data pcm052_audio_data;
 
 static int pcm052_sgtl5000_init(void)
 {
-	pcm052_audio_data.sysclk = 24576000;
+	pcm052_audio_data.sysclk = 12288000;
 	return 0;
 }
 
@@ -252,7 +252,7 @@ static struct mxc_audio_platform_data pcm052_audio_data = {
 };
 
 static struct platform_device pcm052_audio_device = {
-	.name = "mvf-sgtl5000",
+	.name = "pcm052-sgtl5000",
 };
 
 static struct imxuart_platform_data mvf_uart1_pdata = {
@@ -523,8 +523,8 @@ static void __init pcm052_board_init(void)
 
 	mvfa5_add_dcu(0, &mvf_dcu_pdata);
 
-//	mxc_register_device(&pcm052_audio_device, &pcm052_audio_data);
-//	mvfa5_add_sai(2, &mvf_sai_pdata);
+	mxc_register_device(&pcm052_audio_device, &pcm052_audio_data);
+	mvfa5_add_sai(2, &mvf_sai_pdata);
 
 //	mvf_add_wdt(0);
 

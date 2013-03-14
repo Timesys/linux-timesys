@@ -394,7 +394,7 @@
 #define SGTL5000_DAP_MIX_EN			0x0010
 #define SGTL5000_DAP_EN				0x0001
 
-#define SGTL5000_SYSCLK				0x00
+#define SGTL5000_SYSCLK				1
 #define SGTL5000_LRCLK				0x01
 
 #endif

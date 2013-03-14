@@ -185,6 +185,10 @@
 
 #define MXC_CCM_BASE		MVF_IO_ADDRESS(MVF_CCM_BASE_ADDR)
 
+#define MVF_I2S0_BASE		MVF_IO_ADDRESS(MVF_I2S0_BASE_ADDR)
+#define MVF_I2S0_TCR2		(MVF_I2S0_BASE + 0xF008)
+#define MVF_I2S0_RCR2		(MVF_I2S0_BASE + 0xF088)
+
 /* Register addresses of CCM*/
 #define MXC_CCM_CCR		(MXC_CCM_BASE + 0x00)
 #define MXC_CCM_CSR		(MXC_CCM_BASE + 0x04)
@@ -199,6 +203,7 @@
 #define MXC_CCM_CLPCR		(MXC_CCM_BASE + 0x2c)
 #define MXC_CCM_CISR		(MXC_CCM_BASE + 0x30)
 #define MXC_CCM_CIMR		(MXC_CCM_BASE + 0x34)
+#define MXC_CCM_CCOSR		(MXC_CCM_BASE + 0x38)
 #define MXC_CCM_CGPR		(MXC_CCM_BASE + 0x3c)
 #define MXC_CCM_CCGR0		(MXC_CCM_BASE + 0x40)
 #define MXC_CCM_CCGR1		(MXC_CCM_BASE + 0x44)
@@ -434,6 +439,17 @@
 #define MXC_CCM_CIMR_LRF_PLL3		(1 << 2)
 #define MXC_CCM_CIMR_LRF_PLL2		(1 << 1)
 #define MXC_CCM_CIMR_LRF_PLL1		(1)
+
+/* CCOSR */
+#define MXC_CCM_CCOSR_CKO2_EN			(1 << 26)
+#define MXC_CCM_CCOSR_CKO2_DIV_OFFSET		(22)
+
+#define MXC_CCM_CCOSR_CKO2_SEL_MASK		(0x3F << 16)
+#define MXC_CCM_CCOSR_CKO2_SEL_SAI2		(0xD << 16)
+#define MXC_CCM_CCOSR_CKO2_SEL_PLL4_MAIN	(0x1A << 16)
+
+#define MXC_CCM_CCOSR_CKO1_EN			(1 << 10)
+#define MXC_CCM_CCOSR_CKO1_DIV_OFFSET		(6)
 
 /* Define the bits in registers CGPR */
 #define MXC_CCM_CGPR_EFUSE_PROG	(1 << 4)
