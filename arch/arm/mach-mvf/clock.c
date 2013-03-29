@@ -1389,7 +1389,7 @@ static struct clk dcu0_clk = {
 
 static unsigned long get_audio_external_clock_rate(struct clk *clk)
 {
-	return 24576000;
+	return 24567000;
 }
 
 static struct clk audio_external_clk = {
@@ -1405,11 +1405,10 @@ static int _clk_sai2_set_parent(struct clk *clk, struct clk *parent)
 
 	mux = _get_mux6(parent, &audio_external_clk, NULL,
 			NULL, &pll4_audio_main_clk, NULL, NULL);
-
+	
 	reg |= (mux << MXC_CCM_CSCMR1_SAI2_CLK_SEL_OFFSET);
-
 	__raw_writel(reg, MXC_CCM_CSCMR1);
-
+	
 	return 0;
 }
 
@@ -1448,9 +1447,17 @@ static int _clk_sai2_enable(struct clk *clk)
 {
 	u32 reg;
 
+	/* enable SAI2 clock */
 	reg = __raw_readl(MXC_CCM_CSCDR1);
-	reg |= MXC_CCM_CSCDR1_SAI2_EN;
+	reg |= MXC_CCM_CSCDR1_SAI2_EN | (0xF << MXC_CCM_CSCDR1_SAI2_DIV_OFFSET);
 	__raw_writel(reg, MXC_CCM_CSCDR1);
+
+	/* enable CKO2 observation of SAI2 */
+	reg = __raw_readl(MXC_CCM_CCOSR)
+		& ~MXC_CCM_CCOSR_CKO2_SEL_MASK;
+	reg |= MXC_CCM_CCOSR_CKO2_EN | MXC_CCM_CCOSR_CKO2_SEL_SAI2 |
+		(2 << MXC_CCM_CCOSR_CKO2_DIV_OFFSET);
+	__raw_writel(reg, MXC_CCM_CCOSR);
 
 	return 0;
 }
@@ -1459,9 +1466,15 @@ static void _clk_sai2_disable(struct clk *clk)
 {
 	u32 reg;
 
+	/* disable SAI2 clock */
 	reg = __raw_readl(MXC_CCM_CSCDR1);
 	reg &= ~MXC_CCM_CSCDR1_SAI2_EN;
 	__raw_writel(reg, MXC_CCM_CSCDR1);
+
+	/* disable CKO2 observation of SAI2 */
+	reg = __raw_readl(MXC_CCM_CCOSR);
+	reg &= ~MXC_CCM_CCOSR_CKO2_EN;
+	__raw_writel(reg, MXC_CCM_CCOSR);
 
 	return 0;
 }
@@ -1488,7 +1501,7 @@ static unsigned long _clk_sai_round_rate(struct clk *clk,
 
 static struct clk sai2_clk = {
 	__INIT_CLK_DEBUG(sai2_clk)
-	.parent = &audio_external_clk,
+	.parent = &pll4_audio_main_clk,
 	.enable_reg = MXC_CCM_CCGR1,
 	.enable_shift = MXC_CCM_CCGRx_CG1_OFFSET,
 	.enable = _clk_sai2_enable,
@@ -1926,7 +1939,7 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK(NULL, "cpu_clk", cpu_clk), /* arm core clk */
 	_REGISTER_CLOCK(NULL, "periph_clk", periph_clk), /* platform bus clk */
 	_REGISTER_CLOCK(NULL, "ipg_clk", ipg_clk),
-//	_REGISTER_CLOCK(NULL, "audio ext clk", audio_external_clk),
+	_REGISTER_CLOCK(NULL, "audio ext clk", audio_external_clk),
 	_REGISTER_CLOCK(NULL, "mvf-uart.0", uart_clk[0]),
 	_REGISTER_CLOCK(NULL, "mvf-uart.1", uart_clk[0]),
 	_REGISTER_CLOCK(NULL, "mvf-uart.2", uart_clk[0]),
@@ -1940,8 +1953,7 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK("imx2-wdt.0", NULL, dummy_clk),
 	_REGISTER_CLOCK("sdhci-esdhc-imx.1", NULL, esdhc1_clk),
 	_REGISTER_CLOCK("mvf-dcu.0", NULL, dcu0_clk),
-//	_REGISTER_CLOCK("mvf-sai.0", NULL, sai2_clk),
-//	_REGISTER_CLOCK(NULL, "i2c_clk", i2c_clk[2]),
+	_REGISTER_CLOCK("mvf-sai.0", NULL, sai2_clk),
 	_REGISTER_CLOCK("imx-i2c.2", NULL, i2c_clk[2]),
 	_REGISTER_CLOCK(NULL, "usb-clk", usb_clk),
 	_REGISTER_CLOCK(NULL, "mvf-usb.0", usb_phy0_clk),
@@ -2018,8 +2030,8 @@ int __init mvf_clocks_init(unsigned long ckil, unsigned long osc,
 	clk_set_parent(&dcu0_clk, &pll1_pfd2_452M);
 	clk_set_rate(&dcu0_clk, 113000000);
 
-	clk_set_parent(&sai2_clk, &audio_external_clk);
-	clk_set_rate(&sai2_clk, 24576000);
+	clk_set_parent(&sai2_clk, &pll4_audio_main_clk);
+	clk_set_rate(&sai2_clk, 24567000);
 
 	clk_set_parent(&qspi0_clk, &pll1_pfd4_528M);
 	clk_set_rate(&qspi0_clk, 66000000);

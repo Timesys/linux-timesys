@@ -52,6 +52,7 @@
 #include <mach/irqs.h>
 #include <mach/hardware.h>
 #include <mach/i2c.h>
+#include <linux/mvf_sema4.h>
 
 /** Defines ********************************************************************
 *******************************************************************************/
@@ -122,6 +123,8 @@ static u16 __initdata i2c_clk_div[60][2] = {
 	{ 2304,	0x3C },	{ 2560,	0x3D },	{ 3072,	0x3E }, { 3584,	0x7A },
 	{ 3840,	0x3F }, { 4096,	0x7B }, { 5120,	0x7D },	{ 6144,	0x7E },
 };
+
+static MVF_SEMA4* sema4 = NULL;
 #else
 static u16 __initdata i2c_clk_div[50][2] = {
 	{ 22,	0x20 }, { 24,	0x21 }, { 26,	0x22 }, { 28,	0x23 },
@@ -215,7 +218,7 @@ static int i2c_imx_start(struct imx_i2c_struct *i2c_imx)
 
 	dev_dbg(&i2c_imx->adapter.dev, "<%s>\n", __func__);
 
-	clk_enable(i2c_imx->clk);
+	//clk_enable(i2c_imx->clk);
 	writeb(i2c_imx->ifdr, i2c_imx->base + IMX_I2C_IFDR);
 	/* Enable I2C controller */
 #ifdef CONFIG_ARCH_MVF
@@ -269,8 +272,8 @@ static void i2c_imx_stop(struct imx_i2c_struct *i2c_imx)
 	}
 
 	/* Disable I2C controller */
-	writeb(0, i2c_imx->base + IMX_I2C_I2CR);
-	clk_disable(i2c_imx->clk);
+	writeb(0x80, i2c_imx->base + IMX_I2C_I2CR);
+	//clk_disable(i2c_imx->clk);
 }
 
 static void __init i2c_imx_set_clk(struct imx_i2c_struct *i2c_imx,
@@ -434,6 +437,23 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 
 	dev_dbg(&i2c_imx->adapter.dev, "<%s>\n", __func__);
 
+#ifdef CONFIG_ARCH_MVF
+	// since this can get called before probe, assign happens here
+	if(!sema4)
+	{
+		result = mvf_sema4_assign(3, true, &sema4);
+		if(result) {
+			printk(KERN_ERR "can't assign sema4 %s %s exiting.\n",__FILE__,__func__);
+			return result;
+		}
+	}
+
+	// lock out MQX
+	result = mvf_sema4_lock(sema4, 10000000); // 10 seconds
+	if(result)
+		return result;
+#endif
+
 	/* Start I2C transfer */
 	result = i2c_imx_start(i2c_imx);
 	if (result)
@@ -481,6 +501,10 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 fail0:
 	/* Stop I2C transfer */
 	i2c_imx_stop(i2c_imx);
+
+#ifdef CONFIG_ARCH_MVF
+	mvf_sema4_unlock(sema4);
+#endif
 
 	dev_dbg(&i2c_imx->adapter.dev, "<%s> exit with: %s: %d\n", __func__,
 		(result < 0) ? "error" : "success msg",
@@ -571,6 +595,7 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "can't get I2C clock\n");
 		goto fail3;
 	}
+clk_enable(i2c_imx->clk);
 
 	/* Request IRQ */
 	ret = request_irq(i2c_imx->irq, i2c_imx_isr, 0, pdev->name, i2c_imx);
@@ -592,8 +617,9 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
 		i2c_imx_set_clk(i2c_imx, IMX_I2C_BIT_RATE);
 
 	/* Set up chip registers to defaults */
-	writeb(0, i2c_imx->base + IMX_I2C_I2CR);
+	writeb(0x80, i2c_imx->base + IMX_I2C_I2CR);
 	writeb(0, i2c_imx->base + IMX_I2C_I2SR);
+//clk_disable(i2c_imx->clk);
 
 	/* Add I2C adapter */
 	ret = i2c_add_numbered_adapter(&i2c_imx->adapter);

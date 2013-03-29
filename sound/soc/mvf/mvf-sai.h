@@ -21,7 +21,7 @@
 
 #define SAI_TCR2		0x08
 #define SAI_TCR2_SYNC		(1 << 30)
-#define SAI_TCR2_MSEL_MASK	(0xff << 26)
+#define SAI_TCR2_MSEL_MASK	(0x3 << 26)
 #define SAI_TCR2_MSEL_BUS	(0 << 26)
 #define SAI_TCR2_MSEL_MCLK1	(1 << 26)
 #define SAI_TCR2_MSEL_MCLK2	(2 << 26)
@@ -73,7 +73,7 @@
 #define SAI_RCR1		0x84
 
 #define SAI_RCR2		0x88
-#define SAI_RCR2_MSEL_MASK	(0xff << 26)
+#define SAI_RCR2_MSEL_MASK	(0x3 << 26)
 #define SAI_RCR2_MSEL_BUS	(0 << 26)
 #define SAI_RCR2_MSEL_MCLK1	(1 << 26)
 #define SAI_RCR2_MSEL_MCLK2	(2 << 26)
