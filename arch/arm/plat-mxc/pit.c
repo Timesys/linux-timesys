@@ -217,7 +217,8 @@ static struct irqaction pit_timer_irq = {
 
 static struct clock_event_device clockevent_pit = {
 	.name		= "pit",
-	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
+	//.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
+	.features	= CLOCK_EVT_FEAT_PERIODIC,
 	.shift		= 32,
 	.set_mode	= pit_set_mode,
 	.set_next_event	= pit_set_next_event,
