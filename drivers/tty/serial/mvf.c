@@ -98,7 +98,7 @@ struct imx_port {
 	void			*rx_buf;
 	unsigned char		*tx_buf;
 	unsigned int		rx_bytes, tx_bytes;
-	struct work_struct	tsk_dma_rx, tsk_dma_tx;
+	struct work_struct	tsk_rx, tsk_dma_tx;
 	unsigned int		dma_tx_nents;
 	bool			dma_is_rxing, dma_is_txing;
 	wait_queue_head_t	dma_wait;
@@ -384,6 +384,17 @@ out:
 	return IRQ_HANDLED;
 }
 
+static void rx_work(struct work_struct *w)
+{
+	struct imx_port *sport = container_of(w, struct imx_port, tsk_rx);
+	struct tty_struct *tty = sport->port.state->port.tty;
+
+	if (sport->rx_bytes) {
+		tty_flip_buffer_push(tty);
+		sport->rx_bytes = 0;
+	}
+}
+
 static irqreturn_t imx_rxint(int irq, void *dev_id)
 {
 	struct imx_port *sport = dev_id;
@@ -445,12 +456,13 @@ static irqreturn_t imx_rxint(int irq, void *dev_id)
 		uart_insert_char(sport->port, sr, MXC_UARTSR1_OR, rx, flg);
 		*/
 		tty_insert_flip_char(tty, rx, flg);
+		sport->rx_bytes++;
 	}
 
 out:
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 
-	tty_flip_buffer_push(tty);
+	schedule_work(&sport->tsk_rx);
 	return IRQ_HANDLED;
 }
 
@@ -640,7 +652,7 @@ static int imx_startup(struct uart_port *port)
 
 		sport->port.flags |= UPF_LOW_LATENCY;
 		INIT_WORK(&sport->tsk_dma_tx, dma_tx_work);
-		/*INIT_WORK(&sport->tsk_dma_rx, dma_rx_work);*/
+		INIT_WORK(&sport->tsk_rx, rx_work);
 		init_waitqueue_head(&sport->dma_wait);
 
 	}
@@ -1011,6 +1023,29 @@ static int imx_uart_ioctl(struct uart_port *uport, unsigned int cmd,
 
 }
 
+#if defined(CONFIG_CONSOLE_POLL)
+static int imx_poll_get_char(struct uart_port *port)
+{
+	struct imx_port *sport = (struct imx_port *)port;
+	int ch;
+
+	while (!(readb(sport->port.membase + MXC_UARTSR1) & MXC_UARTSR1_RDRF));
+
+	ch = readb(sport->port.membase + MXC_UARTDR);
+	return(ch & 0xff);
+}
+
+static void imx_poll_put_char(struct uart_port *port, unsigned char c)
+{
+	struct imx_port *sport = (struct imx_port *)port;
+
+	while (!(readb(sport->port.membase + MXC_UARTSR1) & MXC_UARTSR1_TDRE))
+		barrier();
+
+	writeb(c, sport->port.membase + MXC_UARTDR);
+}
+#endif
+
 static struct uart_ops imx_pops = {
 	.tx_empty	= imx_tx_empty,
 	.set_mctrl	= imx_set_mctrl,
@@ -1029,6 +1064,10 @@ static struct uart_ops imx_pops = {
 	.config_port	= imx_config_port,
 	.verify_port	= imx_verify_port,
 	.ioctl		= imx_uart_ioctl,
+#if defined(CONFIG_CONSOLE_POLL)
+	.poll_get_char  = imx_poll_get_char,
+	.poll_put_char  = imx_poll_put_char,
+#endif
 };
 
 static struct imx_port *imx_ports[UART_NR];
