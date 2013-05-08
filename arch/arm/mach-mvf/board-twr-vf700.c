@@ -196,11 +196,15 @@ static iomux_v3_cfg_t mvf600_pads[] = {
 	MVF600_PAD24_PTB2_FTM0CH2,
 	MVF600_PAD25_PTB3_FTM0CH3,
 
-	MVF600_PAD28_PTB6_FTM0CH6,
-	MVF600_PAD29_PTB7_FTM0CH7,
+	/*
+	 * PTB6 & PTB7 are commented out as they conflict with uart2
+	 * which is the MQX default console (e.g for printf)
+	*/
+	/* MVF600_PAD28_PTB6_FTM0CH6, */
+	/* MVF600_PAD29_PTB7_FTM0CH7, */
+
 	/*MVF600_PAD30_PTB8_FTM1CH0,*/
 	MVF600_PAD31_PTB9_FTM1CH1,
-
 	/* Touch Screen */
 	MVF600_PAD21_PTA31_TS_IRQ,
 
