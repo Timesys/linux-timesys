@@ -35,13 +35,13 @@ static int fec_get_mac_addr(unsigned char *mac)
 	unsigned int value;
 
 	value = readl(MVF_IO_ADDRESS(MVF_FEC_BASE_ADDR) + ENET_PALR);
-	mac[2] = value & 0xff;
-	mac[3] = (value >> 8) & 0xff;
-	mac[4] = (value >> 16) & 0xff;
-	mac[5] = (value >> 24) & 0xff;
+	mac[3] = value & 0xff;
+	mac[2] = (value >> 8) & 0xff;
+	mac[1] = (value >> 16) & 0xff;
+	mac[0] = (value >> 24) & 0xff;
 	value = readl(MVF_IO_ADDRESS(MVF_FEC_BASE_ADDR) + ENET_PAUR);
-	mac[0] = (value >> 16) & 0xff;
-	mac[1] = (value >> 24) & 0xff;
+	mac[5] = (value >> 16) & 0xff;
+	mac[4] = (value >> 24) & 0xff;
 
 	return 0;
 }
