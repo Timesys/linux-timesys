@@ -47,6 +47,7 @@
 #include <linux/pmic_status.h>
 #include <linux/ipu.h>
 #include <linux/mxcfb.h>
+#include <linux/phy.h>
 #include <linux/pwm_backlight.h>
 #include <linux/leds_pwm.h>
 #include <linux/fec.h>
@@ -86,6 +87,11 @@
 
 #define PCM052_SD1_CD	85
 #define PCM052_TS_IRQ	32
+
+/* FEC1 definitions */
+#define FEC1_BUS_ID		"2:01"	// SP: BUS_ID for ETH1
+#define KSZ8051_PHY_CTRL2       0x1F	// SP: PHY Ctrl2 reg addr
+#define KSZ8051_50MHZ_CLK_MODE (1 << 7)	// SP: PHY Ctrl2 reg val for 50 MHz clk
 
 #ifdef PCM952_REV0
 #undef PCM952_REV0
@@ -274,6 +280,17 @@ static struct switch_platform_data switch_data __initdata = {
 	.phy = PHY_INTERFACE_MODE_RMII,
 };
 
+/* SP: Additional configuration is required to setup ETH1 on the phyCORE-Vybrid
+ * (1) Set to 50 MHz (enable bit 7 in the PHY control 2 register)
+        - Write: reg - 0x1F;  data - (0x1 << 7)
+*/
+static int mvf_fec1_phy_fixup(struct phy_device *phydev){
+        int regval;
+        regval = phy_read(phydev, KSZ8051_PHY_CTRL2);
+        regval |= KSZ8051_50MHZ_CLK_MODE;
+        phy_write(phydev, KSZ8051_PHY_CTRL2, regval);
+}
+
 static int pcm052_spi_cs[] = {
 	41,
 };
@@ -412,10 +429,21 @@ static const struct esdhc_platform_data pcm052_sd1_data __initconst = {
 	.wp_gpio = -1,
 };
 
+/* SP: Replicate the AM335x solution for phy_fixup
+ * - make the required changes for FEC1/ETH1 - see 'mvf_fec1_phy_fixup'
+ */
+static void pcm052_setup(struct memory_accessor *mem_acc, void *context)
+{
+	phy_register_fixup_for_id(FEC1_BUS_ID, mvf_fec1_phy_fixup);
+        return;
+}
+
 static struct at24_platform_data board_eeprom = {
 	.byte_len = 4096,
 	.page_size = 32,
 	.flags = AT24_FLAG_ADDR16,
+	.setup = pcm052_setup, // SP: added to replicate the am335x board file
+	.context = (void *)NULL, // SP: added to replicate the am335x board file
 };
 
 static struct stmpe_gpio_platform_data pba_gpio_stm_data = {

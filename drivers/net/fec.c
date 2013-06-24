@@ -869,7 +869,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
 
 static int fec_enet_mii_init(struct platform_device *pdev)
 {
+#if !(defined(CONFIG_MACH_PCM052) || defined(CONFIG_MACH_PCL052))
 	static struct mii_bus *fec0_mii_bus;
+#endif
 	struct net_device *ndev = platform_get_drvdata(pdev);
 	struct fec_enet_private *fep = netdev_priv(ndev);
 	const struct platform_device_id *id_entry =
@@ -892,11 +894,18 @@ static int fec_enet_mii_init(struct platform_device *pdev)
 	 * mdio interface in board design, and need to be configured by
 	 * fec0 mii_bus.
 	 */
+	/*
+	 * SP: Modified for dual fec interfaces on the phyCORE-Vybrid
+	 * 	- fec0 and fec1 must be on different mdio interfaces
+	 *	- configured by fep -> mii_bus instead of fec0 mii_bus
+	 */
+#if !(defined(CONFIG_MACH_PCM052) || defined(CONFIG_MACH_PCL052))
 	if ((id_entry->driver_data & FEC_QUIRK_ENET_MAC) && pdev->id) {
 		/* fec1 uses fec0 mii_bus */
 		fep->mii_bus = fec0_mii_bus;
 		return 0;
 	}
+#endif
 
 	fep->mii_timeout = 0;
 
@@ -905,7 +914,6 @@ static int fec_enet_mii_init(struct platform_device *pdev)
 	 */
 	fep->phy_speed = DIV_ROUND_UP(clk_get_rate(fep->clk),
 					(FEC_ENET_MII_CLK << 2)) << 1;
-
 	fep->phy_speed |= 0x10;
 
 	/* set hold time to 2 internal clock cycle */
@@ -940,9 +948,11 @@ static int fec_enet_mii_init(struct platform_device *pdev)
 	if (mdiobus_register(fep->mii_bus))
 		goto err_out_free_mdio_irq;
 
+#if !(defined(CONFIG_MACH_PCM052) || defined(CONFIG_MACH_PCL052))
 	/* save fec0 mii_bus */
 	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC)
 		fec0_mii_bus = fep->mii_bus;
+#endif
 
 	return 0;
 
