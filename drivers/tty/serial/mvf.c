@@ -55,7 +55,7 @@
 /* We've been assigned a range on the "Low-density serial ports" major */
 #define SERIAL_IMX_MAJOR        207
 #define MINOR_START	        16
-#define DEV_NAME		"ttymxc"
+#define DEV_NAME		"ttyLP"
 #define MAX_INTERNAL_IRQ	MXC_INTERNAL_IRQS
 
 /*
@@ -641,7 +641,7 @@ static int imx_startup(struct uart_port *port)
 	if (sport->enable_dma) {
 		/* request eDMA channel and buffer */
 		sport->dma_tx_ch = mcf_edma_request_channel(pdata->dma_req_tx,
-			dma_tx_callback, NULL, 1, sport, NULL, "ttymxc");
+			dma_tx_callback, NULL, 1, sport, NULL, DEV_NAME);
 
 		sport->dma_is_txing = 0;
 
