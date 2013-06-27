@@ -74,7 +74,6 @@ struct imx_port {
 	struct uart_port	port;
 	struct timer_list	timer;
 	unsigned int		old_status;
-	int			txirq, rxirq, rtsirq;
 	unsigned int		have_rtscts:1;
 	unsigned int		use_dcedte:1;
 	unsigned int		use_irda:1;
@@ -103,12 +102,6 @@ struct imx_port {
 	bool			dma_is_rxing, dma_is_txing;
 	wait_queue_head_t	dma_wait;
 };
-
-#ifdef CONFIG_IRDA
-#define USE_IRDA(sport)	((sport)->use_irda)
-#else
-#define USE_IRDA(sport)	(0)
-#endif
 
 /*
  * Handle any change of modem status signal since we were last called.
@@ -192,11 +185,10 @@ static void imx_stop_rx(struct uart_port *port)
  */
 static void imx_enable_ms(struct uart_port *port)
 {
-#if 0
-	struct imx_port *sport = (struct imx_port *)port;
-
-	mod_timer(&sport->timer, jiffies);
-#endif
+	/*
+	 * To Be Implemented
+	 */
+	return ;
 }
 
 static inline void imx_transmit_buffer(struct imx_port *sport)
@@ -317,35 +309,12 @@ static void imx_start_tx(struct uart_port *port)
 {
 	struct imx_port *sport = (struct imx_port *)port;
 	unsigned char temp;
-#if 0
-	if (USE_IRDA(sport)) {
-		/* half duplex in IrDA mode; have to disable receive mode */
-		temp = readl(sport->port.membase + UCR4);
-		temp &= ~(UCR4_DREN);
-		writel(temp, sport->port.membase + UCR4);
 
-		temp = readl(sport->port.membase + UCR1);
-		temp &= ~(UCR1_RRDYEN);
-		writel(temp, sport->port.membase + UCR1);
-	}
-#endif
 	if (!sport->enable_dma) {
 		temp = readb(sport->port.membase + MXC_UARTCR2);
 		writeb(temp | MXC_UARTCR2_TIE,
 				sport->port.membase + MXC_UARTCR2);
 	}
-#if 0
-	if (USE_IRDA(sport)) {
-		temp = readl(sport->port.membase + UCR1);
-		temp |= UCR1_TRDYEN;
-		writel(temp, sport->port.membase + UCR1);
-
-		temp = readl(sport->port.membase + UCR4);
-		temp |= UCR4_TCEN;
-		writel(temp, sport->port.membase + UCR4);
-	}
-#endif
-
 	if (sport->enable_dma) {
 		schedule_work(&sport->tsk_dma_tx);
 		return;
@@ -462,6 +431,7 @@ static irqreturn_t imx_rxint(int irq, void *dev_id)
 out:
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 
+	//TODO: Check tsk_rx, seems to be edma related.
 	schedule_work(&sport->tsk_rx);
 	return IRQ_HANDLED;
 }
@@ -539,7 +509,6 @@ static void imx_break_ctl(struct uart_port *port, int break_state)
 	unsigned char temp;
 
 	spin_lock_irqsave(&sport->port.lock, flags);
-
 	temp = readb(sport->port.membase + MXC_UARTCR2) & ~MXC_UARTCR2_SBK;
 
 	if (break_state != 0)
@@ -612,20 +581,6 @@ static int imx_startup(struct uart_port *port)
 
 	writeb(temp & ~MXC_UARTCR2_RIE, sport->port.membase + MXC_UARTCR2);
 
-	if (USE_IRDA(sport)) {
-		/* reset fifo's and state machines */
-#if 0
-		int i = 100;
-		temp = readl(sport->port.membase + UCR2);
-		temp &= ~UCR2_SRST;
-		writel(temp, sport->port.membase + UCR2);
-		while (!(readl(sport->port.membase + UCR2) & UCR2_SRST) &&
-		    (--i > 0)) {
-			udelay(1);
-		}
-#endif
-	}
-
 	/*
 	 * Allocate the IRQ(s)
 	 * Vybrid chips only have one interrupt.
@@ -665,9 +620,7 @@ static int imx_startup(struct uart_port *port)
 	temp = readb(sport->port.membase + MXC_UARTCR2);
 	temp |= MXC_UARTCR2_RIE | MXC_UARTCR2_TIE;
 	writeb(temp, sport->port.membase + MXC_UARTCR2);
-	/*
-	 * Enable modem status interrupts
-	 */
+
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 
 
@@ -704,13 +657,8 @@ static void imx_shutdown(struct uart_port *port)
 	/*
 	 * Free the interrupts
 	 */
-	if (sport->txirq > 0) {
-		if (!USE_IRDA(sport))
-			free_irq(sport->rtsirq, sport);
-		free_irq(sport->txirq, sport);
-		free_irq(sport->rxirq, sport);
-	} else
-		free_irq(sport->port.irq, sport);
+
+	free_irq(sport->port.irq, sport);
 
 	/*
 	 * Disable all interrupts, port and break condition.
@@ -740,14 +688,6 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
 	cr4 = readb(sport->port.membase + MXC_UARTCR4);
 	bdh = readb(sport->port.membase + MXC_UARTBDH);
 	modem = readb(sport->port.membase + MXC_UARTMODEM);
-	/*
-	 * If we don't support modem control lines, don't allow
-	 * these to be set.
-	 */
-	if (0) {
-		termios->c_cflag &= ~(HUPCL | CRTSCTS | CMSPAR);
-		termios->c_cflag |= CLOCAL;
-	}
 
 	/*
 	 * We only support CS8 and CS7,but CS7 must enable PE.
@@ -847,10 +787,10 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
 	while (!(readb(sport->port.membase + MXC_UARTSR1) & MXC_UARTSR1_TC))
 		barrier();
 
+	/* disable transmit and receive */
 	writeb(old_cr2 & ~(MXC_UARTCR2_TE | MXC_UARTCR2_RE),
 			sport->port.membase + MXC_UARTCR2);
 
-	/* disable transmit and receive */
 	sbr = sport->port.uartclk / (16 * baud);
 	brfa = ((sport->port.uartclk - (16 * sbr * baud)) * 2)/baud;
 
@@ -1288,9 +1228,6 @@ static int serial_imx_probe(struct platform_device *pdev)
 	sport->port.ops = &imx_pops;
 	sport->port.flags = UPF_BOOT_AUTOCONF;
 	sport->port.line = pdev->id;
-	init_timer(&sport->timer);
-	sport->timer.function = imx_timeout;
-	sport->timer.data     = (unsigned long)sport;
 
 	sport->clk = clk_get(&pdev->dev, "mvf-uart.1");
 	if (IS_ERR(sport->clk)) {
@@ -1305,18 +1242,25 @@ static int serial_imx_probe(struct platform_device *pdev)
 
 	pdata = pdev->dev.platform_data;
 	if (pdata && (pdata->flags & IMXUART_HAVE_RTSCTS))
+	{
 		sport->have_rtscts = 1;
+		printk("IMX UART RTS/CTS enabled\n");
+	}
 	if (pdata && (pdata->flags & IMXUART_USE_DCEDTE))
+	{
 		sport->use_dcedte = 1;
+		printk("IMX UART using DCE/DTE\n");
+	}
 	if (pdata && (pdata->flags & IMXUART_EDMA))
+	{
 		sport->enable_dma = 1;
+		printk("IMX UART EDMA enabled\n");
+	}
 	if (pdata && (pdata->flags & IMXUART_FIFO))
+	{
 		sport->fifo_en = 1;
-
-#ifdef CONFIG_IRDA
-	if (pdata && (pdata->flags & IMXUART_IRDA))
-		sport->use_irda = 1;
-#endif
+		printk("IMX UART FIFO enabled\n");
+	}
 
 	if (pdata && pdata->init) {
 		ret = pdata->init(pdev);
