@@ -247,7 +247,7 @@ static struct platform_device mvf_twr_audio_device = {
 };
 
 static struct imxuart_platform_data mvf_uart1_pdata = {
-	.flags = IMXUART_FIFO,
+	.flags = IMXUART_FIFO | IMXUART_EDMA,
 	.dma_req_rx = DMA_MUX03_UART1_RX,
 	.dma_req_tx = DMA_MUX03_UART1_TX,
 };
@@ -435,10 +435,6 @@ static struct imx_asrc_platform_data imx_asrc_data = {
 	.clk_map_ver = 3,
 };
 
-static struct viv_gpu_platform_data mvf_gpu_pdata __initdata = {
-	.reserved_mem_size = SZ_16M,
-};
-
 static void __init mvf_twr_init_usb(void)
 {
 	imx_otg_base = MVF_IO_ADDRESS(MVF_USBC0_BASE_ADDR);
@@ -508,6 +504,7 @@ static void __init mvf_board_init(void)
 	imx_asrc_data.asrc_core_clk = clk_get(NULL, "asrc_clk");
 	imx_asrc_data.asrc_audio_clk = clk_get(NULL, "asrc_serial_clk");
 	mvf_add_asrc(&imx_asrc_data);
+
 }
 
 static void __init mvf_timer_init(void)
@@ -524,18 +521,6 @@ static struct sys_timer mxc_timer = {
 	.init   = mvf_timer_init,
 };
 
-static void __init mvf_mem_reserve(void)
-{
-	phys_addr_t phys;
-	if (mvf_gpu_pdata.reserved_mem_size) {
-		phys = memblock_alloc_base(mvf_gpu_pdata.reserved_mem_size,
-				SZ_4K, 0x88000000);
-		memblock_free(phys, mvf_gpu_pdata.reserved_mem_size);
-		memblock_remove(phys, mvf_gpu_pdata.reserved_mem_size);
-		mvf_gpu_pdata.reserved_mem_base = phys;
-	}
-}
-
 /*
  * initialize __mach_desc_ data structure.
  */
@@ -547,5 +532,4 @@ MACHINE_START(MVFA5_TWR_VF700, "Freescale MVF TOWER VF700 Board")
 	.init_irq = mvf_init_irq,
 	.init_machine = mvf_board_init,
 	.timer = &mxc_timer,
-	.reserve = mvf_mem_reserve,
 MACHINE_END

@@ -1880,57 +1880,6 @@ static struct clk qspi1_clk = {
 	.get_rate = _clk_qspi1_get_rate,
 };
 
-static int _clk_gpu2d_core_set_parent(struct clk *clk, struct clk *parent)
-{
-	int mux;
-	u32 reg = __raw_readl(MXC_CCM_CSCMR1)
-		& ~MXC_CCM_CSCMR1_GPU_CLK_SEL_MASK;
-
-	mux = _get_mux6(parent, &pll2_pfd2_396M, &pll3_pfd2_396M,
-			NULL, NULL, NULL, NULL);
-
-	reg |= (mux << MXC_CCM_CSCMR1_GPU_CLK_SEL_OFFSET);
-
-	__raw_writel(reg, MXC_CCM_CSCMR1);
-
-	return 0;
-}
-
-static int _clk_gpu2d_core_set_rate(struct clk *clk, unsigned long rate)
-{
-	u32 reg;
-
-	reg = __raw_readl(MXC_CCM_CSCDR2);
-	reg |= MXC_CCM_CSCDR2_GPU_EN;
-	__raw_writel(reg, MXC_CCM_CSCDR2);
-
-	return 0;
-}
-
-static unsigned long _clk_gpu2d_core_get_rate(struct clk *clk)
-{
-	return clk_get_rate(clk->parent);
-}
-
-static unsigned long _clk_gpu2d_core_round_rate(struct clk *clk, unsigned long rate)
-{
-	return clk_get_rate(clk->parent);
-}
-
-static struct clk gpu2d_core_clk = {
-	__INIT_CLK_DEBUG(gpu2d_core_clk)
-	.id = 0,
-	.parent = &pll2_pfd2_396M,
-	.enable_reg = MXC_CCM_CCGR8,
-	.enable_shift = MXC_CCM_CCGRx_CG15_OFFSET,
-	.enable = _clk_enable,
-	.disable = _clk_disable,
-	.set_parent = _clk_gpu2d_core_set_parent,
-	.set_rate = _clk_gpu2d_core_set_rate,
-	.get_rate = _clk_gpu2d_core_get_rate,
-	.round_rate = _clk_gpu2d_core_round_rate,
-};
-
 static int _clk_asrc_serial_set_rate(struct clk *clk, unsigned long rate)
 {
 	return 0;
@@ -2014,9 +1963,6 @@ static struct clk_lookup lookups[] = {
 	_REGISTER_CLOCK(NULL, "asrc_clk", asrc_clk[0]),
 	_REGISTER_CLOCK(NULL, "asrc_serial_clk", asrc_clk[1]),
  	_REGISTER_CLOCK(NULL, "caam_clk", caam_clk),
-	_REGISTER_CLOCK(NULL, "gpu2d_clk", gpu2d_core_clk),
-	_REGISTER_CLOCK(NULL, "openvg_axi_clk", gpu2d_core_clk),
-	_REGISTER_CLOCK(NULL, "gpu2d_axi_clk", gpu2d_core_clk),
 };
 
 static void clk_tree_init(void)
@@ -2089,10 +2035,6 @@ int __init mvf_clocks_init(unsigned long ckil, unsigned long osc,
 
 	clk_set_parent(&qspi0_clk, &pll1_pfd4_528M);
 	clk_set_rate(&qspi0_clk, 66000000);
-
-	clk_set_parent(&gpu2d_core_clk, &pll2_pfd2_396M);
-	clk_set_rate(&gpu2d_core_clk, 396000000);
-
 	return 0;
 
 }

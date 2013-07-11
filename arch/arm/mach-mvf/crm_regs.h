@@ -312,9 +312,6 @@
 #define MXC_CCM_CSCMR1_SAI1_CLK_SEL_MASK	(0x3 << 2)
 #define MXC_CCM_CSCMR1_SAI0_CLK_SEL_OFFSET	(0)
 #define MXC_CCM_CSCMR1_SAI0_CLK_SEL_MASK	(0x3)
-#define MXC_CCM_CSCMR1_GPU_CLK_SEL_MASK     (0x1 << 14)
-#define MXC_CCM_CSCMR1_GPU_CLK_SEL_OFFSET   (14)
-
 
 /* Define the bits in register CSCDR1 */
 #define MXC_CCM_CSCDR1_FTM3_CLK_EN		(0x1 << 28)
@@ -338,7 +335,6 @@
 #define MXC_CCM_CSCDR1_SAI1_DIV_MASK		(0xF << 4)
 #define MXC_CCM_CSCDR1_SAI0_DIV_OFFSET	(0)
 #define MXC_CCM_CSCDR1_SAI0_DIV_MASK		(0xF << 0)
-#define MXC_CCM_CSCDR2_GPU_EN           (0x1 << 10)
 
 /* Define the bits in register CSCDR2 */
 #define MXC_CCM_CSCDR2_ESAI_EN		(0x1 << 30)
