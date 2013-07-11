@@ -107,7 +107,6 @@ struct mfb_info {
 	struct dcu_layer_desc *layer_desc;
 	int cursor_reset;
 	unsigned char g_alpha;
-	unsigned char blend;
 	unsigned int count;
 	int x_layer_d;	/* layer display x offset to physical screen */
 	int y_layer_d;	/* layer display y offset to physical screen */
@@ -121,7 +120,6 @@ static struct mfb_info mfb_template[] = {
 	.id = "Layer0",
 	.registered = 0,
 	.g_alpha = 0xff,
-	.blend = 0,
 	.count = 0,
 	.x_layer_d = 0,
 	.y_layer_d = 0,
@@ -132,7 +130,6 @@ static struct mfb_info mfb_template[] = {
 	.id = "Layer1",
 	.registered = 0,
 	.g_alpha = 0xff,
-	.blend = 0,
 	.count = 0,
 	.x_layer_d = 50,
 	.y_layer_d = 50,
@@ -143,7 +140,6 @@ static struct mfb_info mfb_template[] = {
 	.id = "Layer2",
 	.registered = 0,
 	.g_alpha = 0xff,
-	.blend = 0,
 	.count = 0,
 	.x_layer_d = 100,
 	.y_layer_d = 100,
@@ -154,7 +150,6 @@ static struct mfb_info mfb_template[] = {
 	.id = "Layer3",
 	.registered = 0,
 	.g_alpha = 0xff,
-	.blend = 0,
 	.count = 0,
 	.x_layer_d = 150,
 	.y_layer_d = 150,
@@ -538,21 +533,11 @@ static int mvf_dcu_set_par(struct fb_info *info)
 	layer_desc->posx = mfbi->x_layer_d;
 	layer_desc->posy = mfbi->y_layer_d;
 
-	switch (var->bits_per_pixel) {
-	case 24:
-		layer_desc->bpp = BPP_24;
-		break;
-	case 32:
-		layer_desc->bpp = BPP_32_ARGB8888;
-		break;
-	default:
-		printk(KERN_ERR "Unable to support other bpp now\n");
-	}
-
-	layer_desc->blend = mfbi->blend;
+	layer_desc->blend = 0x01;
 	layer_desc->chroma_key_en = 0;
 	layer_desc->lut_offset = 0;
 	layer_desc->rle_en = 0;
+	layer_desc->bpp = BPP_24;
 	layer_desc->trans = mfbi->g_alpha;
 	layer_desc->safety_en = 0;
 	layer_desc->data_sel_clut = 0;
@@ -715,7 +700,6 @@ static int mvf_dcu_ioctl(struct fb_info *info, unsigned int cmd,
 	case MFB_SET_ALPHA:
 		if (copy_from_user(&global_alpha, buf, sizeof(global_alpha)))
 			return -EFAULT;
-		mfbi->blend = 1;
 		mfbi->g_alpha = global_alpha;
 		mvf_dcu_check_var(&info->var, info);
 		mvf_dcu_set_par(info);
