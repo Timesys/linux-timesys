@@ -398,6 +398,7 @@ static const struct pm_platform_data pcm052_pm_data __initconst = {
 static struct mvf_dcu_platform_data mvf_dcu_pdata = {
 	.mode_str	= "pm070wl4",
 	.default_bpp	= 24,
+	.enable_pin	= 25,
 };
 
 static void __init fixup_mxc_board(struct machine_desc *desc, struct tag *tags,
