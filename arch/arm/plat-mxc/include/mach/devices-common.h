@@ -406,7 +406,8 @@ struct mvf_dcu_data {
 	resource_size_t iobase;
 	resource_size_t iosize;
 	resource_size_t irq;
-	int (*init) (int);
+	int (*init) (int,
+		struct mvf_dcu_platform_data *pdata);
 };
 struct platform_device *__init mvf_add_dcu(
 		const int id,

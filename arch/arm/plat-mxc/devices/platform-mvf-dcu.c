@@ -22,16 +22,17 @@
 		.init = dcu_init,					\
 	}
 
-int __init mvf_dcu_init(int id)
+int __init mvf_dcu_init(int id,
+		struct mvf_dcu_platform_data *pdata)
 {
 	int ret = 0;
 
-	ret = gpio_request_one(DCU_LCD_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "DCU");
+	ret = gpio_request_one(pdata->enable_pin, GPIOF_OUT_INIT_LOW, "DCU");
 	if (ret)
 		printk(KERN_ERR "DCU: failed to request GPIO 25\n");
 
 	msleep(2);
-	gpio_set_value(DCU_LCD_ENABLE_PIN, 0);
+	gpio_set_value(pdata->enable_pin, 0);
 
 	writel(0x20000000, MVF_IO_ADDRESS(MVF_TCON0_BASE_ADDR));
 	return ret;

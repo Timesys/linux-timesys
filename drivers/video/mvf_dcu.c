@@ -1017,9 +1017,9 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 		goto failed_get_resource;
 	}
 
-	gpio_request_one(DCU_LCD_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "DCU");
+	gpio_request_one(plat_data->enable_pin, GPIOF_OUT_INIT_LOW, "DCU");
 	msleep(2);
-	gpio_set_value(DCU_LCD_ENABLE_PIN, 0);
+	gpio_set_value(plat_data->enable_pin, 0);
 
 	writel(0x20000000, MVF_IO_ADDRESS(MVF_TCON0_BASE_ADDR));
 

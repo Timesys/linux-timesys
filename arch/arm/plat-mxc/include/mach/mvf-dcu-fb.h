@@ -19,8 +19,11 @@
 struct mvf_dcu_platform_data {
 	char *mode_str;
 	int default_bpp;
-	int (*init) (int);
+	int (*init) (int,
+		struct mvf_dcu_platform_data *pdata);
+	int enable_pin;
 };
+
 
 struct dfb_chroma_key {
 	int enable;
@@ -31,8 +34,6 @@ struct dfb_chroma_key {
 	__u8  green_min;
 	__u8  blue_min;
 };
-
-#define DCU_LCD_ENABLE_PIN	25
 
 #define MFB_SET_CHROMA_KEY	_IOW('M', 1, struct mfb_chroma_key)
 #define MFB_SET_BRIGHTNESS	_IOW('M', 3, __u8)
