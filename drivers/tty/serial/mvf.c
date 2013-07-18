@@ -207,7 +207,12 @@ static inline void imx_transmit_buffer(struct imx_port *sport)
 	}
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+	{
+		if (sport->port.state->port.tty)
+		{
 		uart_write_wakeup(&sport->port);
+		}
+	}
 
 	if (uart_circ_empty(xmit))
 		imx_stop_tx(&sport->port);
@@ -296,7 +301,12 @@ static void dma_tx_work(struct work_struct *w)
 	spin_unlock_irqrestore(&sport->port.lock, flags);
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+	{
+		if (sport->port.state->port.tty)
+		{
 		uart_write_wakeup(&sport->port);
+		}
+	}
 
 	return;
 }
@@ -346,7 +356,12 @@ static irqreturn_t imx_txint(int irq, void *dev_id)
 	imx_transmit_buffer(sport);
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+	{
+		if (sport->port.state->port.tty)
+		{
 		uart_write_wakeup(&sport->port);
+		}
+	}
 
 out:
 	spin_unlock_irqrestore(&sport->port.lock, flags);
