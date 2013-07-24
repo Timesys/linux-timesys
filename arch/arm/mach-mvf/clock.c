@@ -2028,7 +2028,7 @@ int __init mvf_clocks_init(unsigned long ckil, unsigned long osc,
 	clk_set_rate(&esdhc1_clk, 200000000);
 
 	clk_set_parent(&dcu0_clk, &pll1_pfd2_452M);
-	clk_set_rate(&dcu0_clk, 113000000);
+	clk_set_rate(&dcu0_clk, 90400000);
 
 	clk_set_parent(&sai2_clk, &pll4_audio_main_clk);
 	clk_set_rate(&sai2_clk, 24567000);

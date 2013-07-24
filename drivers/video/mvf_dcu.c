@@ -37,7 +37,6 @@
 #define DRIVER_NAME	"mvf-dcu"
 
 static struct fb_videomode __devinitdata mvf_dcu_default_mode = {
-	.pixclock	= 31250,
 	.xres		= 800,
 	.yres		= 480,
 	.left_margin	= 42,
@@ -67,7 +66,6 @@ static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
 	},
         {
                 .name           = "pm070wl4",
-		.pixclock	= 31250,
                 .xres           = 800,
                 .yres           = 480,
                 .left_margin    = 42,
@@ -434,7 +432,7 @@ static void update_lcdc(struct fb_info *info)
 	writel(DCU_MODE_BLEND_ITER(3) | DCU_MODE_RASTER_EN(1),
 			dcu->base + DCU_DCU_MODE);
 
-	writel(9, dcu->base + DCU_DIV_RATIO);
+	writel(2, dcu->base + DCU_DIV_RATIO);
 
 	writel(DCU_SYN_POL_INV_PXCK(0) | DCU_SYN_POL_NEG(0) |
 		DCU_SYN_POL_INV_VS(1) | DCU_SYN_POL_INV_HS(1),
