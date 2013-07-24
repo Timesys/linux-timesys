@@ -392,6 +392,8 @@ static struct mvf_dcu_platform_data mvf_dcu_pdata = {
 static void __init fixup_mxc_board(struct machine_desc *desc, struct tag *tags,
 				   char **cmdline, struct meminfo *mi)
 {
+	if (!mi->nr_banks)
+		arm_add_memory(PHYS_OFFSET, SZ_128M);
 }
 /*
  * Not defined the cd/wp so far, set it always present for debug*/
