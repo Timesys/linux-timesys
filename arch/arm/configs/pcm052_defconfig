@@ -607,7 +607,8 @@ CONFIG_MTD_CFI_I2=y
 # Self-contained MTD device drivers
 #
 # CONFIG_MTD_DATAFLASH is not set
-# CONFIG_MTD_M25P80 is not set
+CONFIG_MTD_M25P80=y
+# CONFIG_M25PXX_USE_FAST_READ is not set
 # CONFIG_MTD_SST25L is not set
 # CONFIG_MTD_SLRAM is not set
 # CONFIG_MTD_PHRAM is not set
@@ -1023,7 +1024,7 @@ CONFIG_SPI_MASTER=y
 #
 # CONFIG_SPI_ALTERA is not set
 # CONFIG_SPI_BITBANG is not set
-# CONFIG_SPI_MVF_QSPI is not set
+CONFIG_SPI_MVF_QSPI=y
 # CONFIG_SPI_GPIO is not set
 # CONFIG_SPI_IMX is not set
 CONFIG_SPI_MVF=y
@@ -1036,7 +1037,7 @@ CONFIG_SPI_MVF=y
 #
 # SPI Protocol Masters
 #
-# CONFIG_SPI_SPIDEV is not set
+CONFIG_SPI_SPIDEV=y
 # CONFIG_SPI_TLE62X0 is not set
 
 #

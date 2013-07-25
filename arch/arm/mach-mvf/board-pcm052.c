@@ -315,79 +315,43 @@ static const struct spi_mvf_master pcm052_qspi_data __initconst = {
 };
 
 #if defined(CONFIG_MTD_M25P80) || defined(CONFIG_MTD_M25P80_MODULE)
-static struct mtd_partition at26df081a_partitions[] = {
+static struct mtd_partition n25q128_partitions[] = {
 	{
-		.name = "at26df081a",
-		.size = (1024 * 64 * 16),
+		.name = "n25q128",
+		.size = (1024 * 64 * 128),
 		.offset = 0x00000000,
 		.mask_flags = 0,
 	}
 };
 
-static struct flash_platform_data at26df081a_platform_data = {
-	.name = "Atmel at26df081a SPI Flash chip",
-	.parts = at26df081a_partitions,
-	.nr_parts = ARRAY_SIZE(at26df081a_partitions),
-	.type = "at26df081a",
+static struct flash_platform_data n25q128_spi_flash_data = {
+	.name = "Micron n25q128 SPI Flash chip",
+	.parts = n25q128_partitions,
+	.nr_parts = ARRAY_SIZE(n25q128_partitions),
+	.type = "n25q128",
 };
-
-static struct spi_mvf_chip at26df081a_chip_info = {
-	.mode = SPI_MODE_3,
-	.bits_per_word = 8,
-	.void_write_data = 0,
-	.dbr = 0,
-	.pbr = 0,
-	.br = 0,
-	.pcssck = 0,
-	.pasc = 0,
-	.pdt = 0,
-	.cssck = 0,
-	.asc = 0,
-	.dt = 0,
-};
-
-static struct mtd_partition s25fl256s_partitions[] = {
-	{
-		.name = "s25fl256s",
-		.size = (1024 * 64 * 256),
-		.offset = 0x00000000,
-		.mask_flags = 0,
-	}
-};
-
-static struct flash_platform_data s25fl256s_spi_flash_data = {
-	.name = "Spansion s25fl128s SPI Flash chip",
-	.parts = s25fl256s_partitions,
-	.nr_parts = ARRAY_SIZE(s25fl256s_partitions),
-	.type = "s25fl128s",
-};
-#endif
 
 static struct spi_board_info mvf_spi_board_info[] __initdata = {
-#if defined(CONFIG_MTD_M25P80)
 #if defined(CONFIG_SPI_MVF_QSPI)
 	{
 		/* The modalias must be the same as spi device driver name */
 		.modalias = "m25p80",
-		.max_speed_hz = 20000000,
+		.max_speed_hz = 30000000,
 		.bus_num = 0,
 		.chip_select = 0,
-		.platform_data = &s25fl256s_spi_flash_data,
+		.platform_data = &n25q128_spi_flash_data,
 	},
-#endif
-#if defined(CONFIG_SPI_MVF)
 	{
 		/* The modalias must be the same as spi device driver name */
 		.modalias = "m25p80",
-		.max_speed_hz = 16000000,
+		.max_speed_hz = 30000000,
 		.bus_num = 0,
-		.chip_select = 0,
-		.platform_data = &at26df081a_platform_data,
-		.controller_data = &at26df081a_chip_info
+		.chip_select = 1,
+		.platform_data = &n25q128_spi_flash_data,
 	},
 #endif
-#endif
 };
+#endif
 
 static void spi_device_init(void)
 {
@@ -546,7 +510,6 @@ static void __init pcm052_board_init(void)
 	i2c_register_board_info(2, pcm052_i2c2_board_info,
 			ARRAY_SIZE(pcm052_i2c2_board_info));
 
-	mvf_add_dspi(0, &pcm052_spi_data);
 	mvf_add_qspi(0, &pcm052_qspi_data);
 	spi_device_init();
 
