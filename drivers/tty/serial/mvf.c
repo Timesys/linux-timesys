@@ -491,11 +491,13 @@ static void imx_set_mctrl(struct uart_port *port, unsigned int mctrl)
 	unsigned long temp;
 
 	temp = readb(sport->port.membase + MXC_UARTMODEM) &
-					~MXC_UARTMODEM_RXRTSE;
+					~(MXC_UARTMODEM_RXRTSE | MXC_UARTMODEM_TXCTSE);
 
 	if (mctrl & TIOCM_RTS)
 		temp |= MXC_UARTMODEM_RXRTSE;
 
+	if (mctrl & TIOCM_CTS)
+		temp |= MXC_UARTMODEM_TXCTSE;
 
 	writeb(temp, sport->port.membase + MXC_UARTMODEM);
 }
