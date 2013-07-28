@@ -441,7 +441,7 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 	// since this can get called before probe, assign happens here
 	if(!sema4)
 	{
-		result = mvf_sema4_assign(3, true, &sema4);
+		result = mvf_sema4_assign(MCC_I2C_SEMAPHORE_NUMBER, true, &sema4);
 		if(result) {
 			printk(KERN_ERR "can't assign sema4 %s %s exiting.\n",__FILE__,__func__);
 			return result;
