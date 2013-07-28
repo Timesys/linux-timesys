@@ -14,8 +14,8 @@ typedef struct mvf_sema4_handle_struct {
 	int use_interrupts;
 	wait_queue_head_t wait_queue;
 	// stats
-	unsigned long attempts;
-	unsigned long interrupts;
+	u32 attempts;
+	u32 interrupts;
 	struct dentry *debugfs_file;
 } MVF_SEMA4;
 
