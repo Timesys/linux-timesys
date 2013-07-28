@@ -116,7 +116,8 @@ int mvf_sema4_assign(int gate_num, bool use_interrupts, MVF_SEMA4** sema4_p)
 	int retval;
 	u32 cp0ine;
 	unsigned long irq_flags;
-	char debugfs_gatedir[4];
+	char debugfs_gatedir_name[4];
+	struct dentry *debugfs_gate_dir;
 
 	// take the opportunity to initialize the whole sub-system
 	if(!initialized)
@@ -152,13 +153,14 @@ int mvf_sema4_assign(int gate_num, bool use_interrupts, MVF_SEMA4** sema4_p)
 	}
 
 	// debugfs
-	sprintf(debugfs_gatedir, "%d", gate_num);
-	debugfs_dir = debugfs_create_dir(debugfs_gatedir, debugfs_dir);
-	debugfs_create_u32("attempts", 0444, debugfs_dir, &(*sema4_p)->attempts);
-	debugfs_create_u32("interrupts", 0444, debugfs_dir, &(*sema4_p)->interrupts);
+	sprintf(debugfs_gatedir_name, "%d", gate_num);
+	debugfs_gate_dir = debugfs_create_dir(debugfs_gatedir_name, debugfs_dir);
+	debugfs_create_u32("attempts", 0444, debugfs_gate_dir, &(*sema4_p)->attempts);
+	debugfs_create_u32("interrupts", 0444, debugfs_gate_dir, &(*sema4_p)->interrupts);
 
 	return 0;
 }
+EXPORT_SYMBOL(mvf_sema4_assign);
 
 int mvf_sema4_deassign(MVF_SEMA4 *sema4)
 {
@@ -184,6 +186,7 @@ int mvf_sema4_deassign(MVF_SEMA4 *sema4)
 
 	return 0;
 }
+EXPORT_SYMBOL(mvf_sema4_deassign);
 
 int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us)
 {
@@ -230,6 +233,7 @@ int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us)
 
 	return 0;
 }
+EXPORT_SYMBOL(mvf_sema4_lock);
 
 int mvf_sema4_unlock(MVF_SEMA4 *sema4)
 {
@@ -241,4 +245,5 @@ int mvf_sema4_unlock(MVF_SEMA4 *sema4)
 
 	return 0;
 }
+EXPORT_SYMBOL(mvf_sema4_unlock);
 
