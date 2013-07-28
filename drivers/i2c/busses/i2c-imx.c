@@ -621,7 +621,7 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_ARCH_MVF
 	// make sure not in use by MQX
-	if(mvf_sema4_assign(3, true, &sema4)) {
+	if(mvf_sema4_assign(MCC_I2C_SEMAPHORE_NUMBER, true, &sema4)) {
 		dev_err(&pdev->dev, "could not grab MQX semaphore\n");
 		goto fail5;
 	}
