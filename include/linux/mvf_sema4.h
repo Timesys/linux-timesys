@@ -16,7 +16,10 @@ typedef struct mvf_sema4_handle_struct {
 	// stats
 	u32 attempts;
 	u32 interrupts;
-	struct dentry *debugfs_file;
+	u32 failures;
+	struct timeval request_time;
+	u64 total_latency_us;
+	u32 worst_latency_us;
 } MVF_SEMA4;
 
 int mvf_sema4_assign(int gate_num, bool use_interrupts, MVF_SEMA4** sema4_p);

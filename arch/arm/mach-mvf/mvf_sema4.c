@@ -155,8 +155,11 @@ int mvf_sema4_assign(int gate_num, bool use_interrupts, MVF_SEMA4** sema4_p)
 	// debugfs
 	sprintf(debugfs_gatedir_name, "%d", gate_num);
 	debugfs_gate_dir = debugfs_create_dir(debugfs_gatedir_name, debugfs_dir);
-	debugfs_create_u32("attempts", 0444, debugfs_gate_dir, &(*sema4_p)->attempts);
-	debugfs_create_u32("interrupts", 0444, debugfs_gate_dir, &(*sema4_p)->interrupts);
+	debugfs_create_u32("attempts", S_IRUGO | S_IWUGO, debugfs_gate_dir, &(*sema4_p)->attempts);
+	debugfs_create_u32("interrupts", S_IRUGO | S_IWUGO, debugfs_gate_dir, &(*sema4_p)->interrupts);
+	debugfs_create_u32("failures", S_IRUGO | S_IWUGO, debugfs_gate_dir, &(*sema4_p)->failures);
+	debugfs_create_u64("total_latency_us", S_IRUGO | S_IWUGO, debugfs_gate_dir, &(*sema4_p)->total_latency_us);
+	debugfs_create_u32("worst_latency_us", S_IRUGO | S_IWUGO, debugfs_gate_dir, &(*sema4_p)->worst_latency_us);
 
 	return 0;
 }
@@ -188,6 +191,20 @@ int mvf_sema4_deassign(MVF_SEMA4 *sema4)
 }
 EXPORT_SYMBOL(mvf_sema4_deassign);
 
+static void add_latency_stat(MVF_SEMA4 *sema4) {
+
+	struct timeval now;
+	long latency;
+
+	do_gettimeofday(&now);
+
+	latency = (now.tv_sec * 1000000) + now.tv_usec;
+	latency -= (sema4->request_time.tv_sec * 1000000) + sema4->request_time.tv_usec;
+
+	sema4->total_latency_us += latency;
+	sema4->worst_latency_us = sema4->worst_latency_us < latency ? latency : sema4->worst_latency_us;
+}
+
 int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us)
 {
 	int retval;
@@ -203,21 +220,28 @@ int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us)
 
 	// bump stats
 	gates[gate_num]->attempts++;
+	do_gettimeofday(&gates[gate_num]->request_time);
 
 	// try to grab it
 	writeb(LOCK_VALUE, MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num);
-	if(readb(MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num) == LOCK_VALUE)
+	if(readb(MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num) == LOCK_VALUE) {
+		add_latency_stat(gates[gate_num]);
 		return 0;
+	}
 
 	// no timeout, fail
-	if(!timeout_us)
+	if(!timeout_us) {
+		gates[gate_num]->failures++;
 		return -EBUSY;
+	}
 
 	// wait forever?
 	if(timeout_us == 0xffffffff)
 	{
-		if(wait_event_interruptible(sema4->wait_queue, (readb(MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num) == LOCK_VALUE)))
+		if(wait_event_interruptible(sema4->wait_queue, (readb(MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num) == LOCK_VALUE))) {
+			gates[gate_num]->failures++;
 			return -ERESTARTSYS;
+		}
 	}
 	else
 	{
@@ -225,12 +249,17 @@ int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us)
 		retval = wait_event_interruptible_timeout(sema4->wait_queue,
 							(readb(MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num) == LOCK_VALUE),
 							usecs_to_jiffies(timeout_us));
-		if(retval == 0)
+		if(retval == 0) {
+			gates[gate_num]->failures++;
 			return -ETIME;
-		else if(retval < 0)
+		}
+		else if(retval < 0) {
+			gates[gate_num]->failures++;
 			return retval;
+		}
 	}
 
+	add_latency_stat(gates[gate_num]);
 	return 0;
 }
 EXPORT_SYMBOL(mvf_sema4_lock);
