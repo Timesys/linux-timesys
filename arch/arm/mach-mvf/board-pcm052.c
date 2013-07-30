@@ -518,7 +518,7 @@ static void __init pcm052_board_init(void)
 	mxc_register_device(&pcm052_audio_device, &pcm052_audio_data);
 	mvfa5_add_sai(2, &mvf_sai_pdata);
 
-//	mvf_add_wdt(0);
+	mvf_add_wdt(0);
 
 	pcm052_init_usb();
 
