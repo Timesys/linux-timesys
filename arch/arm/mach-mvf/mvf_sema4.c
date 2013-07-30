@@ -71,12 +71,12 @@ static irqreturn_t sema4_irq_handler(int irq, void *dev_id)
 			// make sure there's a gate assigned
 			if(gates[gate_num])
 			{
-				if(gates[gate_num]->use_interrupts) {
+				//if(gates[gate_num]->use_interrupts) {
 					// wake up whoever was aiting
 					wake_up_interruptible(&(gates[gate_num]->wait_queue));
 					// bump stats
 					gates[gate_num]->interrupts++;
-				}
+				//}
 			}
 		}
 	}
@@ -111,7 +111,7 @@ static int initialize(void)
 	return 0;
 }
 
-int mvf_sema4_assign(int gate_num, bool use_interrupts, MVF_SEMA4** sema4_p)
+int mvf_sema4_assign(int gate_num, MVF_SEMA4** sema4_p)
 {
 	int retval;
 	u32 cp0ine;
@@ -140,17 +140,13 @@ int mvf_sema4_assign(int gate_num, bool use_interrupts, MVF_SEMA4** sema4_p)
 
 	gates[gate_num] = *sema4_p;
 	(*sema4_p)->gate_num = gate_num;
-	(*sema4_p)->use_interrupts = use_interrupts;
 
-	if(use_interrupts)
-	{
-		init_waitqueue_head(&((*sema4_p)->wait_queue));
-		local_irq_save(irq_flags);
-		cp0ine = readl(MVF_IO_ADDRESS(SEMA4_CP0INE));
-		cp0ine |= MASK_FROM_GATE(gate_num);
-		writel(cp0ine, MVF_IO_ADDRESS(SEMA4_CP0INE));
-		local_irq_restore(irq_flags);
-	}
+	init_waitqueue_head(&((*sema4_p)->wait_queue));
+	local_irq_save(irq_flags);
+	cp0ine = readl(MVF_IO_ADDRESS(SEMA4_CP0INE));
+	cp0ine |= MASK_FROM_GATE(gate_num);
+	writel(cp0ine, MVF_IO_ADDRESS(SEMA4_CP0INE));
+	local_irq_restore(irq_flags);
 
 	// debugfs
 	sprintf(debugfs_gatedir_name, "%d", gate_num);
@@ -175,14 +171,11 @@ int mvf_sema4_deassign(MVF_SEMA4 *sema4)
 		return -EINVAL;
 	gate_num = sema4->gate_num;
 
-	if(sema4->use_interrupts)
-	{
-		local_irq_save(irq_flags);
-		cp0ine = readl(MVF_IO_ADDRESS(SEMA4_CP0INE));
-		cp0ine &= ~MASK_FROM_GATE(gate_num);
-		writel(cp0ine, MVF_IO_ADDRESS(SEMA4_CP0INE));
-		local_irq_restore(irq_flags);
-	}
+	local_irq_save(irq_flags);
+	cp0ine = readl(MVF_IO_ADDRESS(SEMA4_CP0INE));
+	cp0ine &= ~MASK_FROM_GATE(gate_num);
+	writel(cp0ine, MVF_IO_ADDRESS(SEMA4_CP0INE));
+	local_irq_restore(irq_flags);
 
 	kfree(sema4);
 	gates[gate_num] = NULL;
@@ -191,32 +184,34 @@ int mvf_sema4_deassign(MVF_SEMA4 *sema4)
 }
 EXPORT_SYMBOL(mvf_sema4_deassign);
 
-static void add_latency_stat(MVF_SEMA4 *sema4) {
+static long delta_time(struct timeval *start) {
 
 	struct timeval now;
-	long latency;
+	long now_us, start_us;
 
 	do_gettimeofday(&now);
 
-	latency = (now.tv_sec * 1000000) + now.tv_usec;
-	latency -= (sema4->request_time.tv_sec * 1000000) + sema4->request_time.tv_usec;
+	now_us = (now.tv_sec * 1000000) + now.tv_usec;
+	start_us = (start->tv_sec * 1000000) + start->tv_usec;
+
+	return now_us > start_us ? now_us - start_us : 0;
+}
+
+static void add_latency_stat(MVF_SEMA4 *sema4) {
+
+	long latency = delta_time(&sema4->request_time);
 
 	sema4->total_latency_us += latency;
 	sema4->worst_latency_us = sema4->worst_latency_us < latency ? latency : sema4->worst_latency_us;
 }
 
-int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us)
+int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us, bool use_interrupts)
 {
 	int retval;
 	int gate_num;
 	if(!sema4)
 		return -EINVAL;
 	gate_num = sema4->gate_num;
-
-	// cant use timeouts if not using interruppts
-	// TODO use spin lock if not using interrupts
-	if((!sema4->use_interrupts) && timeout_us)
-		return -EINVAL;
 
 	// bump stats
 	gates[gate_num]->attempts++;
@@ -233,6 +228,21 @@ int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us)
 	if(!timeout_us) {
 		gates[gate_num]->failures++;
 		return -EBUSY;
+	}
+
+	// spin lock?
+	if(!use_interrupts) {
+		while(readb(MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num) != LOCK_VALUE) {
+
+			if((timeout_us != 0xffffffff) && (delta_time(&gates[gate_num]->request_time) > timeout_us)) {
+				gates[gate_num]->failures++;
+				return -EBUSY;
+			}
+
+			writeb(LOCK_VALUE, MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + gate_num);
+		}
+		add_latency_stat(gates[gate_num]);
+		return 0;
 	}
 
 	// wait forever?

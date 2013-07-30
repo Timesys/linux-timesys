@@ -439,7 +439,7 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 	dev_dbg(&i2c_imx->adapter.dev, "<%s>\n", __func__);
 
 #ifdef CONFIG_ARCH_MVF
-	result = mvf_sema4_lock(sema4, 10000000);
+	result = mvf_sema4_lock(sema4, 10000000, true);
 	if(result)
 		return result;
 #endif
@@ -621,7 +621,7 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_ARCH_MVF
 	// for makeing sure not in use by MQX concurrently
-	if(mvf_sema4_assign(MVF_I2C_SEMAPHORE_NUMBER, true, &sema4)) {
+	if(mvf_sema4_assign(MVF_I2C_SEMAPHORE_NUMBER, &sema4)) {
 		dev_err(&pdev->dev, "could not assign MQX semaphore %d\n", MVF_I2C_SEMAPHORE_NUMBER);
 		goto fail5;
 	}
