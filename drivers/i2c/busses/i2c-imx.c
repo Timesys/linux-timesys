@@ -441,7 +441,7 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 	// since this can get called before probe, assign happens here
 	if(!sema4)
 	{
-		result = mvf_sema4_assign(MVF_I2C_SEMAPHORE_NUMBER, true, &sema4);
+		result = mvf_sema4_assign(MVF_I2C_SEMAPHORE_NUMBER, &sema4);
 		if(result) {
 			printk(KERN_ERR "can't assign sema4 %s %s exiting.\n",__FILE__,__func__);
 			return result;
@@ -449,7 +449,7 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 	}
 
 	// lock out MQX
-	result = mvf_sema4_lock(sema4, 10000000); // 10 seconds
+	result = mvf_sema4_lock(sema4, 10000000, true); // 10 seconds
 	if(result)
 		return result;
 #endif
