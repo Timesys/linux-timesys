@@ -25,5 +25,6 @@ int mvf_sema4_assign(int gate_num, MVF_SEMA4** sema4_p);
 int mvf_sema4_deassign(MVF_SEMA4 *sema4);
 int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us, bool use_interrupts);
 int mvf_sema4_unlock(MVF_SEMA4 *sema4);
+int mvf_sema4_test(MVF_SEMA4 *sema4);
 
 #endif

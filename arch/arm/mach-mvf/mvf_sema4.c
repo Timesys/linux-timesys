@@ -286,3 +286,13 @@ int mvf_sema4_unlock(MVF_SEMA4 *sema4)
 }
 EXPORT_SYMBOL(mvf_sema4_unlock);
 
+// return 0 on success (meaning it is set to us)
+int mvf_sema4_test(MVF_SEMA4 *sema4)
+{
+	if(!sema4)
+		return -EINVAL;
+
+	return (readb(MVF_IO_ADDRESS(MVF_SEMA4_BASE_ADDR) + sema4->gate_num)) == LOCK_VALUE ? 0 : 1;
+}
+EXPORT_SYMBOL(mvf_sema4_test);
+
