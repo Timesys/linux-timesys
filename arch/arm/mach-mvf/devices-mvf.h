@@ -102,6 +102,7 @@ const struct imx_fsl_usb2_wakeup_data mvf_fsl_hs_wakeup_data[] __initconst;
 #ifdef CONFIG_MACH_PCM052
 #define mvf_add_fsl_usb2_hs_wakeup(id, pdata)  \
 	imx_add_fsl_usb2_wakeup(&mvf_fsl_hs_wakeup_data[id], pdata)
+#else
 #define mvf_add_fsl_usb2_hs_wakeup(id, pdata)	\
 	imx_add_fsl_usb2_wakeup(&mvf_fsl_hs_wakeup_data[id - 1], pdata)
 #endif

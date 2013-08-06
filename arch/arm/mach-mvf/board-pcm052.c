@@ -15,7 +15,6 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
@@ -49,7 +48,6 @@
 #include <linux/mxcfb.h>
 #include <linux/phy.h>
 #include <linux/pwm_backlight.h>
-#include <linux/leds_pwm.h>
 #include <linux/fec.h>
 #include <linux/memblock.h>
 #include <linux/gpio.h>
@@ -92,6 +90,10 @@
 #define FEC1_BUS_ID		"2:01"	// SP: BUS_ID for ETH1
 #define KSZ8051_PHY_CTRL2       0x1F	// SP: PHY Ctrl2 reg addr
 #define KSZ8051_50MHZ_CLK_MODE (1 << 7)	// SP: PHY Ctrl2 reg val for 50 MHz clk
+
+#define MVF_BACKLIGHT_MAX_BRIGHTNESS		100
+#define MVF_BACKLIGHT_DEFAULT_BRIGHTNESS	100
+#define MVF_PWM_PERIOD_NANO_SECONDS		100000
 
 #ifdef PCM952_REV0
 #undef PCM952_REV0
@@ -156,11 +158,8 @@ static iomux_v3_cfg_t pcm052_pads[] = {
 	MVF600_PAD6_PTA16_SAI2_TX_BCLK,
 	MVF600_PAD8_PTA18_SAI2_TX_DATA,
 	MVF600_PAD9_PTA19_SAI2_TX_SYNC,
-//	MVF600_PAD11_PTA21_SAI2_RX_BCLK,
-	MVF600_PAD23_PTB1_SAI2_RX_DATA,	// originally PAD12_PTA22
-//	MVF600_PAD24_PTB2_SAI2_RX_SYNC, // originally PAD13_PTA23
-//	MVF600_PAD40_PTB18_EXT_AUDIO_MCLK, // UNUSED
-	MVF600_PAD33_PTB11__CKO2, // phyCORE MCLK
+	MVF600_PAD23_PTB1_SAI2_RX_DATA,
+	MVF600_PAD33_PTB11__CKO2,
 
 	/*DCU0*/
 	MVF600_PAD25_PTB3_LCD_ENABLE,
@@ -205,20 +204,8 @@ static iomux_v3_cfg_t pcm052_pads[] = {
 #endif
 	MVF600_PAD7_PTA17__USB_OC_N,
 
-	/*
-	 * FlexTimer PWM channels
-	 * FTM0 CH0~3 are connected to demo LED0~3
-	 * PAD30 mux with LCD enable signal
-	 */
-//	MVF600_PAD22_PTB0_FTM0CH0,
-//	MVF600_PAD23_PTB1_FTM0CH1,
-//	MVF600_PAD24_PTB2_FTM0CH2,
-//	MVF600_PAD25_PTB3_FTM0CH3,
-
-//	MVF600_PAD28_PTB6_FTM0CH6,
-//	MVF600_PAD29_PTB7_FTM0CH7,
-	/*MVF600_PAD30_PTB8_FTM1CH0,*/
-//	MVF600_PAD31_PTB9_FTM1CH1,
+	/* Display Brightness PWM */
+	MVF600_PAD22_PTB0_FTM0CH0,
 
 	/* Touch Screen */
 	MVF600_PAD32_PTB10_TS_IRQ,
@@ -267,9 +254,16 @@ static struct imxuart_platform_data mvf_uart1_pdata = {
 	.dma_req_tx = DMA_MUX03_UART1_TX,
 };
 
+static struct imxuart_platform_data mvf_uart2_pdata = {
+	.flags = IMXUART_FIFO | IMXUART_EDMA,
+	.dma_req_rx = DMA_MUX03_UART2_RX,
+	.dma_req_tx = DMA_MUX03_UART2_TX,
+};
+
 static inline void pcm052_init_uart(void)
 {
 	mvf_add_imx_uart(1, &mvf_uart1_pdata);
+	mvf_add_imx_uart(2, &mvf_uart2_pdata);
 }
 
 static struct fec_platform_data fec_data __initdata = {
@@ -289,6 +283,8 @@ static int mvf_fec1_phy_fixup(struct phy_device *phydev){
         regval = phy_read(phydev, KSZ8051_PHY_CTRL2);
         regval |= KSZ8051_50MHZ_CLK_MODE;
         phy_write(phydev, KSZ8051_PHY_CTRL2, regval);
+
+	return 0;
 }
 
 static int pcm052_spi_cs[] = {
@@ -315,19 +311,35 @@ static const struct spi_mvf_master pcm052_qspi_data __initconst = {
 };
 
 #if defined(CONFIG_MTD_M25P80) || defined(CONFIG_MTD_M25P80_MODULE)
-static struct mtd_partition n25q128_partitions[] = {
+static struct mtd_partition n25q128_qspi0a_partitions[] = {
 	{
-		.name = "n25q128",
-		.size = (1024 * 64 * 128),
+		.name = "qspi0_a",
+		.size = MTDPART_SIZ_FULL,
 		.offset = 0x00000000,
 		.mask_flags = 0,
 	}
 };
 
-static struct flash_platform_data n25q128_spi_flash_data = {
-	.name = "Micron n25q128 SPI Flash chip",
-	.parts = n25q128_partitions,
-	.nr_parts = ARRAY_SIZE(n25q128_partitions),
+static struct mtd_partition n25q128_qspi0b_partitions[] = {
+	{
+		.name = "qspi0_b",
+		.size = MTDPART_SIZ_FULL,
+		.offset = 0x00000000,
+		.mask_flags = 0,
+	}
+};
+
+static struct flash_platform_data n25q128_spi_flash_data_0 = {
+	.name = "n25q128.0",
+	.parts = n25q128_qspi0a_partitions,
+	.nr_parts = ARRAY_SIZE(n25q128_qspi0a_partitions),
+	.type = "n25q128",
+};
+
+static struct flash_platform_data n25q128_spi_flash_data_1 = {
+	.name = "n25q128.1",
+	.parts = n25q128_qspi0b_partitions,
+	.nr_parts = ARRAY_SIZE(n25q128_qspi0b_partitions),
 	.type = "n25q128",
 };
 
@@ -336,18 +348,18 @@ static struct spi_board_info mvf_spi_board_info[] __initdata = {
 	{
 		/* The modalias must be the same as spi device driver name */
 		.modalias = "m25p80",
-		.max_speed_hz = 30000000,
+		.max_speed_hz = 50000000,
 		.bus_num = 0,
 		.chip_select = 0,
-		.platform_data = &n25q128_spi_flash_data,
+		.platform_data = &n25q128_spi_flash_data_0,
 	},
 	{
 		/* The modalias must be the same as spi device driver name */
 		.modalias = "m25p80",
-		.max_speed_hz = 30000000,
+		.max_speed_hz = 50000000,
 		.bus_num = 0,
 		.chip_select = 1,
-		.platform_data = &n25q128_spi_flash_data,
+		.platform_data = &n25q128_spi_flash_data_1,
 	},
 #endif
 };
@@ -369,12 +381,20 @@ static void pcm052_suspend_exit(void)
 {
 	/* resmue resore */
 }
+
 static const struct pm_platform_data pcm052_pm_data __initconst = {
 	.name = "mvf_pm",
 	.suspend_enter = pcm052_suspend_enter,
 	.suspend_exit = pcm052_suspend_exit,
 };
 #endif
+
+static struct platform_pwm_backlight_data mvf_backlight_data = {
+	.pwm_id		= 1,
+	.max_brightness = MVF_BACKLIGHT_MAX_BRIGHTNESS,
+	.dft_brightness = MVF_BACKLIGHT_DEFAULT_BRIGHTNESS,
+	.pwm_period_ns	= MVF_PWM_PERIOD_NANO_SECONDS,
+};
 
 static struct mvf_dcu_platform_data mvf_dcu_pdata = {
 	.mode_str	= "pm070wl4",
@@ -459,17 +479,9 @@ static struct mxc_nand_platform_data mvf_data __initdata = {
 	.width = 2,
 };
 
-static struct led_pwm mvf_led __initdata = {
-	.name = "mvf_leds",
-	.pwm_id = 1,
-	.active_low = 0,
-	.max_brightness = 6,
-	.pwm_period_ns = 100000000,
-};
-
-static struct led_pwm_platform_data mvf_led_data __initdata = {
-	.num_leds = 1,
-	.leds = &mvf_led,
+static struct imx_asrc_platform_data imx_asrc_data = {
+        .channel_bits = 4,
+        .clk_map_ver = 3,
 };
 
 #define USB_VBUS_ENABLE_PIN	134
@@ -524,9 +536,12 @@ static void __init pcm052_board_init(void)
 
 	mvf_add_nand(&mvf_data);
 
-//	mvf_add_mxc_pwm(0);
-//	mvf_add_pwm_leds(&mvf_led_data);
+	mvf_add_mxc_pwm(0);
+	mvf_add_mxc_pwm_backlight(0, &mvf_backlight_data);
 
+	imx_asrc_data.asrc_core_clk = clk_get(NULL, "asrc_clk");
+	imx_asrc_data.asrc_audio_clk = clk_get(NULL, "asrc_serial_clk");
+	mvf_add_asrc(&imx_asrc_data);
 }
 
 static void __init mvf_timer_init(void)
@@ -547,7 +562,7 @@ static struct sys_timer pcm052_timer = {
  * initialize __mach_desc_ data structure.
  */
 MACHINE_START(PCM052, "PHYTEC phyCORE-Vybrid Board")
-	/* Maintainer: Freescale Semiconductor, Inc. */
+	/* Maintainer: PHYTEC America, LLC */
 	.boot_params = MVF_PHYS_OFFSET + 0x100,
 	.fixup = fixup_mxc_board,
 	.map_io = mvf_map_io,
