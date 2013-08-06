@@ -670,7 +670,7 @@ static int _clk_pll3_usb_otg_set_rate(struct clk *clk, unsigned long rate)
 	else
 		return -EINVAL;
 
-#ifndef CONFIG_MACH_PCM052
+#if !(defined CONFIG_MACH_PCM052 && defined CONFIG_MACH_PCL052)
 	reg = __raw_readl(PLL3_480_USB1_BASE_ADDR);
 	reg &= ~ANADIG_PLL_480_DIV_SELECT_MASK;
 	reg |= div;
@@ -1344,7 +1344,7 @@ static int _clk_dcu0_set_rate(struct clk *clk, unsigned long rate)
 	div = (parent_rate + rate - 1) / rate;
 	if (div == 0)
 		div++;
-	if (((parent_rate / div) != rate) || (div > 8))
+	if (((parent_rate / div) > rate) || (div > 8))
 		return -EINVAL;
 
 	reg = __raw_readl(MXC_CCM_CSCDR3);
@@ -2028,7 +2028,14 @@ int __init mvf_clocks_init(unsigned long ckil, unsigned long osc,
 	clk_set_rate(&esdhc1_clk, 200000000);
 
 	clk_set_parent(&dcu0_clk, &pll1_pfd2_452M);
-	clk_set_rate(&dcu0_clk, 90400000);
+
+#ifdef CONFIG_MACH_PCL052
+    /* setting to 226MHz */
+	clk_set_rate(&dcu0_clk, 227000000);
+#else
+    /* setting to 150.667MHz */
+	clk_set_rate(&dcu0_clk, 151000000);
+#endif
 
 	clk_set_parent(&sai2_clk, &pll4_audio_main_clk);
 	clk_set_rate(&sai2_clk, 24567000);

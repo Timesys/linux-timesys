@@ -66,7 +66,7 @@ const struct imx_mxc_ehci_data imx6q_mxc_ehci_hs_data[] __initconst = {
 #endif /* ifdef CONFIG_SOC_IMX6Q */
 
 #ifdef CONFIG_ARCH_MVF
-#ifdef CONFIG_MACH_PCM052
+#if (defined CONFIG_MACH_PCM052 || defined CONFIG_MACH_PCL052)
 const struct imx_mxc_ehci_data mvf_mxc_ehci_otg_data[] __initconst = {
        mvf_mxc_ehci_data_entry_single(MVF, 0),
        mvf_mxc_ehci_data_entry_single(MVF, 1),

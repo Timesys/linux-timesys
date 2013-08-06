@@ -35,7 +35,7 @@ const struct imx_fsl_usb2_wakeup_data imx6q_fsl_hs_wakeup_data[] __initconst = {
 #endif /* ifdef CONFIG_SOC_IMX6Q */
 #ifdef CONFIG_SOC_MVFA5
 const struct imx_fsl_usb2_wakeup_data mvf_fsl_otg_wakeup_data[] __initconst = {
-#ifdef CONFIG_MACH_PCM052
+#if (defined CONFIG_MACH_PCM052 || defined CONFIG_MACH_PCL052)
        mvf_fsl_usb2_wakeup_data_entry_single(MVF, 0),
        mvf_fsl_usb2_wakeup_data_entry_single(MVF, 1),
 #else

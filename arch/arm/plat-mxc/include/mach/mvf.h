@@ -555,7 +555,7 @@
 #define MVF_INT_I2C2		105
 #define MVF_INT_I2C3		106
 
-#ifdef CONFIG_MACH_PCM052
+#if (defined CONFIG_MACH_PCM052 || defined CONFIG_MACH_PCL052)
 #define MVF_INT_USB0           107
 #define MVF_INT_USB1           108
 #else

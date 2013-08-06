@@ -1674,7 +1674,7 @@ void usb_disconnect(struct usb_device **pdev)
 			udev->devnum);
 #ifdef MVF_USB_HOST_HACK
 	if (udev->speed == USB_SPEED_HIGH && udev->level == 1)
-#ifdef CONFIG_MACH_PCM052
+#if (defined CONFIG_MACH_PCM052 || defined CONFIG_MACH_PCL052)
        {
                fsl_platform_set_usb0_phy_dis(NULL, 0);
                fsl_platform_set_usb1_phy_dis(NULL, 0);
@@ -2929,7 +2929,7 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
 	}
 #ifdef MVF_USB_HOST_HACK
 	if (udev->speed == USB_SPEED_HIGH && udev->level == 1)
-#ifdef CONFIG_MACH_PCM052
+#if (defined CONFIG_MACH_PCM052 || defined CONFIG_MACH_PCL052)
        {
                fsl_platform_set_usb0_phy_dis(NULL, 1);
                fsl_platform_set_usb1_phy_dis(NULL, 1);

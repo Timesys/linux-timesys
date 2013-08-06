@@ -32,9 +32,11 @@
 #include <asm/mach-types.h>
 #include <mach/mvf.h>
 #include <mach/mvf-dcu-fb.h>
+#include "mvf-tda1998x.h"
 
-
+#define DCU_MASTER_CLOCK_FREQ 226000000
 #define DRIVER_NAME	"mvf-dcu"
+
 
 static struct fb_videomode __devinitdata mvf_dcu_default_mode = {
 	.xres		= 800,
@@ -52,19 +54,6 @@ static struct fb_videomode __devinitdata mvf_dcu_default_mode = {
 
 static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
 	{
-		.name		= "480x272",
-		.xres		= 480,
-		.yres		= 272,
-		.left_margin	= 2,
-		.right_margin	= 2,
-		.upper_margin	= 1,
-		.lower_margin	= 1,
-		.hsync_len	= 41,
-		.vsync_len	= 2,
-		.sync		= FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
-		.vmode		= FB_VMODE_NONINTERLACED,
-	},
-        {
                 .name           = "pm070wl4",
                 .xres           = 800,
                 .yres           = 480,
@@ -77,6 +66,41 @@ static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
                 .sync           = FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT |
 				  FB_SYNC_HOR_HIGH_ACT,
                 .vmode          = FB_VMODE_NONINTERLACED,
+#if (defined CONFIG_MACH_PCL052)
+    },{
+        /* HDMI */
+        .name           = "640x480p_hdmipc",
+        .pixclock	= 25111, /* From TDA Doc */
+        .xres           = 640,
+        .yres           = 480,
+        .left_margin    = 1,
+        .right_margin   = 1,
+        .upper_margin   = 1,
+        .lower_margin   = 1,
+        .hsync_len      = 158, 
+        .vsync_len      = 36, 
+        .sync           = FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT |
+            FB_SYNC_HOR_HIGH_ACT,
+        .vmode          = FB_VMODE_NONINTERLACED,
+    },{
+        /* HDMI 480p */ /* NOTE: Sync isn't valid on this config */
+        .name           = "720x480p",
+        .pixclock   	= 28250, /* VESA is 27.027MHz, DCU docs say 28.250, actual is 28.282MHz*/
+        .xres           = 720, 
+        .yres           = 480,
+        /* 178 total for 31500Hz hsync  */
+        .left_margin    = 96, /*hbp*/
+        .right_margin   = 9,  /*hfp*/
+        .hsync_len      = 73, /*hsw*/ 
+        /* 45 total for 59.98 Hz vsync  */
+        .upper_margin   = 1,  /*vbp*/
+        .lower_margin   = 1,  /*vfp*/
+        .vsync_len      = 43, /*vsw*/
+
+        .sync           = FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT 
+            | FB_SYNC_HOR_HIGH_ACT,
+        .vmode          = FB_VMODE_NONINTERLACED,
+#endif  /* CONFIG_MACH_PCL052 */
         },
 
 };
@@ -395,6 +419,7 @@ static void update_lcdc(struct fb_info *info)
 	struct fb_var_screeninfo *var = &info->var;
 	struct mfb_info *mfbi = info->par;
 	struct mvf_dcu_fb_data *dcu = mfbi->parent;
+    uint8_t div_val = 0;
 
 	if (mfbi->type == DCU_TYPE_OFF) {
 		mvf_dcu_disable_panel(info);
@@ -429,10 +454,31 @@ static void update_lcdc(struct fb_info *info)
 		DCU_VSYN_PARA_FP(var->lower_margin),
 		dcu->base + DCU_VSYN_PARA);
 
+
+    /* Setup Default Colorbars RGB format */
+	writel(0xFFFF0000, dcu->base + DCU_COLBAR_1); /* red */
+	writel(0xFF00FF00, dcu->base + DCU_COLBAR_2); /* green */
+	writel(0xFF0000FF, dcu->base + DCU_COLBAR_3); /* blue */
+	writel(0xFF00FFFF, dcu->base + DCU_COLBAR_4); /* cyan */
+	writel(0xFFFF00FF, dcu->base + DCU_COLBAR_5); /* magenta */
+	writel(0xFFFFFF00, dcu->base + DCU_COLBAR_6); /* yellow */
+	writel(0xFF000000, dcu->base + DCU_COLBAR_7); /* black */
+	writel(0xFFFFFFFF, dcu->base + DCU_COLBAR_8); /* white */
 	writel(DCU_MODE_BLEND_ITER(3) | DCU_MODE_RASTER_EN(1),
 			dcu->base + DCU_DCU_MODE);
 
-	writel(2, dcu->base + DCU_DIV_RATIO);
+    /* PCLK output calculation */
+    if ((var->pixclock == 0) || (DCU_MASTER_CLOCK_FREQ / (var->pixclock<<12) > 0x100))
+    {
+        /* default value */
+        div_val = 0x10;
+    }
+    else
+    {
+        div_val = DCU_MASTER_CLOCK_FREQ / var->pixclock;
+    }
+
+	writel(div_val, dcu->base + DCU_DIV_RATIO);
 
 	writel(DCU_SYN_POL_INV_PXCK(0) | DCU_SYN_POL_NEG(0) |
 		DCU_SYN_POL_INV_VS(1) | DCU_SYN_POL_INV_HS(1),
@@ -636,9 +682,9 @@ static int mvf_dcu_pan_display(struct fb_var_screeninfo *var,
 
 static int mvf_dcu_blank(int blank_mode, struct fb_info *info)
 {
+#ifdef CONFIG_MVF_DCU_BLANKING_TEST
 	struct mfb_info *mfbi = info->par;
 
-#ifdef CONFIG_MVF_DCU_BLANKING_TEST
 	mfbi->blank = blank_mode;
 
 	switch (blank_mode) {
@@ -952,7 +998,8 @@ static int mvf_dcu_resume(struct platform_device *pdev)
 #else
 #define mvf_dcu_suspend	NULL
 #define mvf_dcu_resume	NULL
-#endif
+#endif /* CONFIG_PM */
+
 
 static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 {
@@ -1043,7 +1090,9 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 			goto failed_install_fb;
 		}
 	}
-
+#if (defined CONFIG_MVF_TDA_998X)
+    init_tda19988();
+#endif /* CONFIG_MVF_TDA_998X */
 	dev_set_drvdata(&pdev->dev, dcu);
 	return 0;
 
