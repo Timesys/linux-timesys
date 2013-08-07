@@ -33,6 +33,11 @@
 #include <mach/mvf.h>
 #include <mach/mvf-dcu-fb.h>
 
+#if (defined CONFIG_MVF_TDA_998X)
+#include "mvf-tda1998x.h"
+#endif /* CONFIG_MVF_TDA_998X */
+
+
 #if (defined CONFIG_MACH_PCL052)
 #define DCU_MASTER_CLOCK_FREQ 226000000
 #else
@@ -1094,6 +1099,9 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 			goto failed_install_fb;
 		}
 	}
+#if (defined CONFIG_MVF_TDA_998X)
+    init_tda19988();
+#endif /* CONFIG_MVF_TDA_998X */
 	dev_set_drvdata(&pdev->dev, dcu);
 	return 0;
 
