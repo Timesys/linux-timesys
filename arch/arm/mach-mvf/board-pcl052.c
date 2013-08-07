@@ -397,7 +397,7 @@ static const struct pm_platform_data pcl052_pm_data __initconst = {
 #endif
 
 static struct mvf_dcu_platform_data mvf_dcu_pdata = {
-	.mode_str	= "640x480p_min", /* works with HDMI PC, not HDMI TV */
+	.mode_str	= "640x480p_hdmipc", /* works with HDMI PC, not HDMI TV */
    // .mode_str	= "720x480p",
 	.default_bpp	= 24,
 };

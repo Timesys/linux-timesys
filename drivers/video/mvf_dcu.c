@@ -32,9 +32,13 @@
 #include <asm/mach-types.h>
 #include <mach/mvf.h>
 #include <mach/mvf-dcu-fb.h>
-#include "mvf-tda1998x.h"
 
+#if (defined CONFIG_MACH_PCL052)
 #define DCU_MASTER_CLOCK_FREQ 226000000
+#else
+#define DCU_MASTER_CLOCK_FREQ 252000000
+#endif /* CONFIG_MACH_PCL052 */
+
 #define DRIVER_NAME	"mvf-dcu"
 
 
@@ -54,18 +58,19 @@ static struct fb_videomode __devinitdata mvf_dcu_default_mode = {
 
 static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
 	{
-                .name           = "pm070wl4",
-                .xres           = 800,
-                .yres           = 480,
-                .left_margin    = 42,
-                .right_margin   = 86,
-                .upper_margin   = 10,
-                .lower_margin   = 33,
-                .hsync_len      = 128,
-                .vsync_len      = 2,
-                .sync           = FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT |
-				  FB_SYNC_HOR_HIGH_ACT,
-                .vmode          = FB_VMODE_NONINTERLACED,
+        .name           = "pm070wl4",
+        .pixclock	= 31250,
+        .xres           = 800,
+        .yres           = 480,
+        .left_margin    = 42,
+        .right_margin   = 86,
+        .upper_margin   = 10,
+        .lower_margin   = 33,
+        .hsync_len      = 128,
+        .vsync_len      = 2,
+        .sync           = FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT |
+            FB_SYNC_HOR_HIGH_ACT,
+        .vmode          = FB_VMODE_NONINTERLACED,
 #if (defined CONFIG_MACH_PCL052)
     },{
         /* HDMI */
@@ -102,7 +107,6 @@ static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
         .vmode          = FB_VMODE_NONINTERLACED,
 #endif  /* CONFIG_MACH_PCL052 */
         },
-
 };
 
 static DEFINE_SPINLOCK(dcu_lock);
@@ -1090,9 +1094,6 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 			goto failed_install_fb;
 		}
 	}
-#if (defined CONFIG_MVF_TDA_998X)
-    init_tda19988();
-#endif /* CONFIG_MVF_TDA_998X */
 	dev_set_drvdata(&pdev->dev, dcu);
 	return 0;
 

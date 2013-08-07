@@ -1961,13 +1961,6 @@ config FB_MVF_DCU
 	---help---
 	  Framebuffer driver for the Faraday SoC DCU
 
-config MVF_TDA_998X
-	depends on FB_MVF_DCU && I2C
-    tristate "TDA998X HDMI Support"
-	default n
-	---help---
-	  TDA1998x HDMI Encoder support for MVF FB
-
 config MVF_DCU_BLANKING_TEST
 	bool "DCU framebuffer blanking support"
 	depends on FB && ARCH_MVF && FB_MVF_DCU
