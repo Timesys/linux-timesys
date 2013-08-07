@@ -311,35 +311,13 @@ static const struct spi_mvf_master pcm052_qspi_data __initconst = {
 };
 
 #if defined(CONFIG_MTD_M25P80) || defined(CONFIG_MTD_M25P80_MODULE)
-static struct mtd_partition n25q128_qspi0a_partitions[] = {
-	{
-		.name = "qspi0_a",
-		.size = MTDPART_SIZ_FULL,
-		.offset = 0x00000000,
-		.mask_flags = 0,
-	}
-};
-
-static struct mtd_partition n25q128_qspi0b_partitions[] = {
-	{
-		.name = "qspi0_b",
-		.size = MTDPART_SIZ_FULL,
-		.offset = 0x00000000,
-		.mask_flags = 0,
-	}
-};
-
 static struct flash_platform_data n25q128_spi_flash_data_0 = {
-	.name = "n25q128.0",
-	.parts = n25q128_qspi0a_partitions,
-	.nr_parts = ARRAY_SIZE(n25q128_qspi0a_partitions),
+	.name = "qspi0-a",
 	.type = "n25q128",
 };
 
 static struct flash_platform_data n25q128_spi_flash_data_1 = {
-	.name = "n25q128.1",
-	.parts = n25q128_qspi0b_partitions,
-	.nr_parts = ARRAY_SIZE(n25q128_qspi0b_partitions),
+	.name = "qspi0-b",
 	.type = "n25q128",
 };
 
