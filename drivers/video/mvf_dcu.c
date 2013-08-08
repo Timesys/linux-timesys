@@ -80,7 +80,7 @@ static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
     },{
         /* HDMI */
         .name           = "640x480p_hdmipc",
-        .pixclock	= 25111, /* From TDA Doc */
+        .pixclock	    = 25200, /* From TDA Doc */
         .xres           = 640,
         .yres           = 480,
         .left_margin    = 1,
@@ -477,14 +477,14 @@ static void update_lcdc(struct fb_info *info)
 			dcu->base + DCU_DCU_MODE);
 
     /* PCLK output calculation */
-    if ((var->pixclock == 0) || (DCU_MASTER_CLOCK_FREQ / (var->pixclock<<12) > 0x100))
+    if ((var->pixclock == 0) || ((DCU_MASTER_CLOCK_FREQ/1000) / (var->pixclock) > 0x100))
     {
         /* default value */
         div_val = 0x10;
     }
     else
     {
-        div_val = DCU_MASTER_CLOCK_FREQ / var->pixclock;
+        div_val = (DCU_MASTER_CLOCK_FREQ /1000) / (var->pixclock);
     }
 
 	writel(div_val, dcu->base + DCU_DIV_RATIO);
