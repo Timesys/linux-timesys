@@ -334,8 +334,10 @@ static void __init pcl052_init_usb(void)
 	gpio_set_value(USB_VBUS_ENABLE_PIN, 1);
 
 #ifdef CONFIG_USB_EHCI_ARC
-	mvf_usb_dr_init();
 	mvf_usb_dr2_init();
+#endif
+#ifdef CONFIG_USB_GADGET_ARC
+	mvf_usb_dr_init();
 #endif
 }
 
