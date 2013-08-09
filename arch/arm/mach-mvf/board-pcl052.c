@@ -47,7 +47,7 @@
 #include <linux/pmic_status.h>
 #include <linux/ipu.h>
 #include <linux/mxcfb.h>
-#include <linux/phy.h> // SP: added for reference to phy_ functions, ex. phy_register_fixup
+#include <linux/phy.h>
 #include <linux/pwm_backlight.h>
 #include <linux/leds_pwm.h>
 #include <linux/fec.h>
@@ -74,7 +74,6 @@
 #include <mach/mxc_asrc.h>
 #include <mach/mipi_dsi.h>
 #include <mach/mipi_csi2.h>
-#include <mach/fsl_l2_switch.h>
 #include <asm/irq.h>
 #include <asm/setup.h>
 #include <asm/mach-types.h>
@@ -89,14 +88,10 @@
 #define PCL052_TS_IRQ	32
 
 /* FEC1 definitions */
-#define FEC1_BUS_ID	"2:01"	// SP: BUS_ID - required to use phy-fixup specifically for the ETH1 PHY
+#define FEC1_BUS_ID	"2:01"
 
-#define KSZ8051_PHY_CTRL2       0x1F     // SP: PHY Control 2 register address
-#define KSZ8051_50MHZ_CLK_MODE (1 << 7) // SP: PHY Control 2 register setting for 50 MHz clock mode
-
-#ifdef PCM952_REV0
-#undef PCM952_REV0
-#endif
+#define KSZ8051_PHY_CTRL2       0x1F
+#define KSZ8051_50MHZ_CLK_MODE (1 << 7)
 
 static iomux_v3_cfg_t pcl052_pads[] = {
 
@@ -108,8 +103,8 @@ static iomux_v3_cfg_t pcl052_pads[] = {
 	MVF600_PAD18_PTA28__SDHC1_DAT2,
 	MVF600_PAD19_PTA29__SDHC1_DAT3,
 	/*set PTB28 as GPIO for sdhc card detecting*/
-    // GPIO[98]
 	MVF600_PAD98_PTB28__SDHC1_SW_CD,
+
 	/*I2C2*/
 	MVF600_PAD12_PTA22__I2C2_SCL,
 	MVF600_PAD13_PTA23__I2C2_SDA,
@@ -129,7 +124,7 @@ static iomux_v3_cfg_t pcl052_pads[] = {
 	MVF600_PAD44_PTB22__DSPI0_SCK,
 
 	/*FEC0 not supported*/
-#if defined(CONFIG_FEC1) || defined(CONFIG_FSL_L2_SWITCH)
+#if defined(CONFIG_FEC1)
 	/*FEC1*/
 	MVF600_PAD54_PTC9__RMII1_MDC,
 	MVF600_PAD55_PTC10__RMII1_MDIO,
@@ -141,8 +136,8 @@ static iomux_v3_cfg_t pcl052_pads[] = {
 	MVF600_PAD61_PTC16__RMII1_TXD0,
 	MVF600_PAD62_PTC17__RMII1_TXEN,
 #endif
-    /*TDA19988x HDMI Encoder*/
-    /***Video*/
+	/*TDA19988x HDMI Encoder*/
+	/***Video*/
 	MVF600_PAD108_PTE3_LCD_ENABLE,
 	MVF600_PAD105_PTE0_DCU0_HSYNC,
 	MVF600_PAD106_PTE1_DCU0_VSYNC,
@@ -172,33 +167,29 @@ static iomux_v3_cfg_t pcl052_pads[] = {
 	MVF600_PAD131_PTE26_DCU0_B5,
 	MVF600_PAD132_PTE27_DCU0_B6,
 	MVF600_PAD133_PTE28_DCU0_B7,
-    /* MVF600_PAD53_PTC8__GPIO_TDA_INT*/
-    IOMUX_PAD(0x00D4, 0x00D4, IOMUX_CONFIG_ALT0, 0x0000, 0,
-			  PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_SPEED_MED 
-              | PAD_CTL_PUS_47K_UP | PAD_CTL_DSE_25ohm 
-              | PAD_CTL_ODE | PAD_CTL_IBE_ENABLE),
+	/* MVF600_PAD53_PTC8__GPIO_TDA_INT*/
+	IOMUX_PAD(0x00D4, 0x00D4, IOMUX_CONFIG_ALT0, 0x0000, 0,
+			PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_SPEED_MED |
+			PAD_CTL_PUS_47K_UP | PAD_CTL_DSE_25ohm |
+			PAD_CTL_ODE | PAD_CTL_IBE_ENABLE),
 
-    /***Audio*/
-    /* BCLK ACLK*/
+	/***Audio*/
+	/* BCLK ACLK*/
 	MVF600_PAD6_PTA16_SAI2_TX_BCLK,
-    /* SYNC WS/AP0 */
+	/* SYNC WS/AP0 */
 	MVF600_PAD9_PTA19_SAI2_TX_SYNC,
-    /* DATA AXR0/AP1 */
+	/* DATA AXR0/AP1 */
 	MVF600_PAD8_PTA18_SAI2_TX_DATA,
-    /* PTB10 MCLK OSC_IN/AP3 CKIO1 */
-    IOMUX_PAD(0x0080, 0x0080, 6, 0x0000, 0, \
-              MVF600_SAI_PAD_CTRL | PAD_CTL_IBE_ENABLE),
+	/* PTB10 MCLK OSC_IN/AP3 CKIO1 */
+	IOMUX_PAD(0x0080, 0x0080, 6, 0x0000, 0, \
+			MVF600_SAI_PAD_CTRL | PAD_CTL_IBE_ENABLE),
 
 	/*UART1*/
 	MVF600_PAD26_PTB4_UART1_TX,
 	MVF600_PAD27_PTB5_UART1_RX,
 
 	/*USB0/1 VBUS_EN*/
-#ifdef PCM952_REV0
-	MVF600_PAD6_PTA16__USB0_VBUS_EN,
-#else
 	MVF600_PAD134_PTA7__USB_VBUS_EN,
-#endif
 	MVF600_PAD7_PTA17__USB_OC_N,
 
 	/* Quad SPI */
@@ -255,26 +246,6 @@ static struct fec_platform_data fec_data __initdata = {
 	.phy = PHY_INTERFACE_MODE_RMII,
 };
 
-static struct switch_platform_data switch_data __initdata = {
-	.phy = PHY_INTERFACE_MODE_RMII,
-};
-
-/* SP: Added function - mvf_fec1_phy_fixup
- * Additional configuration is required to setup ETH1 on the phyCORE-Vybrid
- * (1) Set to 50 MHz (enable bit 7 in the PHY control 2 register)
-        - Write: reg - 0x1F;  data - (0x1 << 7)
-*/
-
-static int mvf_fec1_phy_fixup(struct phy_device *phydev)
-{
-        int regval;
-        regval = phy_read(phydev, KSZ8051_PHY_CTRL2); // read current value of PHY Control 2 register
-        regval |= KSZ8051_50MHZ_CLK_MODE; // enable 50MHz clock mode
-        phy_write(phydev, KSZ8051_PHY_CTRL2, regval); // write to PHY Control 2 register
-
-        return 0;
-}
-
 static int pcl052_spi_cs[] = {
 	41,
 };
@@ -298,85 +269,10 @@ static const struct spi_mvf_master pcl052_qspi_data __initconst = {
 	.cs_control = NULL,
 };
 
-#if defined(CONFIG_MTD_M25P80) || defined(CONFIG_MTD_M25P80_MODULE)
-static struct mtd_partition at26df081a_partitions[] = {
-	{
-		.name = "at26df081a",
-		.size = (1024 * 64 * 16),
-		.offset = 0x00000000,
-		.mask_flags = 0,
-	}
-};
-
-static struct flash_platform_data at26df081a_platform_data = {
-	.name = "Atmel at26df081a SPI Flash chip",
-	.parts = at26df081a_partitions,
-	.nr_parts = ARRAY_SIZE(at26df081a_partitions),
-	.type = "at26df081a",
-};
-
-static struct spi_mvf_chip at26df081a_chip_info = {
-	.mode = SPI_MODE_3,
-	.bits_per_word = 8,
-	.void_write_data = 0,
-	.dbr = 0,
-	.pbr = 0,
-	.br = 0,
-	.pcssck = 0,
-	.pasc = 0,
-	.pdt = 0,
-	.cssck = 0,
-	.asc = 0,
-	.dt = 0,
-};
-
-static struct mtd_partition s25fl256s_partitions[] = {
-	{
-		.name = "s25fl256s",
-		.size = (1024 * 64 * 256),
-		.offset = 0x00000000,
-		.mask_flags = 0,
-	}
-};
-
-static struct flash_platform_data s25fl256s_spi_flash_data = {
-	.name = "Spansion s25fl128s SPI Flash chip",
-	.parts = s25fl256s_partitions,
-	.nr_parts = ARRAY_SIZE(s25fl256s_partitions),
-	.type = "s25fl128s",
-};
-#endif
-
-static struct spi_board_info mvf_spi_board_info[] __initdata = {
-#if defined(CONFIG_MTD_M25P80)
-#if defined(CONFIG_SPI_MVF_QSPI)
-	{
-		/* The modalias must be the same as spi device driver name */
-		.modalias = "m25p80",
-		.max_speed_hz = 20000000,
-		.bus_num = 0,
-		.chip_select = 0,
-		.platform_data = &s25fl256s_spi_flash_data,
-	},
-#endif
-#if defined(CONFIG_SPI_MVF)
-	{
-		/* The modalias must be the same as spi device driver name */
-		.modalias = "m25p80",
-		.max_speed_hz = 16000000,
-		.bus_num = 0,
-		.chip_select = 0,
-		.platform_data = &at26df081a_platform_data,
-		.controller_data = &at26df081a_chip_info
-	},
-#endif
-#endif
-};
-
+/* TODO: add SPIDEV support */
 static void spi_device_init(void)
 {
-	spi_register_board_info(mvf_spi_board_info,
-				ARRAY_SIZE(mvf_spi_board_info));
+	/* no devices on PCL-052 */
 }
 
 #if 1
@@ -397,7 +293,8 @@ static const struct pm_platform_data pcl052_pm_data __initconst = {
 #endif
 
 static struct mvf_dcu_platform_data mvf_dcu_pdata = {
-	.mode_str	= "640x480p_hdmipc", /* works with HDMI PC, not HDMI TV */
+	/* works with HDMI PC, not HDMI TV */
+	.mode_str	= "640x480p_hdmipc",
    // .mode_str	= "720x480p",
 	.default_bpp	= 24,
 };
@@ -406,29 +303,10 @@ static void __init fixup_mxc_board(struct machine_desc *desc, struct tag *tags,
 				   char **cmdline, struct meminfo *mi)
 {
 }
-/*
- * Not defined the cd/wp so far, set it always present for debug*/
+
 static const struct esdhc_platform_data pcl052_sd1_data __initconst = {
 	.cd_gpio = PCL052_SD1_CD,
 	.wp_gpio = -1,
-};
-
-/* SP: Replicate the AM335x solution for phy_fixup
- * 	- Call a phy_register_fixup to make the required changes for FEC1/ETH1 - see 'mvf_fec1_phy_fixup'
- * 	- 'pcl052_setup' will be assigned  to .setup in EEPROM platform data (board_eeprom)
- */ 
-static void pcl052_setup(struct memory_accessor *mem_acc, void *context)
-{
-    phy_register_fixup_for_id(FEC1_BUS_ID, mvf_fec1_phy_fixup); // SP: run mvf_fec1_phy_fixup to setup ETH1
-        return;
-}
-
-static struct at24_platform_data board_eeprom = {
-	.byte_len = 4096,
-	.page_size = 32,
-	.flags = AT24_FLAG_ADDR16,
-    .setup = pcl052_setup, // SP: added to replicate the am335x board file
-	.context = (void *)NULL, // SP: added to replicate the am335x board file
 };
 
 static struct imxi2c_platform_data pcl052_i2c_data = {
@@ -446,19 +324,6 @@ static struct i2c_board_info pcl052_i2c2_board_info[] __initdata = {
 
 static struct mxc_nand_platform_data mvf_data __initdata = {
 	.width = 2,
-};
-
-static struct led_pwm mvf_led __initdata = {
-	.name = "mvf_leds",
-	.pwm_id = 1,
-	.active_low = 0,
-	.max_brightness = 6,
-	.pwm_period_ns = 100000000,
-};
-
-static struct led_pwm_platform_data mvf_led_data __initdata = {
-	.num_leds = 1,
-	.leds = &mvf_led,
 };
 
 #define USB_VBUS_ENABLE_PIN	134
@@ -487,10 +352,6 @@ static void __init pcl052_board_init(void)
 	mvf_init_fec(fec_data);
 #endif
 
-#ifdef CONFIG_FSL_L2_SWITCH
-	mvf_init_switch(switch_data);
-#endif
-
 	mvf_add_snvs_rtc();
 
 	mvf_add_sdhci_esdhc_imx(1, &pcl052_sd1_data);
@@ -509,15 +370,13 @@ static void __init pcl052_board_init(void)
 	mxc_register_device(&pcl052_audio_device, &pcl052_audio_data);
 	mvfa5_add_sai(2, &mvf_sai_pdata);
 
-//	mvf_add_wdt(0);
+	mvf_add_wdt(0);
 
 	pcl052_init_usb();
 
 	mvf_add_nand(&mvf_data);
 
-//      mvf_add_mxc_pwm(0);
-//      mvf_add_pwm_leds(&mvf_led_data);
-
+	mvf_add_mxc_pwm(0);
 }
 
 static void __init mvf_timer_init(void)
@@ -538,7 +397,7 @@ static struct sys_timer pcl052_timer = {
  * initialize __mach_desc_ data structure.
  */
 MACHINE_START(PCL052, "PHYTEC Cosmic Board")
-	/* Maintainer: Freescale Semiconductor, Inc. */
+	/* Maintainer: PHYTEC America, LLC */
 	.boot_params = MVF_PHYS_OFFSET + 0x100,
 	.fixup = fixup_mxc_board,
 	.map_io = mvf_map_io,
