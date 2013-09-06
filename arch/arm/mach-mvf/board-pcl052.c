@@ -398,7 +398,7 @@ static struct sys_timer pcl052_timer = {
 /*
  * initialize __mach_desc_ data structure.
  */
-MACHINE_START(PCL052, "PHYTEC Cosmic Board")
+MACHINE_START(PCL052, "PHYTEC Cosmic Board for phyCORE-Vybrid")
 	/* Maintainer: PHYTEC America, LLC */
 	.boot_params = MVF_PHYS_OFFSET + 0x100,
 	.fixup = fixup_mxc_board,
