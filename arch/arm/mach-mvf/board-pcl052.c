@@ -23,6 +23,7 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/init.h>
+#include <linux/gpio_keys.h>
 #include <linux/input.h>
 #include <linux/nodemask.h>
 #include <linux/clk.h>
@@ -93,6 +94,16 @@
 #define KSZ8051_PHY_CTRL2       0x1F
 #define KSZ8051_50MHZ_CLK_MODE (1 << 7)
 
+/* GPIO definitions */
+#define GPIO_LED_1	35
+#define GPIO_LED_2	40
+#define GPIO_LED_3      96
+#define GPIO_LED_4      102
+
+#define GPIO_BTN_1      25
+#define GPIO_BTN_2      30
+#define GPIO_BTN_3      31
+#define GPIO_BTN_4      34
 static iomux_v3_cfg_t pcl052_pads[] = {
 
 	/*SDHC1*/
@@ -183,6 +194,19 @@ static iomux_v3_cfg_t pcl052_pads[] = {
 	/* PTB10 MCLK OSC_IN/AP3 CKIO1 */
 	IOMUX_PAD(0x0080, 0x0080, 6, 0x0000, 0, \
 			MVF600_SAI_PAD_CTRL | PAD_CTL_IBE_ENABLE),
+
+
+	/*LEDs*/
+        MVF600_PAD35_PTB13_GPIO_LED1,
+        MVF600_PAD40_PTB18_GPIO_LED2,
+        MVF600_PAD96_PTB26_GPIO_LED3,
+        MVF600_PAD102_PTC29_GPIO_LED4,
+
+        /*BTNs*/
+        MVF600_PAD25_PTB3_GPIO_BTN1,
+        MVF600_PAD30_PTB8_GPIO_BTN2,
+        MVF600_PAD31_PTB9_GPIO_BTN3,
+        MVF600_PAD34_PTB12_GPIO_BTN4,
 
 	/*UART1*/
 	MVF600_PAD26_PTB4_UART1_TX,
@@ -313,6 +337,62 @@ static struct imxi2c_platform_data pcl052_i2c_data = {
 	.bitrate = 100000,
 };
 
+static struct gpio_keys_button pcl052_gpio_keys[] = {
+	{
+		.desc                   = "User Button 1",
+		.gpio                   =  GPIO_BTN_1,
+	},
+	{
+		.desc                   = "User Button 2",
+		.gpio                   = GPIO_BTN_2,
+	},
+	{
+		.desc                   = "User Button 3",
+		.gpio                   = GPIO_BTN_3,
+	},
+	{
+		.desc                   = "User Button 4",
+		.gpio                   = GPIO_BTN_4,
+	},
+};
+
+static struct gpio_led pcl052_gpio_leds[] = {
+{
+		.name   = "LED1",
+		.gpio   =  GPIO_LED_1,
+		.default_trigger = "gpio",
+		.trigger_gpio = GPIO_BTN_1,
+	},
+	{
+		.name   = "LED2",
+		.gpio   =  GPIO_LED_2,
+		.default_trigger = "gpio",
+		.trigger_gpio = GPIO_BTN_2,
+	},
+	{
+		.name   = "LED3",
+		.gpio   =  GPIO_LED_3,
+		.default_trigger = "gpio",
+		.trigger_gpio = GPIO_BTN_3,
+	},
+	{
+		.name   = "LED4",
+		.gpio   =  GPIO_LED_4,
+		.default_trigger = "gpio",
+		.trigger_gpio = GPIO_BTN_4,
+	},
+};
+
+static struct gpio_led_platform_data pcl052_led_data = {
+        .leds   = pcl052_gpio_leds,
+        .num_leds       = ARRAY_SIZE(pcl052_gpio_leds),
+};
+
+static struct gpio_keys_platform_data pcl052_gpio_keys_data = {
+        .buttons        = pcl052_gpio_keys,
+        .nbuttons       = ARRAY_SIZE(pcl052_gpio_keys),
+};
+
 static struct i2c_board_info pcl052_i2c2_board_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("tda998x", 0x70),
@@ -341,6 +421,17 @@ static void __init pcl052_init_usb(void)
 #endif
 }
 
+/*
+ * Add GPIO's to platform devices
+ */
+static inline void pcl052_init_gpio(void)
+{
+	imx_add_platform_device("leds-gpio", -1, NULL,
+                0, &pcl052_led_data, sizeof(pcl052_led_data));
+	imx_add_platform_device("gpio-keys", -1, NULL,
+		0, &pcl052_gpio_keys_data, sizeof(pcl052_gpio_keys_data));
+}
+
 /*!
  * Board specific initialization.
  */
@@ -353,6 +444,7 @@ static void __init pcl052_board_init(void)
 #ifdef CONFIG_FEC
 	mvf_init_fec(fec_data);
 #endif
+	pcl052_init_gpio();
 
 	mvf_add_snvs_rtc();
 
