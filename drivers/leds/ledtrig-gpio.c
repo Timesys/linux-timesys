@@ -164,6 +164,7 @@ static ssize_t gpio_trig_gpio_store(struct device *dev,
 	ret = request_irq(gpio_to_irq(gpio), gpio_trig_irq,
 			IRQF_SHARED | IRQF_TRIGGER_RISING
 			| IRQF_TRIGGER_FALLING, "ledtrig-gpio", led);
+
 	if (ret) {
 		dev_err(dev, "request_irq failed with error %d\n", ret);
 	} else {
@@ -198,6 +199,17 @@ static void gpio_trig_activate(struct led_classdev *led)
 		goto err_brightness;
 
 	gpio_data->led = led;
+
+	if(led->trigger_gpio)
+	{
+		gpio_data->gpio = led->trigger_gpio;
+		ret = request_irq(gpio_to_irq(gpio_data->gpio), gpio_trig_irq,
+                        IRQF_SHARED | IRQF_TRIGGER_RISING
+                        | IRQF_TRIGGER_FALLING, "ledtrig-gpio", led);
+	}
+	if (ret)
+		dev_err(led->dev, "request_irq failed with error %d\n", ret);
+
 	led->trigger_data = gpio_data;
 	INIT_WORK(&gpio_data->work, gpio_trig_work);
 

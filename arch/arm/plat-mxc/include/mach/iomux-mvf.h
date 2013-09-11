@@ -64,6 +64,10 @@ typedef enum iomux_config {
 
 #define MVF600_DCU_PAD_CTRL	(MVF600_HIGH_DRV | PAD_CTL_OBE_ENABLE)
 
+#define MVF600_LED_PAD_CTRL     (PAD_CTL_PUS_47K_UP | PAD_CTL_OBE_ENABLE)
+
+#define MVF600_BTN_PAD_CTRL     (PAD_CTL_PUS_47K_UP | PAD_CTL_IBE_ENABLE)
+
 #define MVF600_UART_PAD_CTRL	(PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
 				PAD_CTL_DSE_25ohm)
 
@@ -329,6 +333,30 @@ typedef enum iomux_config {
 		IOMUX_PAD(0x0210, 0x0210, 1, 0x0000, 0, MVF600_DCU_PAD_CTRL)
 #define MVF600_PAD133_PTE28_DCU0_B7				\
 		IOMUX_PAD(0x0214, 0x0214, 1, 0x0000, 0, MVF600_DCU_PAD_CTRL)
+/*LED1*/
+#define MVF600_PAD35_PTB13_GPIO_LED1                            \
+                IOMUX_PAD(0x008C, 0x008C, 0, 0x0000, 0, MVF600_LED_PAD_CTRL)
+/*LED2*/
+#define MVF600_PAD40_PTB18_GPIO_LED2                            \
+                IOMUX_PAD(0x00A0, 0x00A0, 0, 0x0000, 0, MVF600_LED_PAD_CTRL)
+/*LED3*/
+#define MVF600_PAD96_PTB26_GPIO_LED3                            \
+                IOMUX_PAD(0x0180, 0x0180, 0, 0x0000, 0, MVF600_LED_PAD_CTRL)
+/*LED4*/
+#define MVF600_PAD102_PTC29_GPIO_LED4                            \
+                IOMUX_PAD(0x0198, 0x0198 ,0, 0x0000, 0, MVF600_LED_PAD_CTRL)
+/*BTN1*/
+#define MVF600_PAD25_PTB3_GPIO_BTN1                            \
+                IOMUX_PAD(0x0064, 0x0064, 0, 0x0000, 0, MVF600_BTN_PAD_CTRL)
+/*BTN2*/
+#define MVF600_PAD30_PTB8_GPIO_BTN2                            \
+                IOMUX_PAD(0x0078, 0x0078, 0, 0x0000, 0, MVF600_BTN_PAD_CTRL)
+/*BTN3*/
+#define MVF600_PAD31_PTB9_GPIO_BTN3                            \
+                IOMUX_PAD(0x007C, 0x007C, 0, 0x0000, 0, MVF600_BTN_PAD_CTRL)
+/*BTN4*/
+#define MVF600_PAD34_PTB12_GPIO_BTN4                            \
+                IOMUX_PAD(0x0088, 0x0088, 0, 0x0000, 0, MVF600_BTN_PAD_CTRL)
 
 /*UART1*/
 #define MVF600_PAD26_PTB4_UART1_TX				\

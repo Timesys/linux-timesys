@@ -111,6 +111,7 @@ static int __devinit create_gpio_led(const struct gpio_led *template,
 
 	led_dat->cdev.name = template->name;
 	led_dat->cdev.default_trigger = template->default_trigger;
+	led_dat->cdev.trigger_gpio = template->trigger_gpio;
 	led_dat->gpio = template->gpio;
 	led_dat->can_sleep = gpio_cansleep(template->gpio);
 	led_dat->active_low = template->active_low;

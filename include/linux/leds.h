@@ -61,6 +61,7 @@ struct led_classdev {
 	struct device		*dev;
 	struct list_head	 node;			/* LED Device list */
 	const char		*default_trigger;	/* Trigger to use */
+	unsigned		trigger_gpio;
 
 	unsigned long		 blink_delay_on, blink_delay_off;
 	struct timer_list	 blink_timer;
@@ -173,6 +174,7 @@ extern void ledtrig_ide_activity(void);
 struct led_info {
 	const char	*name;
 	const char	*default_trigger;
+	unsigned	trigger_gpio;
 	int		flags;
 };
 
@@ -185,6 +187,7 @@ struct led_platform_data {
 struct gpio_led {
 	const char *name;
 	const char *default_trigger;
+	unsigned 	trigger_gpio;
 	unsigned 	gpio;
 	unsigned	active_low : 1;
 	unsigned	retain_state_suspended : 1;
