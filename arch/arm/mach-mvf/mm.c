@@ -69,19 +69,34 @@ int mxc_init_l2x0(void)
 {
 	unsigned int val;
 
-	writel(0x132, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_TAG_LATENCY_CTRL));
-	writel(0x132, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_DATA_LATENCY_CTRL));
+	//Read the fuse bit in MSCM_CPxCFG1 register to determine if L2 cache present.
+	//For the Cortex-A5 core in Vybrid,
+	//if L2 is present, then L2WY = 0x08 (8-way set-associative)
 
-	val = readl(MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_PREFETCH_CTRL));
-	val |= 0x40800000;
-	writel(val, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_PREFETCH_CTRL));
-	val = readl(MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_POWER_CTRL));
-	val |= L2X0_DYNAMIC_CLK_GATING_EN;
-	val |= L2X0_STNDBY_MODE_EN;
-	writel(val, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_POWER_CTRL));
+	val = readl(MVF_IO_ADDRESS(MVF_MSCM_BASE_ADDR + MVF_MSCM_CPxCFG1));
 
-	l2x0_init(MVF_IO_ADDRESS(L2_BASE_ADDR), 0x0, ~0x00000000);
-	return 0;
+	if(((val & MVF_MSCM_L2WY) >> 16) != 0x00)
+	{
+		writel(0x132, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_TAG_LATENCY_CTRL));
+		writel(0x132, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_DATA_LATENCY_CTRL));
+
+		val = readl(MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_PREFETCH_CTRL));
+		val |= 0x40800000;
+		writel(val, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_PREFETCH_CTRL));
+		val = readl(MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_POWER_CTRL));
+		val |= L2X0_DYNAMIC_CLK_GATING_EN;
+		val |= L2X0_STNDBY_MODE_EN;
+		writel(val, MVF_IO_ADDRESS(L2_BASE_ADDR + L2X0_POWER_CTRL));
+
+		l2x0_init(MVF_IO_ADDRESS(L2_BASE_ADDR), 0x0, ~0x00000000);
+		return 0;
+	}
+	else
+	{
+		//No L2 cache present, return no such device / address.
+		printk("L2x0: L2 cache not present");
+		return -ENXIO;
+	}
 }
 
 

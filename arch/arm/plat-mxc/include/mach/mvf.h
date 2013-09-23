@@ -294,6 +294,18 @@
 #define MVF_WKPU_BASE		(MVF_IO_ADDRESS(MVF_WKPU_BASE_ADDR))
 
 /*
+ * defines for MSCM - Misc system control module
+ */
+#define MVF_MSCM_CPxTYPE 	0x0
+#define MVF_MSCM_CPxNUM 	0x04
+#define MVF_MSCM_CPxMASTER 0x8
+#define MVF_MSCM_CPxCOUNT 	0x0c
+#define MVF_MSCM_CPxCFG0 	0x10
+#define MVF_MSCM_CPxCFG1 	0x14
+
+#define MVF_MSCM_L2WY 		0xFF0000
+
+/*
  * defines for SPBA modules
  */
 #define MVF_SPBA_SDHC1	0x04
