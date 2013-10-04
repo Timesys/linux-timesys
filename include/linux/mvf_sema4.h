@@ -9,6 +9,8 @@
 #define MVF_RESERVED1_SEMAPHORE_NUMBER  (4)
 #define MVF_RESERVED2_SEMAPHORE_NUMBER  (5)
 
+#ifdef __KERNEL__
+
 typedef struct mvf_sema4_handle_struct {
 	int gate_num;
 	wait_queue_head_t wait_queue;
@@ -27,4 +29,5 @@ int mvf_sema4_lock(MVF_SEMA4 *sema4, unsigned int timeout_us, bool use_interrupt
 int mvf_sema4_unlock(MVF_SEMA4 *sema4);
 int mvf_sema4_test(MVF_SEMA4 *sema4);
 
+#endif
 #endif
