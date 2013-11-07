@@ -138,7 +138,7 @@ config HAVE_PIT
 
 config MXC_USE_PIT
 	bool "Use PIT"
-	depends on HAVE_PIT
+	depends on HAVE_PIT && !HIGH_RES_TIMERS
 	help
 	  Use PIT as the system timer on systems that have it.
 	  Anyway, on some systems the GPT may be in use such as mvf platform.

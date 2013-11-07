@@ -73,3 +73,15 @@
 	streq	\irqstat, [\base, #GIC_CPU_EOI]
 	cmp	\tmp, #0
 	.endm
+
+#if defined(CONFIG_ARCH_MVF) && !defined(CONFIG_MXC_USE_PIT)
+	/* MVF Global Timer Support*/
+	.macro test_for_gtirq, irqnr, irqstat, base, tmp
+	bic	\irqnr, \irqstat, #0x1c00
+	mov 	\tmp, #0
+	cmp	\irqnr, #27
+	moveq	\tmp, #1
+	streq	\irqstat, [\base, #GIC_CPU_EOI]
+	cmp	\tmp, #0
+	.endm
+#endif
