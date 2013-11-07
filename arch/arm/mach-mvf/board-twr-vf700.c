@@ -322,7 +322,7 @@ static struct spi_mvf_chip at26df081a_chip_info = {
 
 static struct mtd_partition s25fl256s_partitions[] = {
 	{
-		.name = "s25fl256s",
+		.name = "Flash_JFFS2",
 		.size = (1024 * 64 * 256),
 		.offset = 0x00000000,
 		.mask_flags = 0,
@@ -333,7 +333,7 @@ static struct flash_platform_data s25fl256s_spi_flash_data = {
 	.name = "Spansion s25fl128s SPI Flash chip",
 	.parts = s25fl256s_partitions,
 	.nr_parts = ARRAY_SIZE(s25fl256s_partitions),
-	.type = "s25fl128s",
+	.type = "s25fl128s1",
 };
 #endif
 

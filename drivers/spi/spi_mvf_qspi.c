@@ -313,6 +313,16 @@ static void set_lut(struct mvfqspi *mvfqspi)
 	writel(0x0, mvfqspi->iobase + QUADSPI_LUT(54));
 	writel(0x0, mvfqspi->iobase + QUADSPI_LUT(55));
 
+	/* SEQID 14 - Fast READ */
+#ifdef QUADSPI_ENABLE_32BITS_ADDR
+	writel(0x0820040C, mvfqspi->iobase + QUADSPI_LUT(56));
+#else
+	writel(0x0818040B, mvfqspi->iobase + QUADSPI_LUT(56));
+#endif
+	writel(0x1c800c08, mvfqspi->iobase + QUADSPI_LUT(57));
+	writel(0x0, mvfqspi->iobase + QUADSPI_LUT(58));
+	writel(0x0, mvfqspi->iobase + QUADSPI_LUT(59));
+
 	/* Lock the LUT */
 	writel(0x5af05af0, mvfqspi->iobase + QUADSPI_LUTKEY);
 	writel(0x1, mvfqspi->iobase + QUADSPI_LCKCR);
@@ -434,6 +444,35 @@ static void mvfqspi_transfer_msg(unsigned int opr, unsigned int to_or_from,
 				mvfqspi->iobase + QUADSPI_MCR);
 		}
 		break;
+	case OPCODE_FAST_READ:
+		to_or_from += PSP_QSPI0_MEMMAP_BASE;
+
+		while (count > 0) {
+			writel(to_or_from, mvfqspi->iobase + QUADSPI_SFAR);
+			size = (count > RX_BUFFER_SIZE) ?
+				RX_BUFFER_SIZE : count;
+			writel(14 << QSPI_IPCR_SEQID_SHIFT | size,
+				mvfqspi->iobase + QUADSPI_IPCR);
+			do {} while (readl(mvfqspi->iobase + QUADSPI_SR) &
+				QSPI_SR_BUSY_MASK);
+
+			to_or_from += size;
+			count -= size;
+
+			i = 0;
+			while ((RX_BUFFER_SIZE >= size) && (size > 0)) {
+				tmp = readl(mvfqspi->iobase + QUADSPI_RBDR +
+					i * 4);
+				*rxbuf = endian_change_32bit(tmp);
+				rxbuf++;
+				size -= 4;
+				i++;
+			}
+			writel(readl(mvfqspi->iobase + QUADSPI_MCR) |
+				QSPI_MCR_CLR_RXF_MASK,
+				mvfqspi->iobase + QUADSPI_MCR);
+		}
+		break;
 	case OPCODE_SE:
 		to_or_from += PSP_QSPI0_MEMMAP_BASE;
 		writel(to_or_from, mvfqspi->iobase + QUADSPI_SFAR);
@@ -517,14 +556,23 @@ static void mvfqspi_transfer_msg(unsigned int opr, unsigned int to_or_from,
 
 		reg = readl(mvfqspi->iobase + QUADSPI_RBSR);
 		if (reg & QSPI_RBSR_RDBFL_MASK) {
-			tmp = readl(mvfqspi->iobase + QUADSPI_RBDR);
-			*rxbuf = endian_change_32bit(tmp);
-			rxbuf += 4;
-			count -= 4;
+			i = 0;
+			while (count >= 4) {
+				tmp = readl(mvfqspi->iobase + QUADSPI_RBDR + i);
+				*rxbuf = endian_change_32bit(tmp);
+				rxbuf += 1;
+				count -= 4;
+				i += 4;
+			}
+			if (count) {
+				tmp = readl(mvfqspi->iobase + QUADSPI_RBDR + i);
+				tmp = endian_change_32bit(tmp);
+				memcpy(rxbuf, &tmp, count);
+			}
 		}
 		break;
 	default:
-		printk(KERN_ERR "cannot support this opcode\n");
+		printk(KERN_ERR "cannot support %x opcode\n", opr);
 		break;
 	}
 
@@ -565,6 +613,11 @@ static void mvfqspi_work(struct work_struct *work)
 					to_or_from = tx_buf & 0xffffff00;
 					msg->actual_length += xfer->len;
 					continue;
+				case OPCODE_FAST_READ:
+					opr = OPCODE_FAST_READ;
+					to_or_from = tx_buf & 0xffffff00;
+					msg->actual_length += xfer->len;
+					continue;
 				case OPCODE_PP:
 					opr = OPCODE_PP;
 					to_or_from = tx_buf & 0xffffff00;
@@ -592,7 +645,7 @@ static void mvfqspi_work(struct work_struct *work)
 					break;
 				default:
 					printk(KERN_ERR "cannot support"
-						" this opcode\n");
+						" %x opcode\n", temp_tx_buf);
 					break;
 				}
 			}
