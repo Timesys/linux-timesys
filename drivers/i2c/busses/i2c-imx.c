@@ -59,6 +59,8 @@
 
 /* This will be the driver name the kernel reports */
 #define DRIVER_NAME "imx-i2c"
+#define FALSE 	0
+#define TRUE 	1
 
 /* Default value */
 #define IMX_I2C_BIT_RATE	100000	/* 100kHz */
@@ -521,6 +523,7 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
 	resource_size_t res_size;
 	int irq;
 	int ret;
+	static bool sema4Assigned = FALSE;
 
 	dev_dbg(&pdev->dev, "<%s>\n", __func__);
 
@@ -620,10 +623,14 @@ static int __init i2c_imx_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, i2c_imx);
 
 #ifdef CONFIG_ARCH_MVF
-	// for makeing sure not in use by MQX concurrently
-	if(mvf_sema4_assign(MVF_I2C_SEMAPHORE_NUMBER, &sema4)) {
-		dev_err(&pdev->dev, "could not assign MQX semaphore %d\n", MVF_I2C_SEMAPHORE_NUMBER);
-		goto fail5;
+	if(sema4Assigned == FALSE)
+	{
+		// for making sure the i2c port is not in use by MQX concurrently
+		if(mvf_sema4_assign(MVF_I2C_SEMAPHORE_NUMBER, &sema4)) {
+			dev_err(&pdev->dev, "could not assign MQX semaphore %d\n", MVF_I2C_SEMAPHORE_NUMBER);
+			goto fail5;
+		}
+		sema4Assigned = TRUE;
 	}
 #endif
 

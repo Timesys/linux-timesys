@@ -420,20 +420,13 @@ static void __init mvf_board_init(void)
 
 	mvf_add_sdhci_esdhc_imx(1, &mvfa5_sd1_data);
 
-#if 1
-	/*FIXME: I2C driver needs a fix for Linux-MQX semaphore
-	 * conflict
-	 */
 	mvf_add_imx_i2c(2, &mvf600_i2c_data);
 	i2c_register_board_info(2, mxc_i2c2_board_info,
 				ARRAY_SIZE(mxc_i2c2_board_info));
-#endif
 
-#if 0
 	mvf_add_imx_i2c(3, &mvf600_i2c_data);
 	i2c_register_board_info(3, mxc_i2c3_board_info,
 				ARRAY_SIZE(mxc_i2c3_board_info));
-#endif
 
 	mvfa5_add_dcu(0, &mvf_dcu_pdata);
 
