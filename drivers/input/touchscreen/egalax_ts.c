@@ -57,6 +57,7 @@
 
 #define MAX_I2C_DATA_LEN	10
 
+#define FORCE_SINGLE_POINTER_SUPPORT
 struct egalax_pointer {
 	bool valid;
 	bool status;
@@ -80,103 +81,115 @@ static irqreturn_t egalax_ts_interrupt(int irq, void *dev_id)
 	int i, id, ret, x, y;
 	bool down, valid;
 	u8 state;
+	int irqStatus = 0;
 
+	irqStatus = gpio_get_value(irq_to_gpio(irq));
+
+	while(irqStatus == 0)
+	{
 retry:
-	ret = i2c_master_recv(client, buf, MAX_I2C_DATA_LEN);
-	if (ret == -EAGAIN)
-		goto retry;
+		ret = i2c_master_recv(client, buf, MAX_I2C_DATA_LEN);
+		if (ret == -EAGAIN)
+			goto retry;
 
-	if (ret < 0)
-		return IRQ_HANDLED;
-
-	dev_dbg(&client->dev, "recv ret:%d", ret);
-	for (i = 0; i < MAX_I2C_DATA_LEN; i++)
-		dev_dbg(&client->dev, " %x ", buf[i]);
-
-	if (buf[0] != REPORT_MODE_VENDOR
-	    && buf[0] != REPORT_MODE_SINGLE
-	    && buf[0] != REPORT_MODE_MTTOUCH) {
-		/* invalid point */
-		return IRQ_HANDLED;
-	}
-
-	if (buf[0] == REPORT_MODE_VENDOR) {
-		dev_dbg(&client->dev, "vendor message, ignored\n");
-		return IRQ_HANDLED;
-	}
-
-	state = buf[1];
-	x = (buf[3] << 8) | buf[2];
-	y = (buf[5] << 8) | buf[4];
-
-	/* Currently, the panel Freescale using on SMD board _NOT_
-	 * support single pointer mode. All event are going to
-	 * multiple pointer mode.  Add single pointer mode according
-	 * to EETI eGalax I2C programming manual.
-	 */
-	if (buf[0] == REPORT_MODE_SINGLE) {
-		input_report_abs(input_dev, ABS_X, x);
-		input_report_abs(input_dev, ABS_Y, y);
-		input_report_key(input_dev, BTN_TOUCH, !!state);
-		input_sync(input_dev);
-		return IRQ_HANDLED;
-	}
-
-	/* deal with multiple touch  */
-	valid = state & EVENT_VAILD_MASK;
-	id = (state & EVENT_ID_MASK) >> EVENT_ID_OFFSET;
-	down = state & EVENT_DOWN_UP;
-
-	if (!valid || id > MAX_SUPPORT_POINTS) {
-		dev_dbg(&client->dev, "point invalid\n");
-		return IRQ_HANDLED;
-	}
-
-	if (down) {
-		/* should also report old pointers */
-		events[id].valid = valid;
-		events[id].status = down;
-		events[id].x = x;
-		events[id].y = y;
-
-#ifdef FORCE_SINGLE_POINTER_SUPPORT
-		input_report_abs(input_dev, ABS_X, x);
-		input_report_abs(input_dev, ABS_Y, y);
-		input_event(data->input_dev, EV_KEY, BTN_TOUCH, 1);
-		input_report_abs(input_dev, ABS_PRESSURE, 1);
-#else
-		for (i = 0; i < MAX_SUPPORT_POINTS; i++) {
-			if (!events[i].valid)
-				continue;
-			dev_dbg(&client->dev, "report id:%d valid:%d x:%d y:%d",
-				i, valid, x, y);
-
-			input_report_abs(input_dev,
-					 ABS_MT_TRACKING_ID, i);
-			input_report_abs(input_dev,
-					 ABS_MT_TOUCH_MAJOR, 1);
-			input_report_abs(input_dev,
-					 ABS_MT_POSITION_X, events[i].x);
-			input_report_abs(input_dev,
-					 ABS_MT_POSITION_Y, events[i].y);
-			input_mt_sync(input_dev);
+		if (ret < 0)
+		{
+			printk("EGALAX: error receiving i2c data\n");
+			return IRQ_HANDLED;
 		}
-#endif
-	} else {
-		dev_dbg(&client->dev, "release id:%d\n", id);
-		events[id].valid = 0;
-		events[id].status = 0;
-#ifdef FORCE_SINGLE_POINTER_SUPPORT
-		input_report_key(input_dev, BTN_TOUCH, 0);
-		input_report_abs(input_dev, ABS_PRESSURE, 0);
-#else
-		input_report_abs(input_dev, ABS_MT_TRACKING_ID, id);
-		input_event(input_dev, EV_ABS, ABS_MT_TOUCH_MAJOR, 0);
-		input_mt_sync(input_dev);
-#endif
+
+		dev_dbg(&client->dev, "recv ret:%d", ret);
+		for (i = 0; i < MAX_I2C_DATA_LEN; i++)
+			dev_dbg(&client->dev, " %x ", buf[i]);
+
+		if (buf[0] != REPORT_MODE_VENDOR
+		    && buf[0] != REPORT_MODE_SINGLE
+		    && buf[0] != REPORT_MODE_MTTOUCH) {
+			/* invalid point */
+			printk("EGALAX: Invalid point\n");
+			return IRQ_HANDLED;
+		}
+
+		if (buf[0] == REPORT_MODE_VENDOR) {
+			dev_dbg(&client->dev, "vendor message, ignored\n");
+			return IRQ_HANDLED;
+		}
+
+		state = buf[1];
+		x = (buf[3] << 8) | buf[2];
+		y = (buf[5] << 8) | buf[4];
+
+		/* Currently, the panel Freescale using on SMD board _NOT_
+		 * support single pointer mode. All event are going to
+		 * multiple pointer mode.  Add single pointer mode according
+		 * to EETI eGalax I2C programming manual.
+		 */
+		if (buf[0] == REPORT_MODE_SINGLE) {
+			input_report_abs(input_dev, ABS_X, x);
+			input_report_abs(input_dev, ABS_Y, y);
+			input_report_key(input_dev, BTN_TOUCH, !!state);
+			input_sync(input_dev);
+			return IRQ_HANDLED;
+		}
+
+		/* deal with multiple touch  */
+		valid = state & EVENT_VAILD_MASK;
+		id = (state & EVENT_ID_MASK) >> EVENT_ID_OFFSET;
+		down = state & EVENT_DOWN_UP;
+
+		if (!valid || id > MAX_SUPPORT_POINTS) {
+			dev_dbg(&client->dev, "point invalid\n");
+			return IRQ_HANDLED;
+		}
+
+		if (down) {
+			/* should also report old pointers */
+			events[id].valid = valid;
+			events[id].status = down;
+			events[id].x = x;
+			events[id].y = y;
+
+	#ifdef FORCE_SINGLE_POINTER_SUPPORT
+			input_report_abs(input_dev, ABS_X, x);
+			input_report_abs(input_dev, ABS_Y, y);
+			input_event(data->input_dev, EV_KEY, BTN_TOUCH, 1);
+			input_report_abs(input_dev, ABS_PRESSURE, 1);
+	#else
+			for (i = 0; i < MAX_SUPPORT_POINTS; i++) {
+				if (!events[i].valid)
+					continue;
+				dev_dbg(&client->dev, "report id:%d valid:%d x:%d y:%d",
+					i, valid, x, y);
+
+				input_report_abs(input_dev,
+						 ABS_MT_TRACKING_ID, i);
+				input_report_abs(input_dev,
+						 ABS_MT_TOUCH_MAJOR, 1);
+				input_report_abs(input_dev,
+						 ABS_MT_POSITION_X, events[i].x);
+				input_report_abs(input_dev,
+						 ABS_MT_POSITION_Y, events[i].y);
+				input_mt_sync(input_dev);
+			}
+	#endif
+		} else {
+			dev_dbg(&client->dev, "release id:%d\n", id);
+			events[id].valid = 0;
+			events[id].status = 0;
+	#ifdef FORCE_SINGLE_POINTER_SUPPORT
+			input_report_key(input_dev, BTN_TOUCH, 0);
+			input_report_abs(input_dev, ABS_PRESSURE, 0);
+	#else
+			input_report_abs(input_dev, ABS_MT_TRACKING_ID, id);
+			input_event(input_dev, EV_ABS, ABS_MT_TOUCH_MAJOR, 0);
+			input_mt_sync(input_dev);
+	#endif
+		}
+
+		input_sync(input_dev);
+		irqStatus = gpio_get_value(irq_to_gpio(irq));
 	}
 
-	input_sync(input_dev);
 	return IRQ_HANDLED;
 }
 
@@ -232,13 +245,6 @@ static int __devinit egalax_ts_probe(struct i2c_client *client,
 	data->client = client;
 	data->input_dev = input_dev;
 	egalax_wake_up_device(client);
-	ret = egalax_7200_firmware_version(client);
-	if (ret < 0) {
-		dev_err(&client->dev,
-			"egalax_ts: failed to read firmware version\n");
-		ret = -EIO;
-		goto err_free_dev;
-	}
 
 	input_dev->name = "eGalax Touch Screen";
 	input_dev->phys = "I2C",
@@ -266,9 +272,16 @@ static int __devinit egalax_ts_probe(struct i2c_client *client,
 			     MAX_SUPPORT_POINTS, 0, 0);
 #endif
 	input_set_drvdata(input_dev, data);
+	ret = egalax_7200_firmware_version(client);
+	if (ret < 0) {
+		dev_err(&client->dev,
+			"egalax_ts: failed to read firmware version\n");
+		ret = -EIO;
+		goto err_free_dev;
+	}
 
 	ret = request_threaded_irq(client->irq, NULL, egalax_ts_interrupt,
-				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+				   (IRQF_TRIGGER_FALLING | IRQF_ONESHOT),
 				   "egalax_ts", data);
 	if (ret < 0) {
 		dev_err(&client->dev, "Failed to register interrupt\n");
