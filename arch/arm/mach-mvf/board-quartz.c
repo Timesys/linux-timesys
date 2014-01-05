@@ -88,6 +88,7 @@
 #define MVF600_SD1_WP  98
 #define MVF600_LVDS_TS	119
 #define MVF600_RTC_INT	127
+#define MVF600_CRTOUCH_INT 68
 /* GPIO definitions */
 #define GPIO_LED_1		65
 #define GPIO_LED_2		64
@@ -303,6 +304,10 @@ static const struct esdhc_platform_data mvfa5_sd1_data __initconst = {
 	.wp_gpio = MVF600_SD1_WP,
 };
 
+static struct crtouch_platform_data crtouch_pdata = {
+	.irq_gpio = MVF600_CRTOUCH_INT,
+};
+
 static struct imxi2c_platform_data mvf600_i2c_data = {
 	.bitrate = 100000,
 };
@@ -310,6 +315,7 @@ static struct imxi2c_platform_data mvf600_i2c_data = {
 static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("crtouch_ts", 0x49),
+		.platform_data = &crtouch_pdata,		
 	},
 	{
 		I2C_BOARD_INFO("sgtl5000", 0x0a),

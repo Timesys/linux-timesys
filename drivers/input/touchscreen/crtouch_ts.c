@@ -19,6 +19,7 @@
 #include <linux/slab.h>
 #include <linux/bitops.h>
 #include <linux/gpio.h>
+#include <linux/fsl_devices.h>
 
 /* Resistive touch sense status registers */
 #define RES_STA_ERROR			0x00
@@ -171,6 +172,7 @@ static int __devinit crtouch_ts_probe(struct i2c_client *client,
 	struct crtouch_ts_data *data;
 	struct input_dev *input_dev;
 	int error;
+	struct crtouch_platform_data *crtouch_pdata = client->dev.platform_data;
 
 	data = kzalloc(sizeof(struct crtouch_ts_data), GFP_KERNEL);
 	input_dev = input_allocate_device();
@@ -204,13 +206,13 @@ static int __devinit crtouch_ts_probe(struct i2c_client *client,
 
 	crtouch_ts_reg_init(data);
 
-	error = gpio_request_one(21, GPIOF_IN, "TS_IRQ");
+	error = gpio_request_one(crtouch_pdata->irq_gpio, GPIOF_IN, "TS_IRQ");
 	if (error) {
 		dev_err(&client->dev, "Failed to request gpio\n");
 		goto err_free_mem;
 	}
 
-	error = request_threaded_irq(gpio_to_irq(21), NULL,
+	error = request_threaded_irq(gpio_to_irq(crtouch_pdata->irq_gpio), NULL,
 		crtouch_ts_interrupt, IRQF_TRIGGER_FALLING, "crtouch_ts", data);
 	if (error) {
 		dev_err(&client->dev, "Failed to register interrupt\n");

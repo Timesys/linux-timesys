@@ -188,6 +188,10 @@ struct mxc_mlb_platform_data {
 	struct cdev cdev;
 };
 
+struct crtouch_platform_data {
+	u32     irq_gpio;
+};
+
 struct spi_device;
 
 struct fsl_spi_platform_data {
