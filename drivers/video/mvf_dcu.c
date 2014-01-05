@@ -64,6 +64,32 @@ static struct fb_videomode __devinitdata mvf_dcu_mode_db[] = {
 		.sync		= FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
 		.vmode		= FB_VMODE_NONINTERLACED,
 	},
+	{
+		.name		= "800x480",
+		.xres		= 800,
+		.yres		= 480,
+		.left_margin	= 40,
+		.right_margin	= 40,
+		.upper_margin	= 29,
+		.lower_margin	= 13,
+		.hsync_len	= 48,
+		.vsync_len	= 3,
+		.sync		= FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
+		.vmode		= FB_VMODE_NONINTERLACED,
+	},
+	{
+		.name		= "1024x768",
+		.xres		= 1024,
+		.yres		= 768,
+		.left_margin	= 2, //No spec
+		.right_margin	= 2, //No spec
+		.upper_margin	= 2, //No spec
+		.lower_margin	= 2, //No spec
+		.hsync_len	= 281,
+		.vsync_len	= 26,
+		.sync		= FB_SYNC_COMP_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
+		.vmode		= FB_VMODE_NONINTERLACED,
+	},
 };
 
 static DEFINE_SPINLOCK(dcu_lock);
@@ -417,11 +443,15 @@ static void update_lcdc(struct fb_info *info)
 	writel(DCU_MODE_BLEND_ITER(3) | DCU_MODE_RASTER_EN(1),
 			dcu->base + DCU_DCU_MODE);
 
+	writel(3, dcu->base + DCU_DIV_RATIO);
+
+#if 0
 	writel(9, dcu->base + DCU_DIV_RATIO);
 
 	writel(DCU_SYN_POL_INV_PXCK(0) | DCU_SYN_POL_NEG(0) |
 		DCU_SYN_POL_INV_VS(1) | DCU_SYN_POL_INV_HS(1),
 		dcu->base + DCU_SYN_POL);
+#endif
 	writel(DCU_THRESHOLD_LS_BF_VS(0x3) | DCU_THRESHOLD_OUT_BUF_HIGH(0x78) |
 		DCU_THRESHOLD_OUT_BUF_LOW(0), dcu->base + DCU_THRESHOLD);
 
@@ -942,6 +972,29 @@ static int mvf_dcu_resume(struct platform_device *pdev)
 #define mvf_dcu_resume	NULL
 #endif
 
+/*
+ * Parse user specified options for display. If no option is
+ * specified use default specified in board file
+ * For using LVDS use bootargs: video=dcu0:1024x768
+ */
+static void mvffb_option_setup(struct platform_device *pdev)
+{
+	struct mvf_dcu_platform_data *plat_data = pdev->dev.platform_data;
+	char *options;
+	char name[] = "dcu0";
+
+	name[3] += pdev->id;
+	fb_get_options(name, &options);
+
+	if (!options || !*options)
+		return;
+
+	plat_data->mode_str = options;
+
+	return;
+}
+
+
 static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 {
 	struct mvf_dcu_platform_data *plat_data = pdev->dev.platform_data;
@@ -954,6 +1007,8 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 	dcu = kmalloc(sizeof(struct mvf_dcu_fb_data), GFP_KERNEL);
 	if (!dcu)
 		return -ENOMEM;
+
+	mvffb_option_setup(pdev);
 
 	for (i = 0; i < ARRAY_SIZE(dcu->mvf_dcu_info); i++) {
 		dcu->mvf_dcu_info[i] =
@@ -1006,6 +1061,14 @@ static int __devinit mvf_dcu_probe(struct platform_device *pdev)
 	gpio_request_one(DCU_LCD_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "DCU");
 	msleep(2);
 	gpio_set_value(DCU_LCD_ENABLE_PIN, 1);
+
+	gpio_request_one(DCU_LVDS_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "DCU");
+	msleep(2);
+	gpio_set_value(DCU_LVDS_ENABLE_PIN, 1);
+
+	gpio_request_one(DCU_LVDS_BLT_ENABLE_PIN, GPIOF_OUT_INIT_LOW, "DCU");
+	msleep(2);
+	gpio_set_value(DCU_LVDS_BLT_ENABLE_PIN, 1);
 
 	writel(0x20000000, MVF_IO_ADDRESS(MVF_TCON0_BASE_ADDR));
 
