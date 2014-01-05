@@ -231,7 +231,7 @@ static struct snd_soc_dai_link mvf_sgtl5000_dai[] = {
 		.name		= "HiFi",
 		.stream_name	= "HiFi",
 		.codec_dai_name	= "sgtl5000",
-		.codec_name	= "sgtl5000.0-000a",
+		.codec_name	= "sgtl5000.2-000a",
 		.cpu_dai_name	= "mvf-sai.0",
 		.platform_name	= "mvf-pcm-audio.0",
 		.init		= mvf_twr_sgtl5000_init,
@@ -256,7 +256,7 @@ static int __devinit mvf_sgtl5000_probe(struct platform_device *pdev)
 	if (plat->init && plat->init())
 		return -EINVAL;
 
-	card_priv.sysclk = 24576000;
+	card_priv.sysclk =  plat->sysclk;;
 
 	return 0;
 }
@@ -288,7 +288,7 @@ static int __init mvf_sgtl5000_init(void)
 	if (ret)
 		return -ENOMEM;
 
-	mvf_sgtl5000_dai[0].codec_name = "sgtl5000.0-000a";
+	mvf_sgtl5000_dai[0].codec_name = "sgtl5000.2-000a";
 
 	mvf_sgtl5000_snd_device = platform_device_alloc("soc-audio", 1);
 	if (!mvf_sgtl5000_snd_device)
