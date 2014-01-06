@@ -515,6 +515,15 @@
 				clock-names = "ipg", "ahb", "ptp";
 				status = "disabled";
 			};
+			
+			nfc: nand@400e0000 {
+				compatible = "fsl,vf610-nfc";
+				reg = <0x400e0000 0x4000>;
+				interrupts = <0 83 0x04>;
+				clocks = <&clks VF610_CLK_NFC>;
+				clock-names = "nfc";
+				status = "disabled";
+			};	
 
 			switch: switch@400e8000 {
 				compatible = "fsl,eth-switch";
