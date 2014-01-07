@@ -89,6 +89,6 @@ config MACH_QDK
 	select IMX_HAVE_PLATFORM_MXC_NAND
 	select IMX_HAVE_PLATFORM_MVF_CAAM
 	help
-	  Include support for Support Device Solutions Quartz platform. This includes specific
+	  Include support for Device Solutions Quartz platform. This includes specific
 	  configurations for the board and its peripherals.
 endif
