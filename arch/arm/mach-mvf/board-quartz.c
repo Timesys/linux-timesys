@@ -337,12 +337,18 @@ static struct mxc_nand_platform_data mvf_data __initdata = {
 
 static struct gpio_keys_button mvf_gpio_btn[] = {
 	{
+		.code   = BTN_1,
 		.desc	= "button1",
-		.gpio	=  GPIO_BTN_1,
+		.gpio	= GPIO_BTN_1,
+		.type 	= EV_KEY,
+		.active_low	= 1,
 	},
 	{
+		.code   = BTN_2,
 		.desc	= "button2",
 		.gpio	= GPIO_BTN_2,
+		.type 	= EV_KEY,
+		.active_low	= 1,
 	},
 };
 
