@@ -916,11 +916,11 @@ fsl_nfc_probe(struct platform_device *pdev)
 			CONFIG_FAST_FLASH_MASK,
 			CONFIG_FAST_FLASH_SHIFT, 1);
 #endif
-
+#if 0
 	nfc_set_field(mtd, NFC_FLASH_CONFIG,
 			CONFIG_16BIT_MASK,
 			CONFIG_16BIT_SHIFT, 1);
-
+#endif
 	/* Detect NAND chips */
 	if (nand_scan(mtd, 1)) {
 		printk(KERN_ERR DRV_NAME ": NAND Flash not found !\n");
