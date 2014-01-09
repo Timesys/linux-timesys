@@ -18,6 +18,7 @@
 #include <linux/cpufreq.h>
 #include <linux/err.h>
 #include <linux/seq_file.h>
+#include <linux/ftrace.h>
 
 #include <asm/sched_clock.h>
 #include <asm/hardware/gic.h>
