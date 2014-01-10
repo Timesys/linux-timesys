@@ -59,7 +59,7 @@ config MACH_MVFA5_TWR_VF700
 	  Include support for MVF TWR-VF700 platform. This includes specific
 	  configurations for the board and its peripherals.
 
-config MACH_QDK
+config MACH_DS_QUARTZ
 	bool "Support Device Solutions Quartz (MVF CORTEX-A5) platform"
 	select ARCH_MVFA5
 	select SOC_MVFA5

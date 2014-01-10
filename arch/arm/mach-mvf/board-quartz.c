@@ -470,7 +470,7 @@ static struct sys_timer mxc_timer = {
 /*
  * initialize __mach_desc_ data structure.
  */
-MACHINE_START(MVFA5_TWR_VF700, "Device Solutions QDK Board")
+MACHINE_START(DS_QUARTZ, "Device Solutions QDK Board")
 	.boot_params = MVF_PHYS_OFFSET + 0x100,
 	.fixup = fixup_mxc_board,
 	.map_io = mvf_map_io,
