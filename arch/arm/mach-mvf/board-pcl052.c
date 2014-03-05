@@ -321,6 +321,7 @@ static struct mvf_dcu_platform_data mvf_dcu_pdata = {
 	.mode_str	= "640x480p_hdmipc",
    // .mode_str	= "720x480p",
 	.default_bpp	= 24,
+	.enable_pin	= 108,
 };
 
 static void __init fixup_mxc_board(struct machine_desc *desc, struct tag *tags,
