@@ -244,25 +244,25 @@ static struct platform_device mvf_twr_audio_device = {
 };
 
 static struct imxuart_platform_data mvf_uart3_pdata = {
-	.flags = IMXUART_FIFO | IMXUART_EDMA,
+	.flags = IMXUART_FIFO,
 	.dma_req_rx = DMA_MUX03_UART3_RX,
 	.dma_req_tx = DMA_MUX03_UART3_TX,
 };
 
 static struct imxuart_platform_data mvf_uart2_pdata = {
-	.flags = IMXUART_FIFO | IMXUART_EDMA,
+	.flags = IMXUART_FIFO,
 	.dma_req_rx = DMA_MUX03_UART2_RX,
 	.dma_req_tx = DMA_MUX03_UART2_TX,
 };
 
 static struct imxuart_platform_data mvf_uart1_pdata = {
-	.flags = IMXUART_FIFO | IMXUART_EDMA,
+	.flags = IMXUART_FIFO,
 	.dma_req_rx = DMA_MUX03_UART1_RX,
 	.dma_req_tx = DMA_MUX03_UART1_TX,
 };
 
 static struct imxuart_platform_data mvf_uart0_pdata = {
-	.flags = IMXUART_FIFO | IMXUART_EDMA,
+	.flags = IMXUART_FIFO,
 	.dma_req_rx = DMA_MUX03_UART0_RX,
 	.dma_req_tx = DMA_MUX03_UART0_TX,
 };
