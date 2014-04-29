@@ -394,4 +394,44 @@
 			};
 		};
 	};
+     /* represent how devices are connected */
+	pwmleds {
+		compatible = "pwm-leds";
+		blue {
+               /* <pwm> <channel> <period> <0= period value indicates the LED on-time,
+				1= period value indates LED off time. */
+			pwms = <&pwm0 0 900000000 1>;
+			/* the label is the /sys/class/leds/<label> directory name. */
+			label = "blueLED";
+			max-brightness = <255>;
+			linux,default-trigger = "default-on";
+		};
+		yellow {
+               /* <pwm> <channel> <period> <0= period indicates the LED on-time,
+				1= period indates LED off time. */
+			pwms = <&pwm0 1 900000000 1>;
+				/* the label is the /sys/class/leds/<label> directory name. */
+			label = "yellowLED";
+			max-brightness = <255>;
+			linux,default-trigger = "default-on";
+		};
+		green {
+               /* <pwm> <channel> <period> <0= period indicates the LED on-time,
+				1= period indates LED off time. */
+			pwms = <&pwm0 2 900000000 1>;
+				/* the label is the /sys/class/leds/<label> directory name. */
+			label = "greenLED";
+			max-brightness = <255>;
+			linux,default-trigger = "default-on";
+		};
+		red {
+               /* <pwm> <channel> <period> <0= period indicates the LED on-time,
+				1= period indates LED off time. */
+			pwms = <&pwm0 3 900000000 1>;
+				/* the label is the /sys/class/leds/<label> directory name. */
+			label = "redLED";
+			max-brightness = <255>;
+			linux,default-trigger = "default-on";
+		};
+	};
 };
