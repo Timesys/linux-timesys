@@ -100,9 +100,15 @@ static struct clk_div_table pll4_main_div_table[] = {
 static struct clk *clk[VF610_CLK_END];
 static struct clk_onecell_data clk_data;
 
+static unsigned int const clks_init_on[] __initconst = {
+	VF610_CLK_SYS_BUS,
+	VF610_CLK_DDR_SEL,
+};
+
 static void __init vf610_clocks_init(struct device_node *ccm_node)
 {
 	struct device_node *np;
+	int i;
 
 	clk[VF610_CLK_DUMMY] = imx_clk_fixed("dummy", 0);
 	clk[VF610_CLK_SIRC_128K] = imx_clk_fixed("sirc_128k", 128000);
@@ -333,6 +339,9 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
 
 	clk_set_parent(clk[VF610_CLK_DCU0_SEL], clk[VF610_CLK_PLL1_PFD2]);
 	clk_set_rate(clk[VF610_CLK_DCU0_DIV], 113200000);
+
+	for (i = 0; i < ARRAY_SIZE(clks_init_on); i++)
+		clk_prepare_enable(clk[clks_init_on[i]]);
 
 	/* Add the clocks to provider list */
 	clk_data.clks = clk;
