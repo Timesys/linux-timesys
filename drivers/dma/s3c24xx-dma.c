@@ -877,6 +877,103 @@ static struct dma_async_tx_descriptor *s3c24xx_dma_prep_memcpy(
 	return vchan_tx_prep(&s3cchan->vc, &txd->vd, flags);
 }
 
+static struct dma_async_tx_descriptor *s3c24xx_dma_prep_dma_cyclic(
+	struct dma_chan *chan, dma_addr_t addr, size_t size, size_t period,
+	enum dma_transfer_direction direction, unsigned long flags)
+{
+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
+	const struct s3c24xx_dma_platdata *pdata = s3cdma->pdata;
+	struct s3c24xx_dma_channel *cdata = &pdata->channels[s3cchan->id];
+	struct s3c24xx_txd *txd;
+	struct s3c24xx_sg *dsg;
+	unsigned sg_len;
+	dma_addr_t slave_addr;
+	u32 hwcfg = 0;
+	int i;
+
+	dev_dbg(&s3cdma->pdev->dev,
+		"prepare cyclic transaction of %zu bytes with period %zu from %s\n",
+		size, period, s3cchan->name);
+
+	if (!is_slave_direction(direction)) {
+		dev_err(&s3cdma->pdev->dev,
+			"direction %d unsupported\n", direction);
+		return NULL;
+	}
+
+	txd = s3c24xx_dma_get_txd();
+	if (!txd)
+		return NULL;
+
+	txd->cyclic = 1;
+
+	if (cdata->handshake)
+		txd->dcon |= S3C24XX_DCON_HANDSHAKE;
+
+	switch (cdata->bus) {
+	case S3C24XX_DMA_APB:
+		txd->dcon |= S3C24XX_DCON_SYNC_PCLK;
+		hwcfg |= S3C24XX_DISRCC_LOC_APB;
+		break;
+	case S3C24XX_DMA_AHB:
+		txd->dcon |= S3C24XX_DCON_SYNC_HCLK;
+		hwcfg |= S3C24XX_DISRCC_LOC_AHB;
+		break;
+	}
+
+	/*
+	 * Always assume our peripheral desintation is a fixed
+	 * address in memory.
+	 */
+	hwcfg |= S3C24XX_DISRCC_INC_FIXED;
+
+	/*
+	 * Individual dma operations are requested by the slave,
+	 * so serve only single atomic operations (S3C24XX_DCON_SERV_SINGLE).
+	 */
+	txd->dcon |= S3C24XX_DCON_SERV_SINGLE;
+
+	if (direction == DMA_MEM_TO_DEV) {
+		txd->disrcc = S3C24XX_DISRCC_LOC_AHB |
+			      S3C24XX_DISRCC_INC_INCREMENT;
+		txd->didstc = hwcfg;
+		slave_addr = s3cchan->cfg.dst_addr;
+		txd->width = s3cchan->cfg.dst_addr_width;
+	} else {
+		txd->disrcc = hwcfg;
+		txd->didstc = S3C24XX_DIDSTC_LOC_AHB |
+			      S3C24XX_DIDSTC_INC_INCREMENT;
+		slave_addr = s3cchan->cfg.src_addr;
+		txd->width = s3cchan->cfg.src_addr_width;
+	}
+
+	sg_len = size / period;
+
+	for (i = 0; i < sg_len; i++) {
+		dsg = kzalloc(sizeof(*dsg), GFP_NOWAIT);
+		if (!dsg) {
+			s3c24xx_dma_free_txd(txd);
+			return NULL;
+		}
+		list_add_tail(&dsg->node, &txd->dsg_list);
+
+		dsg->len = period;
+		/* Check last period length */
+		if (i == sg_len - 1)
+			dsg->len = size - period * i;
+		if (direction == DMA_MEM_TO_DEV) {
+			dsg->src_addr = addr + period * i;
+			dsg->dst_addr = slave_addr;
+		} else { /* DMA_DEV_TO_MEM */
+			dsg->src_addr = slave_addr;
+			dsg->dst_addr = addr + period * i;
+		}
+	}
+
+	return vchan_tx_prep(&s3cchan->vc, &txd->vd, flags);
+}
+
 static struct dma_async_tx_descriptor *s3c24xx_dma_prep_slave_sg(
 		struct dma_chan *chan, struct scatterlist *sgl,
 		unsigned int sg_len, enum dma_transfer_direction direction,

@@ -640,7 +640,71 @@ static struct dma_async_tx_descriptor *shdma_prep_slave_sg(
 	slave_addr = ops->slave_addr(schan);
 
 	return shdma_prep_sg(schan, sgl, sg_len, &slave_addr,
-			      direction, flags);
+			     direction, flags, false);
+}
+
+#define SHDMA_MAX_SG_LEN 32
+
+static struct dma_async_tx_descriptor *shdma_prep_dma_cyclic(
+	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+	size_t period_len, enum dma_transfer_direction direction,
+	unsigned long flags)
+{
+	struct shdma_chan *schan = to_shdma_chan(chan);
+	struct shdma_dev *sdev = to_shdma_dev(schan->dma_chan.device);
+	struct dma_async_tx_descriptor *desc;
+	const struct shdma_ops *ops = sdev->ops;
+	unsigned int sg_len = buf_len / period_len;
+	int slave_id = schan->slave_id;
+	dma_addr_t slave_addr;
+	struct scatterlist *sgl;
+	int i;
+
+	if (!chan)
+		return NULL;
+
+	BUG_ON(!schan->desc_num);
+
+	if (sg_len > SHDMA_MAX_SG_LEN) {
+		dev_err(schan->dev, "sg length %d exceds limit %d",
+				sg_len, SHDMA_MAX_SG_LEN);
+		return NULL;
+	}
+
+	/* Someone calling slave DMA on a generic channel? */
+	if (slave_id < 0 || (buf_len < period_len)) {
+		dev_warn(schan->dev,
+			"%s: bad parameter: buf_len=%zu, period_len=%zu, id=%d\n",
+			__func__, buf_len, period_len, slave_id);
+		return NULL;
+	}
+
+	slave_addr = ops->slave_addr(schan);
+
+	/*
+	 * Allocate the sg list dynamically as it would consumer too much stack
+	 * space.
+	 */
+	sgl = kcalloc(sg_len, sizeof(*sgl), GFP_KERNEL);
+	if (!sgl)
+		return NULL;
+
+	sg_init_table(sgl, sg_len);
+
+	for (i = 0; i < sg_len; i++) {
+		dma_addr_t src = buf_addr + (period_len * i);
+
+		sg_set_page(&sgl[i], pfn_to_page(PFN_DOWN(src)), period_len,
+			    offset_in_page(src));
+		sg_dma_address(&sgl[i]) = src;
+		sg_dma_len(&sgl[i]) = period_len;
+	}
+
+	desc = shdma_prep_sg(schan, sgl, sg_len, &slave_addr,
+			     direction, flags, true);
+
+	kfree(sgl);
+	return desc;
 }
 
 static int shdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
