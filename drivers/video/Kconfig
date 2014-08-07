@@ -1985,6 +1985,7 @@ config FB_FSL_DCU
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
 	select VIDEOMODE_HELPERS
+	select FB_MODE_HELPERS if OF
 	---help---
 	  Framebuffer driver for the Freescale SoC DCU
 
