@@ -207,6 +207,14 @@
 				status = "disabled";
 			};
 
+			tcon0: tcon@4003d000 {
+				compatible = "fsl,vf610-tcon";
+				reg = <0x4003d000 0x1000>;
+				clocks = <&clks VF610_CLK_TCON0>;
+				clock-names = "tcon";
+				status = "disabled";
+			};
+
 			wdog@4003e000 {
 				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
 				reg = <0x4003e000 0x1000>;
@@ -306,6 +314,16 @@
 				interrupts = <0 51 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&clks VF610_CLK_USBPHY1>;
 				fsl,anatop = <&anatop>;
+			};
+
+			dcu0: dcu@40058000 {
+				compatible = "fsl,vf610-dcu";
+				reg = <0x40058000 0x1200>;
+				interrupts = <0 30 0x04>;
+				clocks = <&clks VF610_CLK_DCU0>;
+				clock-names = "dcu";
+				tcon-controller = <&tcon0>;
+				status = "disabled";
 			};
 
 			i2c0: i2c@40066000 {
