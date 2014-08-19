@@ -30,6 +30,8 @@
 
 #define MX6_BM_OVER_CUR_DIS		BIT(7)
 
+#define VF610_OVER_CUR_DIS		BIT(7)
+
 struct usbmisc_ops {
 	/* It's called once when probe a usb device */
 	int (*init)(struct imx_usbmisc_data *data);
@@ -44,10 +46,9 @@ struct imx_usbmisc {
 	const struct usbmisc_ops *ops;
 };
 
-static struct imx_usbmisc *usbmisc;
-
 static int usbmisc_imx25_post(struct imx_usbmisc_data *data)
 {
+	struct imx_usbmisc *usbmisc = dev_get_drvdata(data->dev);
 	void __iomem *reg;
 	unsigned long flags;
 	u32 val;
@@ -70,6 +71,7 @@ static int usbmisc_imx25_post(struct imx_usbmisc_data *data)
 
 static int usbmisc_imx53_init(struct imx_usbmisc_data *data)
 {
+	struct imx_usbmisc *usbmisc = dev_get_drvdata(data->dev);
 	void __iomem *reg = NULL;
 	unsigned long flags;
 	u32 val = 0;
@@ -107,6 +109,7 @@ static int usbmisc_imx53_init(struct imx_usbmisc_data *data)
 
 static int usbmisc_imx6q_init(struct imx_usbmisc_data *data)
 {
+	struct imx_usbmisc *usbmisc = dev_get_drvdata(data->dev);
 	unsigned long flags;
 	u32 reg;
 
@@ -124,6 +127,26 @@ static int usbmisc_imx6q_init(struct imx_usbmisc_data *data)
 	return 0;
 }
 
+static int usbmisc_vf610_init(struct imx_usbmisc_data *data)
+{
+	struct imx_usbmisc *usbmisc = dev_get_drvdata(data->dev);
+	u32 reg;
+
+	/*
+	 * Vybrid only has one misc register set, but in two different
+	 * areas. These is reflected in two instances of this driver.
+	 */
+	if (data->index >= 1)
+		return -EINVAL;
+
+	if (data->disable_oc) {
+		reg = readl(usbmisc->base);
+		writel(reg | VF610_OVER_CUR_DIS, usbmisc->base);
+}
+
+	return 0;
+}
+
 static const struct usbmisc_ops imx25_usbmisc_ops = {
 	.post = usbmisc_imx25_post,
 };
@@ -136,10 +159,14 @@ static const struct usbmisc_ops imx6q_usbmisc_ops = {
 	.init = usbmisc_imx6q_init,
 };
 
+static const struct usbmisc_ops vf610_usbmisc_ops = {
+	.init = usbmisc_vf610_init,
+};
+
 int imx_usbmisc_init(struct imx_usbmisc_data *data)
 {
-	if (!usbmisc)
-		return -EPROBE_DEFER;
+	struct imx_usbmisc *usbmisc = dev_get_drvdata(data->dev);
+
 	if (!usbmisc->ops->init)
 		return 0;
 	return usbmisc->ops->init(data);
@@ -148,8 +175,8 @@ EXPORT_SYMBOL_GPL(imx_usbmisc_init);
 
 int imx_usbmisc_init_post(struct imx_usbmisc_data *data)
 {
-	if (!usbmisc)
-		return -EPROBE_DEFER;
+	struct imx_usbmisc *usbmisc = dev_get_drvdata(data->dev);
+
 	if (!usbmisc->ops->post)
 		return 0;
 	return usbmisc->ops->post(data);
@@ -169,6 +196,10 @@ static const struct of_device_id usbmisc_imx_dt_ids[] = {
 		.compatible = "fsl,imx6q-usbmisc",
 		.data = &imx6q_usbmisc_ops,
 	},
+	{
+		.compatible = "fsl,vf610-usbmisc",
+		.data = &vf610_usbmisc_ops,
+	},
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, usbmisc_imx_dt_ids);
@@ -180,8 +211,6 @@ static int usbmisc_imx_probe(struct platform_device *pdev)
 	int ret;
 	struct of_device_id *tmp_dev;
 
-	if (usbmisc)
-		return -EBUSY;
 
 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
 	if (!data)
@@ -211,15 +240,15 @@ static int usbmisc_imx_probe(struct platform_device *pdev)
 	tmp_dev = (struct of_device_id *)
 		of_match_device(usbmisc_imx_dt_ids, &pdev->dev);
 	data->ops = (const struct usbmisc_ops *)tmp_dev->data;
-	usbmisc = data;
+	platform_set_drvdata(pdev, data);
 
 	return 0;
 }
 
 static int usbmisc_imx_remove(struct platform_device *pdev)
 {
+	struct imx_usbmisc *usbmisc = dev_get_drvdata(&pdev->dev);
 	clk_disable_unprepare(usbmisc->clk);
-	usbmisc = NULL;
 	return 0;
 }
 
