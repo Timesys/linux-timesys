@@ -1490,6 +1490,7 @@ CONFIG_FB_CFB_IMAGEBLIT=y
 # Frame buffer hardware drivers
 #
 # CONFIG_FB_S1D13XXX is not set
+CONFIG_FB_FSL_DCU=y
 # CONFIG_FB_SMSCUFX is not set
 # CONFIG_FB_UDL is not set
 # CONFIG_FB_GOLDFISH is not set
