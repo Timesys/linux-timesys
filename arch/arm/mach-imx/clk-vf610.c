@@ -200,8 +200,8 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
 	clk[VF610_CLK_UART1] = imx_clk_gate2("uart1", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(8));
 	clk[VF610_CLK_UART3] = imx_clk_gate2("uart3", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(10));
 
-	clk[VF610_CLK_I2C0] = imx_clk_gate2("i2c0", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(6));
-	clk[VF610_CLK_I2C1] = imx_clk_gate2("i2c1", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(7));
+	clk[VF610_CLK_I2C0] = imx_clk_gate("i2c0", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(6));
+	clk[VF610_CLK_I2C1] = imx_clk_gate("i2c1", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(7));
 
 	clk[VF610_CLK_DSPI0] = imx_clk_gate2("dspi0", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(12));
 	clk[VF610_CLK_DSPI1] = imx_clk_gate2("dspi1", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(13));
@@ -297,8 +297,8 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
 	clk[VF610_CLK_VADC_DIV_HALF] = imx_clk_fixed_factor("vadc_div_half", "vadc_div", 1, 2);
 	clk[VF610_CLK_VADC] = imx_clk_gate2("vadc", "vadc_div", CCM_CCGR8, CCM_CCGRx_CGn(7));
 
-	clk[VF610_CLK_ADC0] = imx_clk_gate2("adc0", "ipg_bus", CCM_CCGR1, CCM_CCGRx_CGn(11));
-	clk[VF610_CLK_ADC1] = imx_clk_gate2("adc1", "ipg_bus", CCM_CCGR7, CCM_CCGRx_CGn(11));
+	clk[VF610_CLK_ADC0] = imx_clk_gate("adc0", "ipg_bus", CCM_CCGR1, CCM_CCGRx_CGn(11));
+	clk[VF610_CLK_ADC1] = imx_clk_gate("adc1", "ipg_bus", CCM_CCGR7, CCM_CCGRx_CGn(11));
 	clk[VF610_CLK_DAC0] = imx_clk_gate2("dac0", "ipg_bus", CCM_CCGR8, CCM_CCGRx_CGn(12));
 	clk[VF610_CLK_DAC1] = imx_clk_gate2("dac1", "ipg_bus", CCM_CCGR8, CCM_CCGRx_CGn(13));
 
