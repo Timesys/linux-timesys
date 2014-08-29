@@ -118,6 +118,11 @@
 	status = "okay";
 };
 
+&snvs0 {
+	pinctrl-names= "default";
+	status = "okay";
+};
+
 &dcu0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_dcu0_1>;
