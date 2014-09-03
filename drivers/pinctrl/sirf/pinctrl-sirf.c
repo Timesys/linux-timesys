@@ -175,8 +175,9 @@ static void sirfsoc_pinmux_endisable(struct sirfsoc_pmx *spmx, unsigned selector
 	}
 }
 
-static int sirfsoc_pinmux_enable(struct pinctrl_dev *pmxdev, unsigned selector,
-	unsigned group)
+static int sirfsoc_pinmux_set_mux(struct pinctrl_dev *pmxdev,
+				unsigned selector,
+				unsigned group)
 {
 	struct sirfsoc_pmx *spmx;
 
@@ -184,15 +185,6 @@ static int sirfsoc_pinmux_enable(struct pinctrl_dev *pmxdev, unsigned selector,
 	sirfsoc_pinmux_endisable(spmx, selector, true);
 
 	return 0;
-}
-
-static void sirfsoc_pinmux_disable(struct pinctrl_dev *pmxdev, unsigned selector,
-	unsigned group)
-{
-	struct sirfsoc_pmx *spmx;
-
-	spmx = pinctrl_dev_get_drvdata(pmxdev);
-	sirfsoc_pinmux_endisable(spmx, selector, false);
 }
 
 static int sirfsoc_pinmux_get_funcs_count(struct pinctrl_dev *pmxdev)
@@ -239,8 +231,7 @@ static int sirfsoc_pinmux_request_gpio(struct pinctrl_dev *pmxdev,
 }
 
 static struct pinmux_ops sirfsoc_pinmux_ops = {
-	.enable = sirfsoc_pinmux_enable,
-	.disable = sirfsoc_pinmux_disable,
+	.set_mux = sirfsoc_pinmux_set_mux,
 	.get_functions_count = sirfsoc_pinmux_get_funcs_count,
 	.get_function_name = sirfsoc_pinmux_get_func_name,
 	.get_function_groups = sirfsoc_pinmux_get_groups,

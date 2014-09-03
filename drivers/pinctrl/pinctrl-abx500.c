@@ -710,8 +710,8 @@ static int abx500_pmx_get_func_groups(struct pinctrl_dev *pctldev,
 	return 0;
 }
 
-static int abx500_pmx_enable(struct pinctrl_dev *pctldev, unsigned function,
-			     unsigned group)
+static int abx500_pmx_set(struct pinctrl_dev *pctldev, unsigned function,
+			  unsigned group)
 {
 	struct abx500_pinctrl *pct = pinctrl_dev_get_drvdata(pctldev);
 	struct gpio_chip *chip = &pct->chip;
@@ -736,20 +736,6 @@ static int abx500_pmx_enable(struct pinctrl_dev *pctldev, unsigned function,
 		dev_err(pct->dev, "%s failed (%d)\n", __func__, ret);
 
 	return ret;
-}
-
-static void abx500_pmx_disable(struct pinctrl_dev *pctldev,
-			       unsigned function, unsigned group)
-{
-	struct abx500_pinctrl *pct = pinctrl_dev_get_drvdata(pctldev);
-	const struct abx500_pingroup *g;
-
-	g = &pct->soc->groups[group];
-	if (g->altsetting < 0)
-		return;
-
-	/* FIXME: poke out the mux, set the pin to some default state? */
-	dev_dbg(pct->dev, "disable group %s, %u pins\n", g->name, g->npins);
 }
 
 static int abx500_gpio_request_enable(struct pinctrl_dev *pctldev,
@@ -799,8 +785,7 @@ static const struct pinmux_ops abx500_pinmux_ops = {
 	.get_functions_count = abx500_pmx_get_funcs_cnt,
 	.get_function_name = abx500_pmx_get_func_name,
 	.get_function_groups = abx500_pmx_get_func_groups,
-	.enable = abx500_pmx_enable,
-	.disable = abx500_pmx_disable,
+	.set_mux = abx500_pmx_set,
 	.gpio_request_enable = abx500_gpio_request_enable,
 	.gpio_disable_free = abx500_gpio_disable_free,
 };

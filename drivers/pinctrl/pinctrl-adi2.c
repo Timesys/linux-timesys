@@ -605,8 +605,8 @@ static struct pinctrl_ops adi_pctrl_ops = {
 	.get_group_pins = adi_get_group_pins,
 };
 
-static int adi_pinmux_enable(struct pinctrl_dev *pctldev, unsigned selector,
-	unsigned group)
+static int adi_pinmux_set(struct pinctrl_dev *pctldev, unsigned func_id,
+			  unsigned group_id)
 {
 	struct adi_pinctrl *pinctrl = pinctrl_dev_get_drvdata(pctldev);
 	struct gpio_port *port;
@@ -614,7 +614,7 @@ static int adi_pinmux_enable(struct pinctrl_dev *pctldev, unsigned selector,
 	unsigned long flags;
 	unsigned short *mux, pin;
 
-	mux = (unsigned short *)pinctrl->soc->functions[selector].mux;
+	mux = (unsigned short *)pinctrl->soc->groups[group_id].mux;
 
 	while (*mux) {
 		pin = P_IDENT(*mux);
@@ -636,35 +636,6 @@ static int adi_pinmux_enable(struct pinctrl_dev *pctldev, unsigned selector,
 	}
 
 	return 0;
-}
-
-static void adi_pinmux_disable(struct pinctrl_dev *pctldev, unsigned selector,
-	unsigned group)
-{
-	struct adi_pinctrl *pinctrl = pinctrl_dev_get_drvdata(pctldev);
-	struct gpio_port *port;
-	struct pinctrl_gpio_range *range;
-	unsigned long flags;
-	unsigned short *mux, pin;
-
-	mux = (unsigned short *)pinctrl->soc->functions[selector].mux;
-
-	while (*mux) {
-		pin = P_IDENT(*mux);
-
-		range = pinctrl_find_gpio_range_from_pin(pctldev, pin);
-		if (range == NULL) /* should not happen */
-			return;
-
-		port = container_of(range->gc, struct gpio_port, chip);
-
-		spin_lock_irqsave(&port->lock, flags);
-
-		port_setup(port, pin_to_offset(range, pin), true);
-		mux++;
-
-		spin_unlock_irqrestore(&port->lock, flags);
-	}
 }
 
 static int adi_pinmux_get_funcs_count(struct pinctrl_dev *pctldev)
@@ -713,8 +684,7 @@ static int adi_pinmux_request_gpio(struct pinctrl_dev *pctldev,
 }
 
 static struct pinmux_ops adi_pinmux_ops = {
-	.enable = adi_pinmux_enable,
-	.disable = adi_pinmux_disable,
+	.set_mux = adi_pinmux_set,
 	.get_functions_count = adi_pinmux_get_funcs_count,
 	.get_function_name = adi_pinmux_get_func_name,
 	.get_function_groups = adi_pinmux_get_groups,
