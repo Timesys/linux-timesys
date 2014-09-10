@@ -491,6 +491,12 @@
 				clock-names = "ipg", "ahb", "ptp";
 				status = "disabled";
 			};
+
+			switch: switch@400e8000 {
+				compatible = "fsl,eth-switch";
+				reg = <0x400e8000 0x1000>;
+				status = "disabled";
+			};
 		};
 	};
      /* represent how devices are connected */
