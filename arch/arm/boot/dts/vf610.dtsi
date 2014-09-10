@@ -239,9 +239,11 @@
 				reg = <0x40048000 0x1000>;
 				#gpio-range-cells = <3>;
 			};
-
-			gpio1: gpio@40049000 {
+			/* This is a GPIO controller device */
+			gpio1: gpio-controller@40049000 {
 				compatible = "fsl,vf610-gpio";
+				#address-cells = <2>;
+				/* PORT A mux control: addr size, GPIO control: addr size */
 				reg = <0x40049000 0x1000 0x400ff000 0x40>;
 				interrupts = <0 107 IRQ_TYPE_LEVEL_HIGH>;
 				gpio-controller;
@@ -250,9 +252,11 @@
 				#interrupt-cells = <2>;
 				gpio-ranges = <&iomuxc 0 0 32>;
 			};
-
-			gpio2: gpio@4004a000 {
+			/* This is a GPIO controller device */
+			gpio2: gpio-controller@4004a000 {
 				compatible = "fsl,vf610-gpio";
+				#address-cells = <2>;
+				/* PORT B mux control: addr size, GPIO control: addr size */
 				reg = <0x4004a000 0x1000 0x400ff040 0x40>;
 				interrupts = <0 108 IRQ_TYPE_LEVEL_HIGH>;
 				gpio-controller;
@@ -261,9 +265,11 @@
 				#interrupt-cells = <2>;
 				gpio-ranges = <&iomuxc 0 32 32>;
 			};
-
-			gpio3: gpio@4004b000 {
+			/* This is a GPIO controller device */
+			gpio3: gpio-controller@4004b000 {
 				compatible = "fsl,vf610-gpio";
+				#address-cells = <2>;
+				/* PORT C mux control: addr size, GPIO control: addr size */
 				reg = <0x4004b000 0x1000 0x400ff080 0x40>;
 				interrupts = <0 109 IRQ_TYPE_LEVEL_HIGH>;
 				gpio-controller;
@@ -272,9 +278,11 @@
 				#interrupt-cells = <2>;
 				gpio-ranges = <&iomuxc 0 64 32>;
 			};
-
-			gpio4: gpio@4004c000 {
+			/* This is a GPIO controller device */
+			gpio4: gpio-controller@4004c000 {
 				compatible = "fsl,vf610-gpio";
+				#address-cells = <2>;
+				/* PORT D mux control: addr size, GPIO control: addr size */
 				reg = <0x4004c000 0x1000 0x400ff0c0 0x40>;
 				interrupts = <0 110 IRQ_TYPE_LEVEL_HIGH>;
 				gpio-controller;
@@ -283,15 +291,18 @@
 				#interrupt-cells = <2>;
 				gpio-ranges = <&iomuxc 0 96 32>;
 			};
-
-			gpio5: gpio@4004d000 {
+			/* This is a GPIO controller device */
+			gpio5: gpio-controller@4004d000 {
 				compatible = "fsl,vf610-gpio";
-				reg = <0x4004d000 0x1000 0x400ff100 0x40>;
+				#address-cells = <2>;
+				/* PORT E mux control: addr size, GPIO control: addr size */
+				reg = < 0x4004d000 0x1000 0x400ff100 0x40>;
 				interrupts = <0 111 IRQ_TYPE_LEVEL_HIGH>;
 				gpio-controller;
 				#gpio-cells = <2>;
 				interrupt-controller;
 				#interrupt-cells = <2>;
+				/* This controller only has 8 pins */
 				gpio-ranges = <&iomuxc 0 128 7>;
 			};
 
@@ -497,46 +508,6 @@
 				reg = <0x400e8000 0x1000>;
 				status = "disabled";
 			};
-		};
-	};
-     /* represent how devices are connected */
-	pwmleds {
-		compatible = "pwm-leds";
-		blue {
-               /* <pwm> <channel> <period> <0= period value indicates the LED on-time,
-				1= period value indates LED off time. */
-			pwms = <&pwm0 0 900000000 1>;
-			/* the label is the /sys/class/leds/<label> directory name. */
-			label = "blueLED";
-			max-brightness = <255>;
-			linux,default-trigger = "default-on";
-		};
-		yellow {
-               /* <pwm> <channel> <period> <0= period indicates the LED on-time,
-				1= period indates LED off time. */
-			pwms = <&pwm0 1 900000000 1>;
-				/* the label is the /sys/class/leds/<label> directory name. */
-			label = "yellowLED";
-			max-brightness = <255>;
-			linux,default-trigger = "default-on";
-		};
-		green {
-               /* <pwm> <channel> <period> <0= period indicates the LED on-time,
-				1= period indates LED off time. */
-			pwms = <&pwm0 2 900000000 1>;
-				/* the label is the /sys/class/leds/<label> directory name. */
-			label = "greenLED";
-			max-brightness = <255>;
-			linux,default-trigger = "default-on";
-		};
-		red {
-               /* <pwm> <channel> <period> <0= period indicates the LED on-time,
-				1= period indates LED off time. */
-			pwms = <&pwm0 3 900000000 1>;
-				/* the label is the /sys/class/leds/<label> directory name. */
-			label = "redLED";
-			max-brightness = <255>;
-			linux,default-trigger = "default-on";
 		};
 	};
 };
