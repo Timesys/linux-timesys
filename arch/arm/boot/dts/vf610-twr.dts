@@ -151,6 +151,35 @@
 	};
 };
 
+&gpio1 {
+	pinctrl-0 = <&pinctrl_gpiored>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&gpio2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpiogreen>;
+	status = "okay";
+};
+
+&gpio3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpioblue>;
+	status = "okay";
+};
+
+&gpio4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpioyellow>;
+	status = "okay";
+};
+
+&gpio5 {
+	pinctrl-names = "default";
+	status = "okay";
+};
+
 &fec0 {
 	phy-mode = "rmii";
 	pinctrl-names = "default";
@@ -249,6 +278,33 @@
 				VF610_PAD_PTA28__ESDHC1_DATA2	0x31ef
 				VF610_PAD_PTA29__ESDHC1_DAT3	0x31ef
 				VF610_PAD_PTA7__GPIO_134	0x219d
+			>;
+		};
+
+		pinctrl_gpiogreen: gpiogreengrp {
+			fsl,pins = <
+				VF610_PAD_PTB2__GPIO_24	0x1c2
+			>;
+		};
+
+#define VF610_GPIO_INPUT_MODE  0x01 /* See Vybrid Reference Manual 5.2 */
+#define VF610_GPIO_OUTPUT_MODE 0x4E /* See Vybrid Reference Manual 5.2 */
+
+		pinctrl_gpiored: gpioredgrp {
+			fsl,pins = <
+				VF610_PAD_PTB3__GPIO_25	0x1c2
+				VF610_PAD_PTB8__GPIO_30  VF610_GPIO_INPUT_MODE
+				VF610_PAD_PTA20__GPIO_10 VF610_GPIO_OUTPUT_MODE
+			>;
+		};
+		pinctrl_gpioblue: gpiobluegrp {
+			fsl,pins = <
+				VF610_PAD_PTB0__GPIO_22	0x1c2
+			>;
+		};
+		pinctrl_gpioyellow: gpioyellowgrp {
+			fsl,pins = <
+				VF610_PAD_PTB1__GPIO_23	0x1c2
 			>;
 		};
 
