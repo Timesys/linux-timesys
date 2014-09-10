@@ -165,6 +165,10 @@
 	status = "okay";
 };
 
+&switch{
+	status = "okay";
+};
+
 &i2c0 {
 	clock-frequency = <100000>;
 	pinctrl-names = "default";
