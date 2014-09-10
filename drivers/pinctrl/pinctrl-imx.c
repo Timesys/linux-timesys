@@ -294,11 +294,36 @@ static int imx_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
 	return 0;
 }
 
+int vf610_pinmux_set_direction (struct pinctrl_dev *pctldev,
+				   struct pinctrl_gpio_range *range,
+				   unsigned offset,
+				   bool input)
+{
+	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
+	u32 reg;
+
+	reg = readl(ipctl->base + (offset*4) );
+	if (input == 1) { /* INPUT */
+		reg &= 0xFFFFFFFC;
+		reg |= 0x1;
+		writel(reg, ipctl->base + (offset*4) );
+	}
+	else { /* OUTPUT */
+		reg &= 0xFFFFFFFC;
+		reg |= 0x2;
+		writel(reg, ipctl->base + (offset*4));
+	}
+	reg = readl(ipctl->base + (offset*4) );
+	return 0;
+}
+
+
 static const struct pinmux_ops imx_pmx_ops = {
 	.get_functions_count = imx_pmx_get_funcs_count,
 	.get_function_name = imx_pmx_get_func_name,
 	.get_function_groups = imx_pmx_get_groups,
 	.enable = imx_pmx_enable,
+	.gpio_set_direction = vf610_pinmux_set_direction
 };
 
 static int imx_pinconf_get(struct pinctrl_dev *pctldev,
@@ -350,8 +375,8 @@ static int imx_pinconf_set(struct pinctrl_dev *pctldev,
 		} else {
 			writel(configs[i], ipctl->base + pin_reg->conf_reg);
 		}
-		dev_dbg(ipctl->dev, "write: offset 0x%x val 0x%lx\n",
-			pin_reg->conf_reg, configs[i]);
+		dev_dbg(ipctl->dev, "write: offset 0x%x val 0x%lx base address 0x%lx\n",
+			pin_reg->conf_reg, configs[i], (long unsigned int)ipctl->base );
 	} /* for each config */
 
 	return 0;
