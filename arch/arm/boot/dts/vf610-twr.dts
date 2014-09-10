@@ -183,6 +183,11 @@
 	       VDDIO-supply = <&reg_3p3v>;
 	       clocks = <&clks VF610_CLK_SAI2>;
        };
+
+	touch: crtouch@49 {
+		compatible = "fsl,crtouch_ts";
+		reg = <0x49>;
+	};
 };
 
 &iomuxc {
@@ -280,6 +285,7 @@
 			fsl,pins = <
 				VF610_PAD_PTB14__I2C0_SCL		0x30d3
 				VF610_PAD_PTB15__I2C0_SDA		0x30d3
+				VF610_PAD_PTA31__GPIO_21		0x219d
 			>;
 		};
 
