@@ -31,6 +31,15 @@ config FEC
 	  Say Y here if you want to use the built-in 10/100 Fast ethernet
 	  controller on some Motorola ColdFire and Freescale i.MX processors.
 
+config FSL_L2_SWITCH
+	bool "Ethernet switch controller(Freescale ColdFire and Vybrid platform)"
+	depends on (SOC_MVFA5 || SOC_VF610)
+	help
+	  Say Y here if you want to use the built-in ethernet switch
+	  controller on some ColdFire processors.
+	  The Integrated Ethernet switch engine is compatible with
+	  10/100 MAC-NET core.
+
 config FEC_MPC52xx
 	tristate "FEC MPC52xx driver"
 	depends on PPC_MPC52xx && PPC_BESTCOMM
