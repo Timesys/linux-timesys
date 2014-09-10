@@ -375,6 +375,16 @@ config TOUCHSCREEN_MAX11801
 	  To compile this driver as a module, choose M here: the
 	  module will be called max11801_ts.
 
+config TOUCHSCREEN_CRTOUCH
+	tristate "Freescale CRTOUCH based touchscreen"
+	depends on I2C
+	help
+	  Say Y here if you have a CRTOUCH based touchscreen
+	  controller.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called crtouch_ts.
+
 config TOUCHSCREEN_MCS5000
 	tristate "MELFAS MCS-5000 touchscreen"
 	depends on I2C
