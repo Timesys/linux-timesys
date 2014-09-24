@@ -833,13 +833,32 @@ config SOC_VF610
 	select CLKSRC_OF
 	select PINCTRL
 	select PINCTRL_VF610
-	select VF_PIT_TIMER
 	select PL310_ERRATA_588369 if CACHE_PL310
 	select PL310_ERRATA_727915 if CACHE_PL310
 	select PL310_ERRATA_769419 if CACHE_PL310
 
 	help
 	  This enable support for Freescale Vybrid VF610 processor.
+
+choice
+	prompt "Clocksource for scheduler clock"
+	depends on SOC_VF610
+	default VF_USE_ARM_GLOBAL_TIMER
+
+	config VF_USE_ARM_GLOBAL_TIMER
+		bool "Use ARM Global Timer"
+		select ARM_GLOBAL_TIMER
+		select CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
+		help
+		  Use the ARM Global Timer as clocksource
+
+	config VF_USE_PIT_TIMER
+		bool "Use PIT timer"
+		select VF_PIT_TIMER
+		help
+		  Use SoC Periodic Interrupt Timer (PIT) as clocksource
+
+endchoice
 
 endif
 
