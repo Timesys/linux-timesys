@@ -395,7 +395,7 @@ static int vf6xx_gpio_val_get(struct gpio_chip *chip, unsigned offset)
 	volatile u32 val;
 
 	/* If pin is input read PDIR */
-	val = readl((void *)(bgc->reg_set + GPIO_PDIR));
+	val = readl((void *)(bgc->reg_dat + GPIO_PDIR));
 	return ((val >> offset) & 1);
 }
 
@@ -406,15 +406,14 @@ static void vf6xx_gpio_val_set(struct gpio_chip *chip, unsigned offset,
 			       int value)
 {
 	struct bgpio_chip *bgc = to_bgpio_chip(chip);
-	volatile u32 val;
 
 	/* If val == zero then set PCOR to clear else set PSOR to set */
 	if (value == 0) {
 		writel((1 << offset),
-		       (void *)(bgc->reg_set + GPIO_PCOR));
+		       (void *)(bgc->reg_dat + GPIO_PCOR));
 	} else {
-		writel((1 << offset | val),
-		       (void *)(bgc->reg_set + GPIO_PSOR));
+		writel((1 << offset),
+		       (void *)(bgc->reg_dat + GPIO_PSOR));
 	}
 	return;
 }
