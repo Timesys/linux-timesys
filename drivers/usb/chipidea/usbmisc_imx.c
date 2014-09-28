@@ -166,6 +166,8 @@ static const struct usbmisc_ops vf610_usbmisc_ops = {
 int imx_usbmisc_init(struct imx_usbmisc_data *data)
 {
 	struct imx_usbmisc *usbmisc = dev_get_drvdata(data->dev);
+	if(!usbmisc)
+		return ERR_PTR(-EPROBE_DEFER);
 
 	if (!usbmisc->ops->init)
 		return 0;
