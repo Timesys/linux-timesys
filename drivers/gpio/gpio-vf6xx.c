@@ -513,7 +513,7 @@ static int vf6xx_gpio_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF_GPIO
 	port->bgc.gc.of_node = np;
-	port->bgc.gc.of_gpio_n_cells = 1;
+	port->bgc.gc.of_gpio_n_cells = 2;
 	port->bgc.gc.of_xlate = vf6xx_of_xlate;
 
 #endif

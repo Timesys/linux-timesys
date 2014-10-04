@@ -85,6 +85,22 @@
 			bitclock-master;
 		};
 	};
+	
+	gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_btn>;
+		sw1 {
+			label = "SW1";
+			gpios = <&gpio2 6 1>;
+			linux,code = <256>; /* BTN_0 */
+		};
+		sw2 {
+			label = "SW2";
+			gpios = <&gpio2 7 1>;
+			linux,code = <257>; /* BTN_1 */
+		};
+	};	
 };
 
 &adc0 {
@@ -374,6 +390,13 @@
 			fsl,pins = <
 				VF610_PAD_PTB4__UART1_TX		0x21a2
 				VF610_PAD_PTB5__UART1_RX		0x21a1
+			>;
+		};
+		
+		pinctrl_btn: btngrp {
+			fsl,pins = <
+				VF610_PAD_PTB16__GPIO_38		0x21ad
+				VF610_PAD_PTB17__GPIO_39		0x21ad
 			>;
 		};
 	};
