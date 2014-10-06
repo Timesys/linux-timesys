@@ -93,14 +93,14 @@
 		sw1 {
 			label = "SW1";
 			gpios = <&gpio2 6 1>;
-			linux,code = <256>; /* BTN_0 */
+			linux,code = <256>; 
 		};
 		sw2 {
 			label = "SW2";
 			gpios = <&gpio2 7 1>;
-			linux,code = <257>; /* BTN_1 */
+			linux,code = <257>; 
 		};
-	};	
+	};
 };
 
 &adc0 {
@@ -399,6 +399,13 @@
 				VF610_PAD_PTB17__GPIO_39		0x21ad
 			>;
 		};
+		
+		pinctrl_can1: can1grp {
+			fsl,pins = <
+				VF610_PAD_PTB16__CAN1_RX		0x30dd
+				VF610_PAD_PTB17__CAN1_TX		0x30de
+			>;
+		};
 	};
 };
 
@@ -433,4 +440,12 @@
 &usbh1 {
 	disable-over-current;
 	status = "okay";
+};
+/* Pins are shared between user button and CAN; disable 
+ * user button to use CAN
+ */
+&can1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_can1>;
+	status = "disabled";
 };
