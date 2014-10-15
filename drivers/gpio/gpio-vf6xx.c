@@ -213,7 +213,6 @@ static int gpio_set_irq_type(struct irq_data *d, u32 type)
 	default:
 		return -EINVAL;
 	}
-	//printk("%s %d gpio = %d gpio_idx = %d edge = %d\n", __FUNCTION__, __LINE__, gpio, gpio_idx, edge);
 	writel((edge << 16), port->base + gpio_idx * 4);
 	_clear_gpio_irqstatus(port, gpio_idx);
 
@@ -223,7 +222,6 @@ static int gpio_set_irq_type(struct irq_data *d, u32 type)
 /* handle 32 interrupts in one status register */
 static void vf6xx_gpio_irq_handler(struct vf6xx_gpio_port *port, u32 irq_stat)
 {
-	//printk("%s %d irq_stat = %d \n", __FUNCTION__, __LINE__, irq_stat);
 	while (irq_stat != 0) {
 		int irqoffset = fls(irq_stat) - 1;
 
@@ -279,7 +277,6 @@ static void __init vf6xx_gpio_init_gc(struct vf6xx_gpio_port *port,
 	struct irq_chip_generic *gc;
 	struct irq_chip_type *ct;
 
-	//printk("%s %d irq_base = %d\n", __FUNCTION__, __LINE__, irq_base);
 	gc = irq_alloc_generic_chip("gpio-vf610", 1, irq_base,
 				    port->base, handle_level_irq);
 	gc->private = port;
@@ -332,7 +329,6 @@ static int vf6xx_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
 
 	int irqmapping = irq_find_mapping(port->domain, offset);
 
-	//printk("%s %d irqmapping = %d offset = %d\n", __FUNCTION__, __LINE__, irqmapping, offset);
 	return irq_find_mapping(port->domain, offset);
 }
 
@@ -421,14 +417,12 @@ static void vf6xx_gpio_val_set(struct gpio_chip *chip, unsigned offset,
 static int vf6xx_of_xlate(struct gpio_chip *gc,
 			  const struct of_phandle_args *gpiospec, u32 * flags)
 {
-	//printk("%s %d\n", __FUNCTION__, __LINE__);
 	if (WARN_ON(gc->of_gpio_n_cells < 1))
 		return -EINVAL;
 	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
 		return -EINVAL;
 	if (gpiospec->args[0] > gc->ngpio)
 		return -EINVAL;
-	//printk("%s arg0=%d arg1=%d arg2=%d \n", __FUNCTION__, gpiospec->args[0], gpiospec->args[1], gpiospec->args[2]);
 	return gpiospec->args[0];
 }
 
@@ -442,7 +436,6 @@ static int vf6xx_gpio_probe(struct platform_device *pdev)
 	int irq_base;
 	int err;
 
-	//printk("%s %d\n", __FUNCTION__, __LINE__);
 	vf6xx_gpio_get_hw(pdev);
 	/* Create holders for this driver */
 	port = (struct vf6xx_gpio_port *)devm_kzalloc(&pdev->dev, sizeof(*port),
@@ -477,7 +470,6 @@ static int vf6xx_gpio_probe(struct platform_device *pdev)
 	if (port->irq < 0)
 		return -EINVAL;
 
-//printk("port->irq = %d base1 = 0x%08x base2 = 0x%08x\n",port->irq, port->base, port->base2 );
 	/* disable the interrupt and clear the status */
 	writel(~0, port->base + GPIO_ISR);
 
@@ -500,7 +492,6 @@ static int vf6xx_gpio_probe(struct platform_device *pdev)
 	port->bgc.gc.to_irq = vf6xx_gpio_to_irq;
 	port->bgc.gc.base = (pdev->id < 0) ? of_alias_get_id(np, "gpio") * 32 :
 					     pdev->id * 32;
-//printk("%s %d port->bgc.gc.base = %d err= %d\n", __FUNCTION__, __LINE__, port->bgc.gc.base, err);
 
 	/* Create the gpio_chip object to manage gpios using the descriptor
 	   interface */
@@ -536,7 +527,7 @@ static int vf6xx_gpio_probe(struct platform_device *pdev)
 		goto out_bgpio_remove;
 
 	irq_base = irq_alloc_descs(-1, 0, 32, numa_node_id());
-printk("%s %d irq_base = %d\n", __FUNCTION__, __LINE__, irq_base);
+
 	if (irq_base < 0) {
 		err = irq_base;
 		goto out_gpiochip_remove;
