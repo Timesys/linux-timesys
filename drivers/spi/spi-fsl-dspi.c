@@ -28,6 +28,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
 #include <linux/of_device.h>
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
 
 #define DRIVER_NAME "fsl-dspi"
 
@@ -125,6 +127,7 @@ struct fsl_dspi {
 
 	wait_queue_head_t 	waitq;
 	u32 			waitflags;
+	int             chipselect[0];
 };
 
 static inline int is_double_byte_mode(struct fsl_dspi *dspi)
@@ -315,16 +318,14 @@ static int dspi_txrx_transfer(struct spi_device *spi, struct spi_transfer *t)
 static void dspi_chipselect(struct spi_device *spi, int value)
 {
 	struct fsl_dspi *dspi = spi_master_get_devdata(spi->master);
-	u32 pushr = readl(dspi->base + SPI_PUSHR);
+	int gpio = dspi->chipselect[spi->chip_select];
+	int active = value != BITBANG_CS_INACTIVE;
+	int dev_is_lowactive = !(spi->mode & SPI_CS_HIGH);
 
-	switch (value) {
-	case BITBANG_CS_ACTIVE:
-		pushr |= SPI_PUSHR_CONT;
-	case BITBANG_CS_INACTIVE:
-		pushr &= ~SPI_PUSHR_CONT;
-	}
+	if (!gpio_is_valid(gpio))
+		return;
 
-	writel(pushr, dspi->base + SPI_PUSHR);
+	gpio_set_value(gpio, dev_is_lowactive ^ active);
 }
 
 static int dspi_setup_transfer(struct spi_device *spi, struct spi_transfer *t)
@@ -370,11 +371,19 @@ static int dspi_setup_transfer(struct spi_device *spi, struct spi_transfer *t)
 
 static int dspi_setup(struct spi_device *spi)
 {
+	struct fsl_dspi *dspi = spi_master_get_devdata(spi->master);
+	int gpio = dspi->chipselect[spi->chip_select];
+
 	if (!spi->max_speed_hz)
 		return -EINVAL;
 
 	if (!spi->bits_per_word)
 		spi->bits_per_word = 8;
+
+	if (gpio_is_valid(gpio))
+		gpio_direction_output(gpio, spi->mode & SPI_CS_HIGH ? 0 : 1);
+
+	dspi_chipselect(spi, BITBANG_CS_INACTIVE);
 
 	return dspi_setup_transfer(spi, NULL);
 }
@@ -441,9 +450,15 @@ static int dspi_probe(struct platform_device *pdev)
 	struct spi_master *master;
 	struct fsl_dspi *dspi;
 	struct resource *res;
-	int ret = 0, cs_num, bus_num;
+	int ret = 0, cs_num, bus_num, i;
 
-	master = spi_alloc_master(&pdev->dev, sizeof(struct fsl_dspi));
+	ret = of_property_read_u32(np, "spi-num-chipselects", &cs_num);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "can't get spi-num-chipselects\n");
+		goto out_master_put;
+	}
+
+	master = spi_alloc_master(&pdev->dev, sizeof(struct fsl_dspi) + sizeof(int) * cs_num);
 	if (!master)
 		return -ENOMEM;
 
@@ -460,11 +475,6 @@ static int dspi_probe(struct platform_device *pdev)
 	master->bits_per_word_mask = SPI_BPW_MASK(4) | SPI_BPW_MASK(8) |
 					SPI_BPW_MASK(16);
 
-	ret = of_property_read_u32(np, "spi-num-chipselects", &cs_num);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "can't get spi-num-chipselects\n");
-		goto out_master_put;
-	}
 	master->num_chipselect = cs_num;
 
 	ret = of_property_read_u32(np, "bus-num", &bus_num);
@@ -473,6 +483,23 @@ static int dspi_probe(struct platform_device *pdev)
 		goto out_master_put;
 	}
 	master->bus_num = bus_num;
+
+	for (i = 0; i < master->num_chipselect; i++) {
+
+		ret = of_get_named_gpio(np, "cs-gpios", i);
+		if (ret == -EPROBE_DEFER)
+			goto out_master_put;
+
+		dspi->chipselect[i] = ret;
+		if (gpio_is_valid(ret)) {
+			ret = devm_gpio_request(&pdev->dev, dspi->chipselect[i],
+						DRIVER_NAME);
+			if (ret) {
+				dev_err(&pdev->dev, "can't get cs gpios\n");
+				goto out_master_put;
+			}
+		}
+	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	dspi->base = devm_ioremap_resource(&pdev->dev, res);
