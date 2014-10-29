@@ -407,6 +407,23 @@
 				VF610_PAD_PTB17__CAN1_TX		0x30de
 			>;
 		};
+
+		pinctrl_qspi0: qspi0grp {
+			fsl,pins = <
+				VF610_PAD_PTD0__QSPI0_A_QSCK	0x31c3
+				VF610_PAD_PTD1__QSPI0_A_CS0     0x31ff
+				VF610_PAD_PTD2__QSPI0_A_DATA3	0x31c3
+				VF610_PAD_PTD3__QSPI0_A_DATA2	0x31c3
+				VF610_PAD_PTD4__QSPI0_A_DATA1	0x31c3
+				VF610_PAD_PTD5__QSPI0_A_DATA0	0x31c3
+				VF610_PAD_PTD7__QSPI0_B_QSCK	0x31c3
+				VF610_PAD_PTD8__QSPI0_B_CS0     0x31ff
+				VF610_PAD_PTD9__QSPI0_B_DATA3	0x31c3
+				VF610_PAD_PTD10__QSPI0_B_DATA2	0x31c3
+				VF610_PAD_PTD11__QSPI0_B_DATA1	0x31c3
+				VF610_PAD_PTD12__QSPI0_B_DATA0	0x31c3
+			>;
+		};
 	};
 };
 
@@ -449,4 +466,38 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_can1>;
 	status = "disabled";
+};
+
+&qspi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_qspi0>;
+	fsl,nor-size = <0x1000000>;
+	fsl,spi-num-chipselects = <2>;
+	status = "okay";
+
+	flash0: s25fl128s@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "spansion,s25fl129p1";
+		spi-max-frequency = <66000000>;
+		reg = <0>;
+
+		partition@0 {
+			label = "s25fl128s-0";
+			reg = <0x0 0x1000000>;
+		};
+	};
+
+	flash1: s25fl128s@1 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "spansion,s25fl129p1";
+		spi-max-frequency = <66000000>;
+		reg = <1>;
+
+		partition@0 {
+			label = "s25fl128s-1";
+			reg = <0x0 0x1000000>;
+		};
+	};
 };
