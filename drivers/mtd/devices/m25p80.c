@@ -897,6 +897,10 @@ static const struct spi_device_id *jedec_probe(struct spi_device *spi)
 	 * we use here.  Supporting some chips might require using it.
 	 */
 	tmp = spi_write_then_read(spi, &code, 1, id, 5);
+	/* Temp hack fix for vf610-twr to read the jedec 2x because the
+	 * clock does not idle high by default which is required by at26df081a
+	 */
+	tmp = spi_write_then_read(spi, &code, 1, id, 5);
 	if (tmp < 0) {
 		pr_debug("%s: error %d reading JEDEC ID\n",
 				dev_name(&spi->dev), tmp);
