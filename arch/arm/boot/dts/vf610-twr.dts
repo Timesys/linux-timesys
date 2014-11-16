@@ -55,6 +55,18 @@
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
 		};
+		/* Uncomment below block to use USB0 host on TWR-SER2
+		reg_usb0_host_vbus: usb0_host_vbus {
+			compatible = "regulator-fixed";
+			regulator-name = "usb0_host_vbus";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			regulator-always-on;
+			gpio = <&gpio3 21 0>;
+			enable-active-high;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usb0_host>;
+		};*/
 	};
 
 	sound {
@@ -453,6 +465,12 @@
 				VF610_PAD_PTD12__QSPI0_B_DATA0	0x31c3
 			>;
 		};
+
+		pinctrl_usb0_host: usb0_host_grp{
+			fsl,pins = <
+				VF610_PAD_PTD6__GPIO_85			0x62
+			>;
+		};
 	};
 };
 
@@ -500,11 +518,18 @@
 
 &usbdev0 {
 	disable-over-current;
+	dr_mode = "peripheral";
+	/* Comment peripheral mode and uncomment below
+	 * code to use usb0 host on TWR-SER2
+	vbus-supply = <&reg_usb0_host_vbus>;
+	dr_mode = "host";
+	*/
 	status = "okay";
 };
 
 &usbh1 {
 	disable-over-current;
+	dr_mode = "host";
 	status = "okay";
 };
 /* Pins are shared between user button and CAN; disable 
