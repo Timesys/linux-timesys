@@ -130,6 +130,13 @@
 #define ECC_STATUS_MASK	0x80
 #define ECC_ERR_COUNT	0x3F
 
+struct nfc_config {
+	int hardware_ecc;
+	int width;
+	int flash_bbt;
+	u32 clkrate;
+};
+
 struct fsl_nfc {
 	struct mtd_info	   mtd;
 	struct nand_chip   chip;
@@ -144,6 +151,8 @@ struct fsl_nfc {
 #define ALT_BUF_ID   1
 #define ALT_BUF_STAT 2
 	struct clk        *clk;
+
+	struct nfc_config *cfg;
 };
 #define mtd_to_nfc(_mtd) container_of(_mtd, struct fsl_nfc, mtd)
 
@@ -537,13 +546,6 @@ static void nfc_enable_hwecc(struct mtd_info *mtd, int mode)
 {
 }
 
-struct nfc_config {
-	int                hardware_ecc;
-	int                width;
-	int                flash_bbt;
-	u32                clkrate;
-};
-
 #ifdef CONFIG_OF_MTD
 static struct of_device_id nfc_dt_ids[] = {
 	{ .compatible = "fsl,vf610-nfc" },
@@ -557,8 +559,6 @@ static int __init nfc_probe_dt(struct device *dev, struct nfc_config *cfg)
 	struct device_node *np = dev->of_node;
 	int buswidth;
 	u32 clkrate;
-
-	memset(cfg, 0, sizeof(*cfg));
 
 	if (!np)
 		return 1;
@@ -582,104 +582,17 @@ static int __init nfc_probe_dt(struct device *dev, struct nfc_config *cfg)
 #else
 static int __init nfc_probe_dt(struct device *dev, struct nfc_config *cfg)
 {
-	memset(cfg, 0, sizeof(*cfg));
 	cfg.flash_bbt = 1;
 	return 1;
 }
 #endif
 
-static int nfc_probe(struct platform_device *pdev)
+static int nfc_init_controller(struct mtd_info *mtd, struct nfc_config *cfg, int page_sz)
 {
-	struct fsl_nfc *nfc;
-	struct resource *res;
-	struct mtd_info *mtd;
-	struct nand_chip *chip;
-	struct nfc_config cfg;
-	int err = 0;
-	int page_sz;
-	int irq;
-
-	nfc = devm_kzalloc(&pdev->dev, sizeof(*nfc), GFP_KERNEL);
-	if (!nfc)
-		return -ENOMEM;
-
-	nfc->dev = &pdev->dev;
-	nfc->page = -1;
-	mtd = &nfc->mtd;
-	chip = &nfc->chip;
-
-	mtd->priv = chip;
-	mtd->owner = THIS_MODULE;
-	mtd->dev.parent = nfc->dev;
-	mtd->name = DRV_NAME;
-
-	err = nfc_probe_dt(nfc->dev, &cfg);
-	if (err > 0)
-		return -ENODEV;
-
-	irq = platform_get_irq(pdev, 0);
-	if (irq <= 0)
-		return -EINVAL;
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	nfc->regs = devm_ioremap_resource(nfc->dev, res);
-	if (IS_ERR(nfc->regs))
-		return PTR_ERR(nfc->regs);
-
-	nfc->clk = devm_clk_get(&pdev->dev, NULL);
-	if (IS_ERR(nfc->clk))
-		return PTR_ERR(nfc->clk);
-
-	if (cfg.clkrate && clk_set_rate(nfc->clk, cfg.clkrate)) {
-		dev_err(nfc->dev, "Clock rate not set.");
-		return -EINVAL;
-	}
-
-	err = clk_prepare_enable(nfc->clk);
-	if (err) {
-		dev_err(nfc->dev, "Unable to enable clock!\n");
-		return err;
-	}
-
-	if (cfg.width == 16) {
-		chip->options |= NAND_BUSWIDTH_16;
+	if (cfg->width == 16)
 		nfc_set(mtd, NFC_FLASH_CONFIG, CONFIG_16BIT);
-	} else {
-		chip->options &= ~NAND_BUSWIDTH_16;
+	else
 		nfc_clear(mtd, NFC_FLASH_CONFIG, CONFIG_16BIT);
-	}
-
-	chip->dev_ready = nfc_dev_ready;
-	chip->cmdfunc = nfc_command;
-	chip->read_byte = nfc_read_byte;
-	chip->read_word = nfc_read_word;
-	chip->read_buf = nfc_read_buf;
-	chip->write_buf = nfc_write_buf;
-	chip->select_chip = nfc_select_chip;
-
-	/* Bad block options. */
-	if (cfg.flash_bbt)
-		chip->bbt_options = NAND_BBT_USE_FLASH | NAND_BBT_CREATE;
-
-	/* Default to software ECC until flash ID. */
-	nfc_set_field(mtd, NFC_FLASH_CONFIG,
-		      CONFIG_ECC_MODE_MASK,
-		      CONFIG_ECC_MODE_SHIFT, ECC_BYPASS);
-
-	chip->bbt_td = &bbt_main_descr;
-	chip->bbt_md = &bbt_mirror_descr;
-
-	init_waitqueue_head(&nfc->irq_waitq);
-
-	err = devm_request_irq(nfc->dev, irq, nfc_irq, 0, DRV_NAME, mtd);
-	if (err) {
-		dev_err(nfc->dev, "Error requesting IRQ!\n");
-		goto error;
-	}
-
-	page_sz = PAGE_2K + OOB_64;
-	page_sz += cfg.width == 16 ? 1 : 0;
-	nfc_write(mtd, NFC_SECTOR_SIZE, page_sz);
 
 	/* Set configuration register. */
 	nfc_clear(mtd, NFC_FLASH_CONFIG, CONFIG_ADDR_AUTO_INCR_BIT);
@@ -697,6 +610,117 @@ static int nfc_probe(struct platform_device *pdev)
 		      CONFIG_ECC_SRAM_ADDR_MASK,
 		      CONFIG_ECC_SRAM_ADDR_SHIFT, ECC_SRAM_ADDR);
 
+	nfc_write(mtd, NFC_SECTOR_SIZE, page_sz);
+
+	if (cfg->hardware_ecc) {
+		/* set ECC mode to 45 bytes OOB with 24 bits correction */
+		nfc_set_field(mtd, NFC_FLASH_CONFIG,
+				CONFIG_ECC_MODE_MASK,
+				CONFIG_ECC_MODE_SHIFT, ECC_45_BYTE);
+
+		/* Enable ECC_STATUS */
+		nfc_set(mtd, NFC_FLASH_CONFIG, CONFIG_ECC_SRAM_REQ_BIT);
+	}
+
+	return 0;
+}
+
+static int nfc_probe(struct platform_device *pdev)
+{
+	struct fsl_nfc *nfc;
+	struct resource *res;
+	struct mtd_info *mtd;
+	struct nand_chip *chip;
+	struct nfc_config *cfg;
+	int err = 0;
+	int page_sz;
+	int irq;
+
+	nfc = devm_kzalloc(&pdev->dev, sizeof(*nfc), GFP_KERNEL);
+	if (!nfc)
+		return -ENOMEM;
+
+	nfc->cfg = devm_kzalloc(&pdev->dev, sizeof(*nfc), GFP_KERNEL);
+	if (!nfc->cfg)
+		return -ENOMEM;
+	cfg = nfc->cfg;
+
+	nfc->dev = &pdev->dev;
+	nfc->page = -1;
+	mtd = &nfc->mtd;
+	chip = &nfc->chip;
+
+	mtd->priv = chip;
+	mtd->owner = THIS_MODULE;
+	mtd->dev.parent = nfc->dev;
+	mtd->name = DRV_NAME;
+
+	err = nfc_probe_dt(nfc->dev, cfg);
+	if (err)
+		return -ENODEV;
+
+	irq = platform_get_irq(pdev, 0);
+	if (irq <= 0)
+		return -EINVAL;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	nfc->regs = devm_ioremap_resource(nfc->dev, res);
+	if (IS_ERR(nfc->regs))
+		return PTR_ERR(nfc->regs);
+
+	nfc->clk = devm_clk_get(&pdev->dev, NULL);
+	if (IS_ERR(nfc->clk))
+		return PTR_ERR(nfc->clk);
+
+	if (cfg->clkrate && clk_set_rate(nfc->clk, cfg->clkrate)) {
+		dev_err(nfc->dev, "Clock rate not set.");
+		return -EINVAL;
+	}
+
+	err = clk_prepare_enable(nfc->clk);
+	if (err) {
+		dev_err(nfc->dev, "Unable to enable clock!\n");
+		return err;
+	}
+
+	if (cfg->width == 16)
+		chip->options |= NAND_BUSWIDTH_16;
+	else
+		chip->options &= ~NAND_BUSWIDTH_16;
+
+	chip->dev_ready = nfc_dev_ready;
+	chip->cmdfunc = nfc_command;
+	chip->read_byte = nfc_read_byte;
+	chip->read_word = nfc_read_word;
+	chip->read_buf = nfc_read_buf;
+	chip->write_buf = nfc_write_buf;
+	chip->select_chip = nfc_select_chip;
+
+	/* Bad block options. */
+	if (cfg->flash_bbt)
+		chip->bbt_options = NAND_BBT_USE_FLASH | NAND_BBT_CREATE;
+
+	chip->bbt_td = &bbt_main_descr;
+	chip->bbt_md = &bbt_mirror_descr;
+
+	init_waitqueue_head(&nfc->irq_waitq);
+
+	err = devm_request_irq(nfc->dev, irq, nfc_irq, 0, DRV_NAME, mtd);
+	if (err) {
+		dev_err(nfc->dev, "Error requesting IRQ!\n");
+		goto error;
+	}
+
+	page_sz = PAGE_2K + OOB_64;
+	page_sz += cfg->width == 16 ? 1 : 0;
+
+	nfc_init_controller(mtd, cfg, page_sz);
+
+	/* Always use software ECC for flash ID. */
+	nfc_set_field(mtd, NFC_FLASH_CONFIG,
+		      CONFIG_ECC_MODE_MASK,
+		      CONFIG_ECC_MODE_SHIFT, ECC_BYPASS);
+
 	/* first scan to find the device and get the page size */
 	if (nand_scan_ident(mtd, 1, NULL)) {
 		err = -ENXIO;
@@ -713,10 +737,10 @@ static int nfc_probe(struct platform_device *pdev)
 		err = -ENXIO;
 		goto error;
 	}
-	page_sz += cfg.width == 16 ? 1 : 0;
+	page_sz += cfg->width == 16 ? 1 : 0;
 	nfc_write(mtd, NFC_SECTOR_SIZE, page_sz);
 
-	if (cfg.hardware_ecc) {
+	if (cfg->hardware_ecc) {
 		if (mtd->writesize != PAGE_2K && mtd->oobsize < 64) {
 			dev_err(nfc->dev, "Unsupported flash with hwecc\n");
 			err = -ENXIO;
@@ -736,14 +760,10 @@ static int nfc_probe(struct platform_device *pdev)
 		chip->ecc.size = PAGE_2K;
 		chip->ecc.strength = 24;
 
-		/* set ECC mode to 45 bytes OOB with 24 bytes correction */
+		/* set ECC mode to 45 bytes OOB with 24 bits correction */
 		nfc_set_field(mtd, NFC_FLASH_CONFIG,
 				CONFIG_ECC_MODE_MASK,
 				CONFIG_ECC_MODE_SHIFT, ECC_45_BYTE);
-
-		/* Enable ECC_STATUS */
-		nfc_set(mtd, NFC_FLASH_CONFIG, CONFIG_ECC_SRAM_REQ_BIT);
-
 	}
 
 	/* second phase scan */
@@ -768,6 +788,8 @@ error:
 	return err;
 }
 
+
+
 static int nfc_remove(struct platform_device *pdev)
 {
 	struct mtd_info *mtd = platform_get_drvdata(pdev);
@@ -778,11 +800,46 @@ static int nfc_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
+static int nfc_suspend(struct device *dev)
+{
+	struct mtd_info *mtd = dev_get_drvdata(dev);
+	struct fsl_nfc *nfc = mtd_to_nfc(mtd);
+
+	clk_disable_unprepare(nfc->clk);
+	return 0;
+}
+
+static int nfc_resume(struct device *dev)
+{
+	struct mtd_info *mtd = dev_get_drvdata(dev);
+	struct fsl_nfc *nfc = mtd_to_nfc(mtd);
+	int page_sz;
+
+	pinctrl_pm_select_default_state(dev);
+	if (nfc->cfg->clkrate && clk_set_rate(nfc->clk, nfc->cfg->clkrate)) {
+		dev_err(nfc->dev, "Clock rate not set.");
+		return -EINVAL;
+	}
+
+	clk_prepare_enable(nfc->clk);
+
+	page_sz = mtd->writesize + mtd->oobsize;
+	page_sz += nfc->cfg->width == 16 ? 1 : 0;
+
+	nfc_init_controller(mtd, nfc->cfg, page_sz);
+	return 0;
+}
+#endif
+
+static SIMPLE_DEV_PM_OPS(nfc_pm_ops, nfc_suspend, nfc_resume);
+
 static struct platform_driver nfc_driver = {
 	.driver		= {
 		.name	= DRV_NAME,
 		.owner	= THIS_MODULE,
 		.of_match_table = nfc_dt_ids,
+		.pm	= &nfc_pm_ops,
 	},
 	.probe		= nfc_probe,
 	.remove		= nfc_remove,
