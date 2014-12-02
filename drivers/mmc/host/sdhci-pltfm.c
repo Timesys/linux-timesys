@@ -31,6 +31,7 @@
 #include <linux/err.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/pm_runtime.h>
 #ifdef CONFIG_PPC
 #include <asm/machdep.h>
 #endif
@@ -239,17 +240,29 @@ EXPORT_SYMBOL_GPL(sdhci_pltfm_unregister);
 #ifdef CONFIG_PM
 int sdhci_pltfm_suspend(struct device *dev)
 {
+	int ret;
 	struct sdhci_host *host = dev_get_drvdata(dev);
 
-	return sdhci_suspend_host(host);
+	pm_runtime_get_sync(dev);
+	ret = sdhci_suspend_host(host);
+	pm_runtime_mark_last_busy(dev);
+	pm_runtime_put_autosuspend(dev);
+
+	return ret;
 }
 EXPORT_SYMBOL_GPL(sdhci_pltfm_suspend);
 
 int sdhci_pltfm_resume(struct device *dev)
 {
+	int ret;
 	struct sdhci_host *host = dev_get_drvdata(dev);
 
-	return sdhci_resume_host(host);
+	pm_runtime_get_sync(dev);
+	ret = sdhci_resume_host(host);
+	pm_runtime_mark_last_busy(dev);
+	pm_runtime_put_autosuspend(dev);
+
+	return ret;
 }
 EXPORT_SYMBOL_GPL(sdhci_pltfm_resume);
 
