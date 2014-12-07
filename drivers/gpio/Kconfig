@@ -197,6 +197,13 @@ config GPIO_MXC
 	select GPIO_GENERIC
 	select GENERIC_IRQ_CHIP
 
+config GPIO_VF610
+	def_bool y
+	depends on ARCH_MXC && SOC_VF610
+	select GPIOLIB_IRQCHIP
+	help
+	  Say yes here to support Vybrid vf610 GPIOs.
+
 config GPIO_MXS
 	def_bool y
 	depends on ARCH_MXS
