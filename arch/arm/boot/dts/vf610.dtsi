@@ -66,6 +66,27 @@
 		interrupt-parent = <&intc>;
 		ranges;
 
+		ocram0: sram@3f000000 {
+			compatible = "mmio-sram";
+			reg = <0x3f000000 0x40000>;
+		};
+
+		ocram1: sram@3f040000 {
+			compatible = "mmio-sram";
+			reg = <0x3f040000 0x40000>;
+		};
+
+		gfxram0: sram@3f400000 {
+			compatible = "mmio-sram";
+			reg = <0x3f400000 0x80000>;
+		};
+
+		/* used by L2 cache */
+		gfxram1: sram@3f480000 {
+			compatible = "mmio-sram";
+			reg = <0x3f480000 0x80000>;
+		};
+
 		aips0: aips-bus@40000000 {
 			compatible = "fsl,aips-bus", "simple-bus";
 			#address-cells = <1>;
