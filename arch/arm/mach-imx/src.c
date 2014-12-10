@@ -140,3 +140,14 @@ void __init imx_src_init(void)
 	writel_relaxed(val, src_base + SRC_SCR);
 	spin_unlock(&scr_lock);
 }
+
+void __init vf610_src_init(void)
+{
+	struct device_node *np;
+
+	np = of_find_compatible_node(NULL, NULL, "fsl,vf610-src");
+	if (!np)
+		return;
+	src_base = of_iomap(np, 0);
+	WARN_ON(!src_base);
+}
