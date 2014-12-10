@@ -395,6 +395,11 @@
 				clocks = <&clks VF610_CLK_USBC0>;
 			};
 			
+			gpc: gpc@4006c000 {
+				compatible = "fsl,vf610-gpc";
+				reg = <0x4006c000 0x1000>;
+			};
+			
 			src: src@4006e000 {
 				compatible = "fsl,vf610-src";
 				reg = <0x4006e000 0x1000>;
