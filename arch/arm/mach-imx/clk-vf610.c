@@ -103,6 +103,7 @@ static struct clk_onecell_data clk_data;
 static unsigned int const clks_init_on[] __initconst = {
 	VF610_CLK_SYS_BUS,
 	VF610_CLK_DDR_SEL,
+	VF610_CLK_DDRMC,
 };
 
 static void __init vf610_clocks_init(struct device_node *ccm_node)
@@ -170,6 +171,8 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
 	clk[VF610_CLK_PLL3_MAIN_DIV] = imx_clk_divider("pll3_main_div", "pll3_main", CCM_CACRR, 20, 1);
 	clk[VF610_CLK_PLL4_MAIN_DIV] = clk_register_divider_table(NULL, "pll4_main_div", "pll4_main", 0, CCM_CACRR, 6, 3, 0, pll4_main_div_table, &imx_ccm_lock);
 	clk[VF610_CLK_PLL6_MAIN_DIV] = imx_clk_divider("pll6_main_div", "pll6_main", CCM_CACRR, 21, 1);
+
+	clk[VF610_CLK_DDRMC] = imx_clk_gate2_cgr("ddrmc", "ddr_sel", CCM_CCGR6, CCM_CCGRx_CGn(14), 0x2);
 
 	clk[VF610_CLK_USBPHY0] = imx_clk_gate("usbphy0", "pll3_main", PLL3_CTRL, 6);
 	clk[VF610_CLK_USBPHY1] = imx_clk_gate("usbphy1", "pll7_main", PLL7_CTRL, 6);
