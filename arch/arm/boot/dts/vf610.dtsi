@@ -394,6 +394,13 @@
 				reg = <0x40034800 0x200>;
 				clocks = <&clks VF610_CLK_USBC0>;
 			};
+			
+			src: src@4006e000 {
+				compatible = "fsl,vf610-src";
+				reg = <0x4006e000 0x1000>;
+				interrupts = <0 96 IRQ_TYPE_LEVEL_HIGH>;
+				#reset-cells = <0>;
+			};
 
 		};
 
