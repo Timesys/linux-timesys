@@ -17,6 +17,7 @@
 static void __init vf610_init_irq(void)
 {
 	vf610_gpc_init();
+	l2x0_of_init(0, ~0);
 	irqchip_init();
 }
 
@@ -32,8 +33,6 @@ static const char * const vf610_dt_compat[] __initconst = {
 };
 
 DT_MACHINE_START(VYBRID_VF610, "Freescale Vybrid VF610 (Device Tree)")
-	.l2c_aux_val	= 0,
-	.l2c_aux_mask	= ~0,
 	.init_machine   = vf610_init_machine,
 	.init_irq	= vf610_init_irq,
 	.dt_compat	= vf610_dt_compat,
