@@ -13,6 +13,7 @@
 #include <dt-bindings/clock/vf610-clock.h>
 
 #include "clk.h"
+#include "common.h"
 
 #define CCM_CCR			(ccm_base + 0x00)
 #define CCM_CSR			(ccm_base + 0x04)
@@ -130,6 +131,8 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
 	np = ccm_node;
 	ccm_base = of_iomap(np, 0);
 	BUG_ON(!ccm_base);
+
+	vf610_pm_set_ccm_base(ccm_base);
 
 	clk[VF610_CLK_SLOW_CLK_SEL] = imx_clk_mux("slow_clk_sel", CCM_CCSR, 4, 1, slow_sels, ARRAY_SIZE(slow_sels));
 	clk[VF610_CLK_FASK_CLK_SEL] = imx_clk_mux("fast_clk_sel", CCM_CCSR, 5, 1, fast_sels, ARRAY_SIZE(fast_sels));
