@@ -23,6 +23,7 @@
 #include <video/videomode.h>
 #include <linux/pm_runtime.h>
 #include <linux/mvf-fb.h>
+#include <linux/console.h>
 
 #define DRIVER_NAME			"fsl-dcu-fb"
 
@@ -900,6 +901,42 @@ static int fsl_dcu_runtime_resume(struct device *dev)
 }
 #endif
 
+#ifdef CONFIG_PM_SLEEP
+static int fsl_dcu_suspend(struct device *dev)
+{
+	struct dcu_fb_data *dcufb = dev_get_drvdata(dev);
+	struct fb_info *fbi = dcufb->fsl_dcu_info[0];
+
+	console_lock();
+	fb_set_suspend(fbi, 1);
+	console_unlock();
+
+	disable_panel(fbi);
+
+	disable_controller(dcufb->fsl_dcu_info[0]);
+	clk_disable_unprepare(dcufb->clk);
+
+	return 0;
+}
+
+static int fsl_dcu_resume(struct device *dev)
+{
+	struct dcu_fb_data *dcufb = dev_get_drvdata(dev);
+	struct fb_info *fbi = dcufb->fsl_dcu_info[0];
+
+	clk_prepare_enable(dcufb->clk);
+	enable_controller(dcufb->fsl_dcu_info[0]);
+
+	console_lock();
+	fb_set_suspend(fbi, 0);
+	console_unlock();
+
+	fsl_dcu_set_par(fbi);
+
+	return 0;
+}
+#endif
+
 static int bypass_tcon(struct device_node *np)
 {
 	struct device_node *tcon_np;
@@ -930,6 +967,7 @@ static int bypass_tcon(struct device_node *np)
 		return PTR_ERR(tcon_reg);
 
 	writel(TCON_BYPASS_ENABLE, tcon_reg + TCON_CTRL1);
+	clk_disable_unprepare(tcon_clk);
 	return 0;
 }
 
@@ -1059,6 +1097,7 @@ static int fsl_dcu_remove(struct platform_device *pdev)
 static const struct dev_pm_ops fsl_dcu_pm_ops = {
 	SET_RUNTIME_PM_OPS(fsl_dcu_runtime_suspend,
 			fsl_dcu_runtime_resume, NULL)
+	SET_SYSTEM_SLEEP_PM_OPS(fsl_dcu_suspend, fsl_dcu_resume)
 };
 
 static struct of_device_id fsl_dcu_dt_ids[] = {
