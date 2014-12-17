@@ -21,6 +21,7 @@
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 #include <linux/regmap.h>
+#include <linux/slab.h>
 #include <linux/suspend.h>
 #include <linux/clk.h>
 #include <asm/cacheflush.h>
@@ -68,13 +69,17 @@
 
 #define ANATOP_PLL1_CTRL		0x270
 #define ANATOP_PLL2_CTRL		0x30
+#define ANATOP_PLL2_PFD			0x100
 #define ANATOP_PLL3_CTRL		0x10
 #define ANATOP_PLL4_CTRL		0x70
 #define ANATOP_PLL5_CTRL		0xe0
 #define ANATOP_PLL6_CTRL		0xa0
 #define ANATOP_PLL7_CTRL		0x10
+#define BM_PLL_POWERDOWN	(0x1 << 12)
 #define BM_PLL_ENABLE		(0x1 << 13)
+#define BM_PLL_BYPASS		(0x1 << 16)
 #define BM_PLL_LOCK		(0x1 << 31)
+#define BM_PLL_PFD2_CLKGATE	(0x1 << 15)
 
 #define VF610_SUSPEND_OCRAM_SIZE	0x4000
 
@@ -87,7 +92,7 @@
 #define VF_UART_PHYSICAL_BASE	VF_UART_BASE(CONFIG_DEBUG_VF_UART_PORT)
 
 static void __iomem *ccm_base;
-static void __iomem *suspend_ocram_base;
+static struct vf610_cpu_pm_info *pm_info;
 
 /*
  * suspend ocram space layout:
@@ -137,6 +142,7 @@ struct vf610_cpu_pm_info {
 	struct vf610_pm_base ccm_base;
 	struct vf610_pm_base gpc_base;
 	struct vf610_pm_base l2_base;
+	u32 ccm_ccsr;
 } __aligned(8);
 
 #ifdef DEBUG
@@ -169,14 +175,14 @@ static void uart_reinit(unsigned long int rate, unsigned long int baud)
 static void uart_reinit(unsigned long int rate, unsigned long int baud) {}
 #endif
 
-static void vf610_enable_pll(void __iomem *pll_base)
+static void vf610_set(void __iomem *pll_base, u32 mask)
 {
-	writel_relaxed(readl_relaxed(pll_base) | BM_PLL_ENABLE, pll_base);
+	writel_relaxed(readl_relaxed(pll_base) | mask, pll_base);
 }
 
-static void vf610_disable_pll(void __iomem *pll_base)
+static void vf610_clr(void __iomem *pll_base, u32 mask)
 {
-	writel_relaxed(readl_relaxed(pll_base) & ~BM_PLL_ENABLE, pll_base);
+	writel_relaxed(readl_relaxed(pll_base) & ~mask, pll_base);
 }
 
 int vf610_set_lpm(enum vf610_cpu_pwr_mode mode)
@@ -184,7 +190,6 @@ int vf610_set_lpm(enum vf610_cpu_pwr_mode mode)
 	u32 ccr = readl_relaxed(ccm_base + CCR);
 	u32 ccsr = readl_relaxed(ccm_base + CCSR);
 	u32 cclpcr = readl_relaxed(ccm_base + CLPCR);
-	struct vf610_cpu_pm_info *pm_info = suspend_ocram_base;
 	void __iomem *gpc_base = pm_info->gpc_base.vbase;
 	u32 gpc_pgcr = readl_relaxed(gpc_base + GPC_PGCR);
 	void __iomem *anatop = pm_info->anatop_base.vbase;
@@ -203,32 +208,49 @@ int vf610_set_lpm(enum vf610_cpu_pwr_mode mode)
 		writel_relaxed(BM_LPMR_STOP, gpc_base + GPC_LPMR);
 		/* fall-through */
 	case VF610_LP_RUN:
+		/* Store clock settings */
+		pm_info->ccm_ccsr = ccsr;
+
 		ccr |= BM_CCR_FIRC_EN;
 		writel_relaxed(ccr, ccm_base + CCR);
+
+		/* Enable PLL2 for DDR clock */
+		vf610_set(anatop + ANATOP_PLL2_CTRL, BM_PLL_ENABLE);
+		vf610_clr(anatop + ANATOP_PLL2_CTRL, BM_PLL_POWERDOWN);
+		vf610_clr(anatop + ANATOP_PLL2_CTRL, BM_PLL_BYPASS);
+		while (!(readl(anatop + ANATOP_PLL2_CTRL) & BM_PLL_LOCK));
+		vf610_clr(anatop + ANATOP_PLL2_PFD, BM_PLL_PFD2_CLKGATE);
 
 		/* Switch internal OSC's */
 		ccsr &= ~BM_CCSR_FAST_CLK_SEL;
 		ccsr &= ~BM_CCSR_SLOW_CLK_SEL;
+
+		/* Select PLL2 as DDR clock */
+		ccsr &= ~BM_CCSR_DDRC_CLK_SEL;
 		writel_relaxed(ccsr, ccm_base + CCSR);
 
 		ccsr &= ~BM_CCSR_SYS_CLK_SEL_MASK;
 		writel_relaxed(ccsr, ccm_base + CCSR);
 		uart_reinit(4000000UL, 115200);
 
-		vf610_disable_pll(anatop + ANATOP_PLL1_CTRL);
-		vf610_disable_pll(anatop + ANATOP_PLL3_CTRL);
-		vf610_disable_pll(anatop + ANATOP_PLL5_CTRL);
-		vf610_disable_pll(anatop + ANATOP_PLL7_CTRL);
+		vf610_set(anatop + ANATOP_PLL1_CTRL, BM_PLL_BYPASS);
+		vf610_clr(anatop + ANATOP_PLL3_CTRL, BM_PLL_ENABLE);
+		vf610_clr(anatop + ANATOP_PLL5_CTRL, BM_PLL_ENABLE);
+		vf610_clr(anatop + ANATOP_PLL7_CTRL, BM_PLL_ENABLE);
 		break;
 	case VF610_RUN:
-		vf610_enable_pll(anatop + ANATOP_PLL1_CTRL);
-		vf610_enable_pll(anatop + ANATOP_PLL3_CTRL);
-		vf610_enable_pll(anatop + ANATOP_PLL5_CTRL);
-		vf610_enable_pll(anatop + ANATOP_PLL7_CTRL);
+		vf610_clr(anatop + ANATOP_PLL1_CTRL, BM_PLL_BYPASS);
+		vf610_set(anatop + ANATOP_PLL3_CTRL, BM_PLL_ENABLE);
+		vf610_set(anatop + ANATOP_PLL5_CTRL, BM_PLL_ENABLE);
+		vf610_set(anatop + ANATOP_PLL7_CTRL, BM_PLL_ENABLE);
 
-		ccsr &= ~BM_CCSR_SYS_CLK_SEL_MASK;
-		ccsr |= 0x4;
-		writel_relaxed(ccsr, ccm_base + CCSR);
+		/* Restore clock settings */
+		writel_relaxed(pm_info->ccm_ccsr, ccm_base + CCSR);
+
+		/* Disable PLL2 if not needed */
+		if (pm_info->ccm_ccsr & BM_CCSR_DDRC_CLK_SEL)
+			vf610_set(anatop + ANATOP_PLL2_CTRL, BM_PLL_POWERDOWN);
+
 		uart_reinit(83368421UL, 115200);
 
 		writel_relaxed(BM_LPMR_RUN, gpc_base + GPC_LPMR);
@@ -315,12 +337,6 @@ out:
 
 static int __init vf610_suspend_init(const struct vf610_pm_socdata *socdata)
 {
-	phys_addr_t ocram_pbase;
-	struct device_node *node;
-	struct platform_device *pdev;
-	struct vf610_cpu_pm_info *pm_info;
-	struct gen_pool *ocram_pool;
-	unsigned long ocram_base;
 	int ret = 0;
 
 	suspend_set_ops(&vf610_pm_ops);
@@ -330,40 +346,7 @@ static int __init vf610_suspend_init(const struct vf610_pm_socdata *socdata)
 		return -EINVAL;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mmio-sram");
-	if (!node) {
-		pr_warn("%s: failed to find ocram node!\n", __func__);
-		return -ENODEV;
-	}
-
-	pdev = of_find_device_by_node(node);
-	if (!pdev) {
-		pr_warn("%s: failed to find ocram device!\n", __func__);
-		ret = -ENODEV;
-		goto put_node;
-	}
-
-	ocram_pool = dev_get_gen_pool(&pdev->dev);
-	if (!ocram_pool) {
-		pr_warn("%s: ocram pool unavailable!\n", __func__);
-		ret = -ENODEV;
-		goto put_node;
-	}
-
-	ocram_base = gen_pool_alloc(ocram_pool, VF610_SUSPEND_OCRAM_SIZE);
-	if (!ocram_base) {
-		pr_warn("%s: unable to alloc ocram!\n", __func__);
-		ret = -ENOMEM;
-		goto put_node;
-	}
-
-	ocram_pbase = gen_pool_virt_to_phys(ocram_pool, ocram_base);
-
-	suspend_ocram_base = __arm_ioremap_exec(ocram_pbase,
-		VF610_SUSPEND_OCRAM_SIZE, false);
-
-	pm_info = suspend_ocram_base;
-	pm_info->pbase = ocram_pbase;
+	pm_info = kzalloc(sizeof(*pm_info), GFP_KERNEL);
 	pm_info->pm_info_size = sizeof(*pm_info);
 
 	/*
@@ -376,13 +359,7 @@ static int __init vf610_suspend_init(const struct vf610_pm_socdata *socdata)
 	ret = imx_pm_get_base(&pm_info->anatop_base, socdata->anatop_compat);
 	if (ret) {
 		pr_warn("%s: failed to get anatop base %d!\n", __func__, ret);
-		goto put_node;
-	}
-
-	ret = imx_pm_get_base(&pm_info->src_base, socdata->src_compat);
-	if (ret) {
-		pr_warn("%s: failed to get src base %d!\n", __func__, ret);
-		goto src_map_failed;
+		goto free_memory;
 	}
 
 	ret = imx_pm_get_base(&pm_info->gpc_base, socdata->gpc_compat);
@@ -391,23 +368,12 @@ static int __init vf610_suspend_init(const struct vf610_pm_socdata *socdata)
 		goto gpc_map_failed;
 	}
 
-	ret = imx_pm_get_base(&pm_info->l2_base, "arm,pl310-cache");
-	if (ret) {
-		pr_warn("%s: failed to get pl310-cache base %d!\n",
-			__func__, ret);
-		goto pl310_cache_map_failed;
-	}
+	return 0;
 
-	goto put_node;
-
-pl310_cache_map_failed:
-	iounmap(&pm_info->gpc_base.vbase);
 gpc_map_failed:
-	iounmap(&pm_info->src_base.vbase);
-src_map_failed:
 	iounmap(&pm_info->anatop_base.vbase);
-put_node:
-	of_node_put(node);
+free_memory:
+	kfree(pm_info);
 
 	return ret;
 }
