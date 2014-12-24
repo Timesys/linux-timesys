@@ -1393,7 +1393,12 @@ static int gpiochip_irq_map(struct irq_domain *d, unsigned int irq,
 #else
 	irq_set_noprobe(irq);
 #endif
-	irq_set_irq_type(irq, chip->irq_default_type);
+	/*
+	 * No set-up of the hardware will happen if IRQ_TYPE_NONE
+	 * is passed as default type.
+	 */
+	if (chip->irq_default_type != IRQ_TYPE_NONE)
+		irq_set_irq_type(irq, chip->irq_default_type);
 
 	return 0;
 }
