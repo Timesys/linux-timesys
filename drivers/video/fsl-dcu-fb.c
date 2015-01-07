@@ -22,6 +22,7 @@
 #include <video/of_display_timing.h>
 #include <video/videomode.h>
 #include <linux/pm_runtime.h>
+#include <linux/mvf-fb.h>
 
 #define DRIVER_NAME			"fsl-dcu-fb"
 
@@ -129,22 +130,12 @@
 #define TCON_CTRL1			0x0000
 #define TCON_BYPASS_ENABLE		(1 << 29)
 
-#define MFB_SET_ALPHA		_IOW('M', 0, __u8)
-#define MFB_GET_ALPHA		_IOR('M', 0, __u8)
-#define MFB_SET_LAYER		_IOW('M', 4, struct layer_display_offset)
-#define MFB_GET_LAYER		_IOR('M', 4, struct layer_display_offset)
-
 struct dcu_fb_data {
 	struct fb_info *fsl_dcu_info[DCU_LAYER_NUM_MAX];
 	struct device *dev;
 	void __iomem *reg_base;
 	unsigned int irq;
 	struct clk *clk;
-};
-
-struct layer_display_offset {
-	int x_layer_d;
-	int y_layer_d;
 };
 
 struct mfb_info {
