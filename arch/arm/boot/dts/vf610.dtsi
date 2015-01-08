@@ -68,12 +68,11 @@
 
 		ocram0: sram@3f000000 {
 			compatible = "mmio-sram";
-			reg = <0x3f000000 0x40000>;
 		};
 
 		ocram1: sram@3f040000 {
 			compatible = "mmio-sram";
-			reg = <0x3f040000 0x40000>;
+			reg = <0x3f050000 0x30000>;
 		};
 
 		gfxram0: sram@3f400000 {
