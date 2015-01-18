@@ -556,9 +556,21 @@
 		reg = <0>;
 
 		partition@0 {
-			label = "s25fl128s-0";
-			reg = <0x0 0x1000000>;
+			label = "s25fl128s-0-uboot";
+			reg = <0x0 0x0100000>;
 		};
+		partition2@100000 {
+			label = "s25fl128s-0-dtb";
+			reg = <0x0100000 0x0100000>;
+		};
+		partition3@200000 {
+			label = "s25fl128s-0-kernel";
+			reg = <0x0200000 0x0500000>;
+		};
+		partition4@700000 {
+			label = "s25fl128s-0-rfs";
+			reg = <0x0600000 0x0900000>;
+		};				
 	};
 
 	flash1: s25fl128s@1 {
