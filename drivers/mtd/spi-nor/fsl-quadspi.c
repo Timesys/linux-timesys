@@ -99,6 +99,7 @@
 
 #define QUADSPI_FR			0x160
 #define QUADSPI_FR_TFF_MASK		0x1
+#define QUADSPI_FR_RBDF_MASK		0x10000
 
 #define QUADSPI_SFA1AD			0x180
 #define QUADSPI_SFA2AD			0x184
@@ -600,13 +601,25 @@ static void fsl_qspi_init_abh_read(struct fsl_qspi *q)
 static int fsl_qspi_nor_setup(struct fsl_qspi *q)
 {
 	void __iomem *base = q->iobase;
-	u32 reg;
+	u32 reg, reg_fr, reg_mcr;
 	int ret;
 
 	/* the default frequency, we will change it in the future.*/
 	ret = clk_set_rate(q->clk, 66000000);
 	if (ret)
 		return ret;
+
+	/* Clear any pending interrupt */
+	reg_fr = readl(q->iobase + QUADSPI_FR);
+	reg_mcr = readl(q->iobase + QUADSPI_MCR);
+	while(reg_fr & QUADSPI_FR_RBDF_MASK)
+	{
+		writel(reg_fr, q->iobase + QUADSPI_FR);
+		reg_fr = readl(q->iobase + QUADSPI_FR);
+	}
+
+	/* Clear / Invalidate any stale data in the RX buffer */
+	writel(reg_mcr | QUADSPI_MCR_CLR_RXF_MASK, (q->iobase + QUADSPI_MCR));
 
 	/* Init the LUT table. */
 	fsl_qspi_init_lut(q);
