@@ -67,6 +67,18 @@ enum ci_role {
 	CI_ROLE_END,
 };
 
+enum CI_REVISION {
+	CI_REVISION_1X = 10,	/* Revision 1.x */
+	CI_REVISION_20 = 20, /* Revision 2.0 */
+	CI_REVISION_21, /* Revision 2.1 */
+	CI_REVISION_22, /* Revision 2.2 */
+	CI_REVISION_23, /* Revision 2.3 */
+	CI_REVISION_24, /* Revision 2.4 */
+	CI_REVISION_25, /* Revision 2.5 */
+	CI_REVISION_25_PLUS, /* Revision above than 2.5 */
+	CI_REVISION_UNKNOWN = 99, /* Unknown Revision */
+};
+
 /**
  * struct ci_role_driver - host/gadget role driver
  * start: start this role
@@ -136,6 +148,7 @@ struct hw_bank {
  * @b_sess_valid_event: indicates there is a vbus event, and handled
  * at ci_otg_work
  * @imx28_write_fix: Freescale imx28 needs swp instruction for writing
+ * @rev: The revision number for controller
  */
 struct ci_hdrc {
 	struct device			*dev;
@@ -175,6 +188,7 @@ struct ci_hdrc {
 	bool				id_event;
 	bool				b_sess_valid_event;
 	bool				imx28_write_fix;
+	enum CI_REVISION		rev;
 };
 
 static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci)
@@ -217,6 +231,15 @@ static inline void ci_role_stop(struct ci_hdrc *ci)
 /* register size */
 #define REG_BITS   (32)
 
+/* Identification Registers */
+#define ID_ID				0x0
+#define ID_HWGENERAL			0x4
+#define ID_HWHOST			0x8
+#define ID_HWDEVICE			0xc
+#define ID_HWTXBUF			0x10
+#define ID_HWRXBUF			0x14
+#define ID_SBUSCFG			0x90
+
 /* register indices */
 enum ci_hw_regs {
 	CAP_CAPLENGTH,
@@ -242,6 +265,36 @@ enum ci_hw_regs {
 	/* endptctrl1..15 follow */
 	OP_LAST = OP_ENDPTCTRL + ENDPT_MAX / 2,
 };
+
+/**
+ * hw_read_id_reg: reads from a identification register
+ * @ci: the controller
+ * @offset: offset from the beginning of identification registers region
+ * @mask: bitfield mask
+ *
+ * This function returns register contents
+ */
+static inline u32 hw_read_id_reg(struct ci_hdrc *ci, u32 offset, u32 mask)
+{
+	return ioread32(ci->hw_bank.abs + offset) & mask;
+}
+
+/**
+ * hw_write_id_reg: writes to a identification register
+ * @ci: the controller
+ * @offset: offset from the beginning of identification registers region
+ * @mask: bitfield mask
+ * @data: new value
+ */
+static inline void hw_write_id_reg(struct ci_hdrc *ci, u32 offset,
+			    u32 mask, u32 data)
+{
+	if (~mask)
+		data = (ioread32(ci->hw_bank.abs + offset) & ~mask)
+			| (data & mask);
+
+	iowrite32(data, ci->hw_bank.abs + offset);
+}
 
 /**
  * hw_read: reads from a hw register
