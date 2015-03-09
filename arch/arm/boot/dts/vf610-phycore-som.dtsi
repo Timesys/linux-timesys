@@ -1,0 +1,145 @@
+/*
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "vf610.dtsi"
+
+/ {
+	model = "Phytec VF610 phyCORE";
+	compatible = "phytec,vf610-phycore-som", "fsl,vf610";
+
+	clocks {
+                enet_ext {
+                        compatible = "fixed-clock";
+                        clock-frequency = <50000000>;
+                };
+        };
+
+	/* Power */
+	regulators {
+                compatible = "simple-bus";
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                reg_3p3v: regulator@0 {
+                        compatible = "regulator-fixed";
+                        reg = <0>;
+                        regulator-name = "3P3V";
+                        regulator-min-microvolt = <3300000>;
+                        regulator-max-microvolt = <3300000>;
+                        regulator-always-on;
+                };
+       };
+};
+
+/* Ethernet */
+&iomuxc {
+        vf610-twr {
+		pinctrl_fec0: fec0grp {
+                        fsl,pins = <
+                                VF610_PAD_PTA6__RMII_CLKIN              0x30d1
+                                VF610_PAD_PTC0__ENET_RMII0_MDC          0x30d3
+                                VF610_PAD_PTC1__ENET_RMII0_MDIO         0x30d1
+                                VF610_PAD_PTC2__ENET_RMII0_CRS          0x30d1
+                                VF610_PAD_PTC3__ENET_RMII0_RXD1         0x30d1
+                                VF610_PAD_PTC4__ENET_RMII0_RXD0         0x30d1
+                                VF610_PAD_PTC5__ENET_RMII0_RXER         0x30d1
+                                VF610_PAD_PTC6__ENET_RMII0_TXD1         0x30d2
+                                VF610_PAD_PTC7__ENET_RMII0_TXD0         0x30d2
+                                VF610_PAD_PTC8__ENET_RMII0_TXEN         0x30d2
+                        >;
+                };
+	};
+};
+
+&fec0 {
+        phy-mode = "rmii";
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_fec0>;
+        status = "disabled";
+};
+
+/* TODO fec1 */
+&fec1 {
+        status = "disabled";
+};
+
+/* TODO: I2C Bus */
+
+&iomuxc {
+        vf610-twr {
+                pinctrl_i2c2: i2c2grp {
+                        fsl,pins = <
+                                VF610_PAD_PTA22__I2C2_SCL               0x30d3
+                                VF610_PAD_PTA23__I2C2_SDA               0x30d3
+                        >;
+                };
+	};
+};
+
+&aips0 {
+	i2c2: i2c@40066000 {
+		status = "disabled";
+	};
+};
+
+&i2c2 {
+        clock-frequency = <100000>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_i2c2>;
+        status = "disabled";
+
+        codec: sgtl5000@0a {
+               #sound-dai-cells = <0>;
+               compatible = "fsl,sgtl5000";
+               reg = <0x0a>;
+               VDDA-supply = <&reg_3p3v>;
+               VDDIO-supply = <&reg_3p3v>;
+               clocks = <&clks VF610_CLK_SAI2>;
+       };
+
+        i2c_eeprom:eeprom@50 {
+                compatible = "atmel,24c32";
+                reg = <50>;
+        };
+        /* stmpe811 @ 0x41 (touch screen ctrlr on Carrier Board) */
+
+};
+
+
+/* TODO: NAND Memory */
+&nfc {
+        status = "disabled";
+};
+
+/* UARTs */
+
+&iomuxc {
+        vf610-twr {
+                pinctrl_uart1: uart1grp {
+                        fsl,pins = <
+                                VF610_PAD_PTB4__UART1_TX                0x21a2
+                                VF610_PAD_PTB5__UART1_RX                0x21a1
+                        >;
+                };
+	};
+};
+
+&uart1 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_uart1>;
+        status = "disabled";
+};
+
+/* TODO: verify and add UART2 */
+&uart2 {
+        status = "disabled";
+};
+	
+/* TODO SPI Busses */
+&qspi0 {
+        status = "disabled";
+};

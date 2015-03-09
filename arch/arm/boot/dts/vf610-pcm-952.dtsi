@@ -1,0 +1,53 @@
+/*
+ * Copyright (C) 2015 Anna Horstmann <ahorstmann@phytec.com> PHYTEC
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/ {
+        model = "Phytec VF610 PCM-952";
+        compatible = "phytec,vf610-pcm-952", "phytec,vf610-phycore-som", "fsl,vf610";
+
+	chosen {
+		bootargs = "console=ttyLP1,115200";
+	};
+};
+
+/* UART1 */
+&uart1 {
+        status = "okay";
+};
+
+/* MMC */
+&iomuxc {
+        vf610-twr {
+                pinctrl_esdhc1: esdhc1grp {
+                        fsl,pins = <
+                                VF610_PAD_PTA24__ESDHC1_CLK     0x31ef
+                                VF610_PAD_PTA25__ESDHC1_CMD     0x31ef
+                                VF610_PAD_PTA26__ESDHC1_DAT0    0x31ef
+                                VF610_PAD_PTA27__ESDHC1_DAT1    0x31ef
+                                VF610_PAD_PTA28__ESDHC1_DATA2   0x31ef
+                                VF610_PAD_PTA29__ESDHC1_DAT3    0x31ef
+
+				/* PTD6 as GPIO for SD card detecting */
+                                VF610_PAD_PTD6__GPIO_85         0x219d
+                        >;
+                };
+	};
+};
+
+&esdhc1 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_esdhc1>;
+        bus-width = <4>;
+        status = "okay";
+};
+
+/* TODO Display */
+
+/* TODO Touch */
+
+/* TODO User IO */
