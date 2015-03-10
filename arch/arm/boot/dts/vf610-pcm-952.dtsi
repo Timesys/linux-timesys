@@ -48,6 +48,35 @@
 
 /* TODO Display */
 
+&iomuxc {
+        vf610-twr {
+                pinctrl_pwm0: pwm0grp {
+                        fsl,pins = <
+				VF610_PAD_PTB0__FTM0_CH0	0x3182
+			>;
+		};
+	};
+};
+
+&pwm0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm0>;
+	status = "okay";
+};
+
+
+#include "vf610-phytec-lcd-018.dtsi"
+
+&dcu0 {
+	status = "okay";
+};
+
+&backlight {
+        pwms = <&pwm0 0 100000 0>;
+	status = "okay";
+};
+
+
 /* TODO Touch */
 
 /* TODO User IO */
