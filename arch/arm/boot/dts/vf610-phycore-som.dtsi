@@ -67,48 +67,48 @@
         status = "disabled";
 };
 
-/* TODO: I2C Bus */
+/* I2C Bus */
 
 &iomuxc {
         vf610-twr {
                 pinctrl_i2c2: i2c2grp {
                         fsl,pins = <
-                                VF610_PAD_PTA22__I2C2_SCL               0x30d3
-                                VF610_PAD_PTA23__I2C2_SDA               0x30d3
+                                VF610_PAD_PTA22__I2C2_SCL               0x34d3
+                                VF610_PAD_PTA23__I2C2_SDA               0x34d3
                         >;
                 };
 	};
 };
 
-&aips0 {
-	i2c2: i2c@40066000 {
+&aips1 {
+	i2c2: i2c@400e6000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "fsl,vf610-i2c";
+		reg = <0x400e6000 0x1000>;
+		interrupts =<0 73 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clks VF610_CLK_I2C2>;
+			clock-names = "ipg";
+		dmas = <&edma1 2 36>,
+			<&edma1 2 37>;
+		dma-names = "rx","tx";
 		status = "disabled";
 	};
 };
 
 &i2c2 {
-        clock-frequency = <100000>;
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_i2c2>;
-        status = "disabled";
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c2>;
+	status = "okay";
 
-        codec: sgtl5000@0a {
-               #sound-dai-cells = <0>;
-               compatible = "fsl,sgtl5000";
-               reg = <0x0a>;
-               VDDA-supply = <&reg_3p3v>;
-               VDDIO-supply = <&reg_3p3v>;
-               clocks = <&clks VF610_CLK_SAI2>;
-       };
-
-        i2c_eeprom:eeprom@50 {
-                compatible = "atmel,24c32";
-                reg = <50>;
+	i2c_eeprom:eeprom@50 {
+		compatible = "at,24c32";
+		pagesize = <32>;
+		reg = <0x50>;
+		status = "disabled";
         };
-        /* stmpe811 @ 0x41 (touch screen ctrlr on Carrier Board) */
-
 };
-
 
 /* TODO: NAND Memory */
 &nfc {

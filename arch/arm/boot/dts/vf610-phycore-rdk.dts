@@ -33,7 +33,7 @@
 };
 
 &i2c_eeprom {
-        status = "disabled";
+        status = "okay";
 };
 
 /* Carrierboard */

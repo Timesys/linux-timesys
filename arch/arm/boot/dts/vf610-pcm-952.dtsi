@@ -46,7 +46,7 @@
         status = "okay";
 };
 
-/* TODO Display */
+/* Display */
 
 &iomuxc {
         vf610-twr {
