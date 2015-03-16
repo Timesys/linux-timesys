@@ -110,9 +110,46 @@
         };
 };
 
-/* TODO: NAND Memory */
+/* NAND Memory */
+&iomuxc {
+        vf610-twr {
+		pinctrl_nfc_1: nfcgrp_1 {
+			fsl,pins = <
+                                VF610_PAD_PTD31__NF_IO15        0x28df
+                                VF610_PAD_PTD30__NF_IO14        0x28df
+                                VF610_PAD_PTD29__NF_IO13        0x28df
+                                VF610_PAD_PTD28__NF_IO12        0x28df
+                                VF610_PAD_PTD27__NF_IO11        0x28df
+                                VF610_PAD_PTD26__NF_IO10        0x28df
+                                VF610_PAD_PTD25__NF_IO9         0x28df
+                                VF610_PAD_PTD24__NF_IO8         0x28df
+                                VF610_PAD_PTD23__NF_IO7         0x28df
+                                VF610_PAD_PTD22__NF_IO6         0x28df
+                                VF610_PAD_PTD21__NF_IO5         0x28df
+                                VF610_PAD_PTD20__NF_IO4         0x28df
+                                VF610_PAD_PTD19__NF_IO3         0x28df
+                                VF610_PAD_PTD18__NF_IO2         0x28df
+                                VF610_PAD_PTD17__NF_IO1         0x28df
+                                VF610_PAD_PTD16__NF_IO0         0x28df
+                                VF610_PAD_PTB24__NF_WE_B        0x28c2
+                                VF610_PAD_PTB25__NF_CE0_B       0x28c2
+                                VF610_PAD_PTB27__NF_RE_B        0x28c2
+                                VF610_PAD_PTC26__NF_RB_B        0x283d
+                                VF610_PAD_PTC27__NF_ALE         0x28c2
+                                VF610_PAD_PTC28__NF_CLE         0x28c2
+			>;
+		};
+	};
+};
+
 &nfc {
-        status = "disabled";
+	nand-bus-width = <16>;
+        nand-ecc-mode = "hw";
+        nand-on-flash-bbt;
+        clock-frequency = <33000000>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_nfc_1>;
+        status = "okay";
 };
 
 /* UARTs */
