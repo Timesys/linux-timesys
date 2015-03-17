@@ -13,6 +13,19 @@
 	chosen {
 		bootargs = "console=ttyLP1,115200";
 	};
+
+	reg_usb0_host_vbus: usb0_host_vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb0_host_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+		gpio = <&gpio5 6 0>;
+		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usb0_host>;
+	};
+
 };
 
 /* UART1 */
@@ -112,6 +125,30 @@
 
         };
 */
+};
+
+/* USB */
+
+&iomuxc {
+        vf610-twr {
+                pinctrl_usb0_host: usb0_host_grp{
+                        fsl,pins = <
+				VF610_PAD_PTA7__GPIO_134                0x1be
+				VF610_PAD_PTA17__USB0_VBUS_OC		0x201
+                        >;
+                };
+	};
+};
+
+&usbdev0 {
+	disable-over-current;
+	vbus-supply = <&reg_usb0_host_vbus>;
+	dr_mode = "host";
+        /* Comment host mode and vbus-supply and uncomment below code to use
+	   usb0 device:
+	dr_mode = "peripheral";
+	*/
+	status = "okay";
 };
 
 /* User Buttons */
