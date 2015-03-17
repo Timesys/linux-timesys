@@ -79,4 +79,56 @@
 
 /* TODO Touch */
 
-/* TODO User IO */
+/* DSPI BUS */
+
+&iomuxc {
+        vf610-twr {
+                pinctrl_dspi0: dspi0grp {
+                        fsl,pins = <
+                                VF610_PAD_PTB19__GPIO_41                0x1182
+                                VF610_PAD_PTB20__DSPI0_SIN              0x1181
+                                VF610_PAD_PTB21__DSPI0_SOUT             0x1182
+                                VF610_PAD_PTB22__DSPI0_SCK              0x1182
+                        >;
+                };
+        };
+};
+
+&dspi0 {
+        bus-num = <0>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_dspi0>;
+        cs-gpios = <&gpio2 9 0>;
+        status = "disabled";
+
+/* Set dspi0 status to "okay" and uncomment below to add slave device using
+   spidev driver for chip select 0
+        spidev: spidev@0 {
+                #address-cells = <1>;
+                #size-cells = <1>;
+                compatible = "linux,spidev";
+                spi-max-frequency = <16000000>;
+                reg = <0>;
+
+        };
+*/
+};
+
+/* User Buttons */
+
+&iomuxc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_userbuttons>;
+        vf610-twr {
+		pinctrl_userbuttons: userbuttonsgrp {
+                        fsl,pins = <
+				VF610_PAD_PTB8__GPIO_30			0x219d
+				VF610_PAD_PTB9__GPIO_31			0x219d
+                        >;
+                };
+        };
+};
+
+
+
+
