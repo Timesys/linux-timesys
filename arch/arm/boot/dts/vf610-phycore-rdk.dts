@@ -36,4 +36,32 @@
         status = "okay";
 };
 
+&nfc {
+
+	partition@0 {
+		label = "loader";
+		reg = <0x0 0x40000>;
+	};
+
+        partition@1 {
+                label = "u-boot";
+                reg = <0x40000 0x40000>;
+        };
+
+        partition@2 {
+                label = "uImage";
+                reg = <0x80000 0x800000>;
+        };
+
+        partition@3 {
+                label = "devicetree";
+                reg = <0x880000 0x20000>;
+        };
+
+	partition@4 {
+		label = "rootfs";
+		reg = <0x8a0000 0x0>; /* size of zero */
+	};
+};
+
 /* Carrierboard */

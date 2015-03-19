@@ -150,6 +150,11 @@
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_nfc_1>;
         status = "okay";
+	
+	/* For partitions */
+	#address-cells = <1>;
+	#size-cells = <1>;
+
 };
 
 /* UARTs */
