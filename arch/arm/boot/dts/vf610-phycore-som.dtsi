@@ -97,10 +97,10 @@
 };
 
 &i2c2 {
-	clock-frequency = <100000>;
+	clock-frequency = <400000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_i2c2>;
-	status = "okay";
+	status = "disabled";
 
 	i2c_eeprom:eeprom@50 {
 		compatible = "at,24c32";
@@ -149,7 +149,7 @@
         clock-frequency = <33000000>;
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_nfc_1>;
-        status = "okay";
+        status = "disabled";
 	
 	/* For partitions */
 	#address-cells = <1>;
@@ -167,6 +167,12 @@
                                 VF610_PAD_PTB5__UART1_RX                0x21a1
                         >;
                 };
+		pinctrl_uart2: uart2grp {
+			fsl,pins = <
+				VF610_PAD_PTB6__UART2_TX		0x21a2
+				VF610_PAD_PTB7__UART2_RX		0x21a1
+			>;
+		};
 	};
 };
 
@@ -176,8 +182,9 @@
         status = "disabled";
 };
 
-/* TODO: verify and add UART2 */
 &uart2 {
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_uart2>;
         status = "disabled";
 };
 	

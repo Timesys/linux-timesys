@@ -15,6 +15,10 @@
                 device_type = "memory";
                 reg = <0x80000000 0x20000000>; /* 512 MB */
         };
+
+	chosen {
+                bootargs = "console=ttyLP1,115200";
+        };
 };
 
 
@@ -28,8 +32,16 @@
         status = "disabled";
 };
 
+&uart1 {
+        status = "okay";
+};
+
 &uart2 {
-        status = "disabled";
+        status = "okay";
+};
+
+&i2c2 {
+	status = "okay";
 };
 
 &i2c_eeprom {
@@ -37,6 +49,7 @@
 };
 
 &nfc {
+	status = "okay";
 
 	partition@0 {
 		label = "loader";
@@ -60,8 +73,37 @@
 
 	partition@4 {
 		label = "rootfs";
-		reg = <0x8a0000 0x0>; /* size of zero */
+		reg = <0x8a0000 0x0>;	/* size of zero, will extend to
+				 	 * end of nand flash */
 	};
 };
 
 /* Carrierboard */
+
+&esdhc1 {
+	status = "okay";
+};
+
+&dcu0 {
+        status = "okay";
+};
+
+&pwm0 {
+	status = "okay";
+};
+
+&backlight {
+	status = "okay";
+};
+
+&usbdev0 {
+	status = "okay";
+};
+
+&dspi0 {
+	status = "disabled";
+};
+
+&spidev {
+	status = "disabled";
+};

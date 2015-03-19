@@ -10,10 +10,6 @@
         model = "Phytec VF610 PCM-952";
         compatible = "phytec,vf610-pcm-952", "phytec,vf610-phycore-som", "fsl,vf610";
 
-	chosen {
-		bootargs = "console=ttyLP1,115200";
-	};
-
 	reg_usb0_host_vbus: usb0_host_vbus {
 		compatible = "regulator-fixed";
 		regulator-name = "usb0_host_vbus";
@@ -26,11 +22,6 @@
 		pinctrl-0 = <&pinctrl_usb0_host>;
 	};
 
-};
-
-/* UART1 */
-&uart1 {
-        status = "okay";
 };
 
 /* MMC */
@@ -56,7 +47,7 @@
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_esdhc1>;
         bus-width = <4>;
-        status = "okay";
+        status = "disabled";
 };
 
 /* Display */
@@ -74,21 +65,15 @@
 &pwm0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pwm0>;
-	status = "okay";
+	status = "disabled";
 };
 
 
 #include "vf610-phytec-lcd-018.dtsi"
 
-&dcu0 {
-	status = "okay";
-};
-
 &backlight {
         pwms = <&pwm0 0 100000 0>;
-	status = "okay";
 };
-
 
 /* TODO Touch */
 
@@ -114,17 +99,14 @@
         cs-gpios = <&gpio2 9 0>;
         status = "disabled";
 
-/* Set dspi0 status to "okay" and uncomment below to add slave device using
-   spidev driver for chip select 0
         spidev: spidev@0 {
                 #address-cells = <1>;
                 #size-cells = <1>;
                 compatible = "linux,spidev";
                 spi-max-frequency = <16000000>;
                 reg = <0>;
-
+		status = "disabled";
         };
-*/
 };
 
 /* USB */
@@ -144,11 +126,12 @@
 	disable-over-current;
 	vbus-supply = <&reg_usb0_host_vbus>;
 	dr_mode = "host";
-        /* Comment host mode and vbus-supply and uncomment below code to use
-	   usb0 device:
+        /* Comment host mode and vbus-supply and uncomment below code 
+	 * to use usb0 device:
 	dr_mode = "peripheral";
-	*/
-	status = "okay";
+	 */
+
+	status = "disabled";
 };
 
 /* User Buttons */
@@ -165,7 +148,3 @@
                 };
         };
 };
-
-
-
-
