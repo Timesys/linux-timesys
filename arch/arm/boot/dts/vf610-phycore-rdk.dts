@@ -11,14 +11,14 @@
 #include "vf610-pcm-952.dtsi"
 
 / {
-        memory {
-                device_type = "memory";
-                reg = <0x80000000 0x20000000>; /* 512 MB */
-        };
+	memory {
+		device_type = "memory";
+		reg = <0x80000000 0x20000000>; /* 512 MB */
+	};
 
 	chosen {
-                bootargs = "console=ttyLP1,115200";
-        };
+		bootargs = "console=ttyLP1,115200";
+	};
 };
 
 
@@ -29,19 +29,19 @@
 };
 
 &fec1 {
-        status = "okay";
+	status = "okay";
 };
 
-&switch{
-        status = "okay";
+&switch {
+	status = "okay";
 };
 
 &uart1 {
-        status = "okay";
+	status = "okay";
 };
 
 &uart2 {
-        status = "okay";
+	status = "okay";
 };
 
 &i2c2 {
@@ -49,7 +49,7 @@
 };
 
 &i2c_eeprom {
-        status = "okay";
+	status = "okay";
 };
 
 &nfc {
@@ -60,25 +60,26 @@
 		reg = <0x0 0x40000>;
 	};
 
-        partition@1 {
-                label = "u-boot";
-                reg = <0x40000 0x40000>;
-        };
+	partition@1 {
+		label = "u-boot";
+		reg = <0x40000 0x40000>;
+	};
 
-        partition@2 {
-                label = "uImage";
-                reg = <0x80000 0x800000>;
-        };
+	partition@2 {
+		label = "uImage";
+		reg = <0x80000 0x800000>;
+	};
 
-        partition@3 {
-                label = "devicetree";
-                reg = <0x880000 0x20000>;
-        };
+	partition@3 {
+		label = "devicetree";
+		reg = <0x880000 0x20000>;
+	};
 
 	partition@4 {
 		label = "rootfs";
 		reg = <0x8a0000 0x0>;	/* size of zero, will extend to
-				 	 * end of nand flash */
+					 * end of nand flash.
+					 */
 	};
 };
 
@@ -89,7 +90,7 @@
 };
 
 &dcu0 {
-        status = "okay";
+	status = "okay";
 };
 
 &pwm0 {

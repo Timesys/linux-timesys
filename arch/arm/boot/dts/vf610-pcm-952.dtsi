@@ -7,8 +7,8 @@
  */
 
 / {
-        model = "Phytec VF610 PCM-952";
-        compatible = "phytec,vf610-pcm-952", "phytec,vf610-phycore-som", "fsl,vf610";
+	model = "Phytec VF610 PCM-952";
+	compatible = "phytec,vf610-pcm-952", "phytec,vf610-phycore-som", "fsl,vf610";
 
 	reg_usb0_host_vbus: usb0_host_vbus {
 		compatible = "regulator-fixed";
@@ -21,42 +21,41 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb0_host>;
 	};
-
 };
 
 /* MMC */
 &iomuxc {
-        vf610-twr {
-                pinctrl_esdhc1: esdhc1grp {
-                        fsl,pins = <
-                                VF610_PAD_PTA24__ESDHC1_CLK     0x31ef
-                                VF610_PAD_PTA25__ESDHC1_CMD     0x31ef
-                                VF610_PAD_PTA26__ESDHC1_DAT0    0x31ef
-                                VF610_PAD_PTA27__ESDHC1_DAT1    0x31ef
-                                VF610_PAD_PTA28__ESDHC1_DATA2   0x31ef
-                                VF610_PAD_PTA29__ESDHC1_DAT3    0x31ef
+	vf610-phycore {
+		pinctrl_esdhc1: esdhc1grp {
+			fsl,pins = <
+				VF610_PAD_PTA24__ESDHC1_CLK		0x31ef
+				VF610_PAD_PTA25__ESDHC1_CMD 		0x31ef
+				VF610_PAD_PTA26__ESDHC1_DAT0		0x31ef
+				VF610_PAD_PTA27__ESDHC1_DAT1		0x31ef
+				VF610_PAD_PTA28__ESDHC1_DATA2		0x31ef
+				VF610_PAD_PTA29__ESDHC1_DAT3		0x31ef
 
 				/* PTD6 as GPIO for SD card detecting */
-                                VF610_PAD_PTD6__GPIO_85         0x219d
-                        >;
-                };
+				VF610_PAD_PTD6__GPIO_85			0x219d
+			>;
+		};
 	};
 };
 
 &esdhc1 {
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_esdhc1>;
-        bus-width = <4>;
-        status = "disabled";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_esdhc1>;
+	bus-width = <4>;
+	status = "disabled";
 };
 
 /* Display */
 
 &iomuxc {
-        vf610-twr {
-                pinctrl_pwm0: pwm0grp {
-                        fsl,pins = <
-				VF610_PAD_PTB0__FTM0_CH0	0x3182
+	vf610-phycore {
+		pinctrl_pwm0: pwm0grp {
+			fsl,pins = <
+				VF610_PAD_PTB0__FTM0_CH0		0x3182
 			>;
 		};
 	};
@@ -68,11 +67,10 @@
 	status = "disabled";
 };
 
-
 #include "vf610-phytec-lcd-018.dtsi"
 
 &backlight {
-        pwms = <&pwm0 0 100000 0>;
+	pwms = <&pwm0 0 100000 0>;
 };
 
 /* TODO Touch */
@@ -80,56 +78,56 @@
 /* DSPI BUS */
 
 &iomuxc {
-        vf610-twr {
-                pinctrl_dspi0: dspi0grp {
-                        fsl,pins = <
-                                VF610_PAD_PTB19__GPIO_41                0x1182
-                                VF610_PAD_PTB20__DSPI0_SIN              0x1181
-                                VF610_PAD_PTB21__DSPI0_SOUT             0x1182
-                                VF610_PAD_PTB22__DSPI0_SCK              0x1182
-                        >;
-                };
-        };
+	vf610-phycore {
+		pinctrl_dspi0: dspi0grp {
+			fsl,pins = <
+				VF610_PAD_PTB19__GPIO_41		0x1182
+				VF610_PAD_PTB20__DSPI0_SIN		0x1181
+				VF610_PAD_PTB21__DSPI0_SOUT		0x1182
+				VF610_PAD_PTB22__DSPI0_SCK		0x1182
+			>;
+		};
+	};
 };
 
 &dspi0 {
-        bus-num = <0>;
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_dspi0>;
-        cs-gpios = <&gpio2 9 0>;
-        status = "disabled";
+	bus-num = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_dspi0>;
+	cs-gpios = <&gpio2 9 0>;
+	status = "disabled";
 
-        spidev: spidev@0 {
-                #address-cells = <1>;
-                #size-cells = <1>;
-                compatible = "linux,spidev";
-                spi-max-frequency = <16000000>;
-                reg = <0>;
+	spidev: spidev@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "linux,spidev";
+		spi-max-frequency = <16000000>;
+		reg = <0>;
 		status = "disabled";
-        };
+	};
 };
 
 /* USB */
 
 &iomuxc {
-        vf610-twr {
-                pinctrl_usb0_host: usb0_host_grp{
-                        fsl,pins = <
-				VF610_PAD_PTA7__GPIO_134                0x1be
+	vf610-phycore {
+		pinctrl_usb0_host: usb0_host_grp {
+			fsl,pins = <
+				VF610_PAD_PTA7__GPIO_134		0x1be
 				VF610_PAD_PTA17__USB0_VBUS_OC		0x201
-                        >;
-                };
+			>;
+		};
 	};
 };
 
 &usbdev0 {
 	disable-over-current;
+
+	/* Switch dr_mode to "peripheral" and comment out vbus-supply
+	 * to use usb0 as device.
+	 */
 	vbus-supply = <&reg_usb0_host_vbus>;
 	dr_mode = "host";
-        /* Comment host mode and vbus-supply and uncomment below code 
-	 * to use usb0 device:
-	dr_mode = "peripheral";
-	 */
 
 	status = "disabled";
 };
@@ -139,12 +137,12 @@
 &iomuxc {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_userbuttons>;
-        vf610-twr {
+	vf610-phycore {
 		pinctrl_userbuttons: userbuttonsgrp {
-                        fsl,pins = <
+			fsl,pins = <
 				VF610_PAD_PTB8__GPIO_30			0x219d
 				VF610_PAD_PTB9__GPIO_31			0x219d
-                        >;
-                };
-        };
+			>;
+		};
+	};
 };

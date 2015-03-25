@@ -12,87 +12,88 @@
 	compatible = "phytec,vf610-phycore-som", "fsl,vf610";
 
 	clocks {
-                enet_ext {
-                        compatible = "fixed-clock";
-                        clock-frequency = <50000000>;
-                };
-        };
+		enet_ext {
+			compatible = "fixed-clock";
+			clock-frequency = <50000000>;
+		};
+	};
 
 	/* Power */
 	regulators {
-                compatible = "simple-bus";
-                #address-cells = <1>;
-                #size-cells = <0>;
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
 
-                reg_3p3v: regulator@0 {
-                        compatible = "regulator-fixed";
-                        reg = <0>;
-                        regulator-name = "3P3V";
-                        regulator-min-microvolt = <3300000>;
-                        regulator-max-microvolt = <3300000>;
-                        regulator-always-on;
-                };
+		reg_3p3v: regulator@0 {
+			compatible = "regulator-fixed";
+			reg = <0>;
+			regulator-name = "3P3V";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+		};
        };
 };
 
 /* Ethernet */
+
 &iomuxc {
-        vf610-twr {
+	vf610-phycore {
 		pinctrl_fec0: fec0grp {
-                        fsl,pins = <
-                                VF610_PAD_PTA6__RMII_CLKIN              0x30d1
-                                VF610_PAD_PTC0__ENET_RMII0_MDC          0x30d3
-                                VF610_PAD_PTC1__ENET_RMII0_MDIO         0x30d1
-                                VF610_PAD_PTC2__ENET_RMII0_CRS          0x30d1
-                                VF610_PAD_PTC3__ENET_RMII0_RXD1         0x30d1
-                                VF610_PAD_PTC4__ENET_RMII0_RXD0         0x30d1
-                                VF610_PAD_PTC5__ENET_RMII0_RXER         0x30d1
-                                VF610_PAD_PTC6__ENET_RMII0_TXD1         0x30d2
-                                VF610_PAD_PTC7__ENET_RMII0_TXD0         0x30d2
-                                VF610_PAD_PTC8__ENET_RMII0_TXEN         0x30d2
-                        >;
+			fsl,pins = <
+				VF610_PAD_PTA6__RMII_CLKIN		0x30d1
+				VF610_PAD_PTC0__ENET_RMII0_MDC		0x30d3
+				VF610_PAD_PTC1__ENET_RMII0_MDIO		0x30d1
+				VF610_PAD_PTC2__ENET_RMII0_CRS		0x30d1
+				VF610_PAD_PTC3__ENET_RMII0_RXD1		0x30d1
+				VF610_PAD_PTC4__ENET_RMII0_RXD0		0x30d1
+				VF610_PAD_PTC5__ENET_RMII0_RXER		0x30d1
+				VF610_PAD_PTC6__ENET_RMII0_TXD1		0x30d2
+				VF610_PAD_PTC7__ENET_RMII0_TXD0		0x30d2
+				VF610_PAD_PTC8__ENET_RMII0_TXEN		0x30d2
+			>;
 		};
-                pinctrl_fec1: fec1grp {
-                        fsl,pins = <
-                                VF610_PAD_PTC9__ENET_RMII1_MDC          0x30d2
-                                VF610_PAD_PTC10__ENET_RMII1_MDIO        0x30d3
-                                VF610_PAD_PTC11__ENET_RMII1_CRS         0x30d1
-                                VF610_PAD_PTC12__ENET_RMII_RXD1         0x30d1
-                                VF610_PAD_PTC13__ENET_RMII1_RXD0        0x30d1
-                                VF610_PAD_PTC14__ENET_RMII1_RXER        0x30d1
-                                VF610_PAD_PTC15__ENET_RMII1_TXD1        0x30d2
-                                VF610_PAD_PTC16__ENET_RMII1_TXD0        0x30d2
-                                VF610_PAD_PTC17__ENET_RMII1_TXEN        0x30d2
-                        >;
-                };
+		pinctrl_fec1: fec1grp {
+			fsl,pins = <
+				VF610_PAD_PTC9__ENET_RMII1_MDC		0x30d2
+				VF610_PAD_PTC10__ENET_RMII1_MDIO	0x30d3
+				VF610_PAD_PTC11__ENET_RMII1_CRS		0x30d1
+				VF610_PAD_PTC12__ENET_RMII_RXD1		0x30d1
+				VF610_PAD_PTC13__ENET_RMII1_RXD0	0x30d1
+				VF610_PAD_PTC14__ENET_RMII1_RXER	0x30d1
+				VF610_PAD_PTC15__ENET_RMII1_TXD1	0x30d2
+				VF610_PAD_PTC16__ENET_RMII1_TXD0	0x30d2
+				VF610_PAD_PTC17__ENET_RMII1_TXEN	0x30d2
+			>;
+		};
 	};
 };
 
 &fec0 {
-        phy-mode = "rmii";
-        pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_fec0>;
-        status = "disabled";
+	phy-mode = "rmii";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_fec0>;
+	status = "disabled";
 };
 
 &fec1 {
-        phy-mode = "rmii";
+	phy-mode = "rmii";
 	pinctrl-names = "default";
-        pinctrl-0 = <&pinctrl_fec1>;
+	pinctrl-0 = <&pinctrl_fec1>;
 	micrel-phy-50mhz-clk;
-        status = "disabled";
+	status = "disabled";
 };
 
 /* I2C Bus */
 
 &iomuxc {
-        vf610-twr {
-                pinctrl_i2c2: i2c2grp {
-                        fsl,pins = <
-                                VF610_PAD_PTA22__I2C2_SCL               0x34d3
-                                VF610_PAD_PTA23__I2C2_SDA               0x34d3
-                        >;
-                };
+	vf610-phycore {
+		pinctrl_i2c2: i2c2grp {
+			fsl,pins = <
+				VF610_PAD_PTA22__I2C2_SCL		0x34d3
+				VF610_PAD_PTA23__I2C2_SDA		0x34d3
+			>;
+		};
 	};
 };
 
@@ -123,36 +124,37 @@
 		pagesize = <32>;
 		reg = <0x50>;
 		status = "disabled";
-        };
+	};
 };
 
 /* NAND Memory */
+
 &iomuxc {
-        vf610-twr {
+	vf610-phycore {
 		pinctrl_nfc_1: nfcgrp_1 {
 			fsl,pins = <
-                                VF610_PAD_PTD31__NF_IO15        0x28df
-                                VF610_PAD_PTD30__NF_IO14        0x28df
-                                VF610_PAD_PTD29__NF_IO13        0x28df
-                                VF610_PAD_PTD28__NF_IO12        0x28df
-                                VF610_PAD_PTD27__NF_IO11        0x28df
-                                VF610_PAD_PTD26__NF_IO10        0x28df
-                                VF610_PAD_PTD25__NF_IO9         0x28df
-                                VF610_PAD_PTD24__NF_IO8         0x28df
-                                VF610_PAD_PTD23__NF_IO7         0x28df
-                                VF610_PAD_PTD22__NF_IO6         0x28df
-                                VF610_PAD_PTD21__NF_IO5         0x28df
-                                VF610_PAD_PTD20__NF_IO4         0x28df
-                                VF610_PAD_PTD19__NF_IO3         0x28df
-                                VF610_PAD_PTD18__NF_IO2         0x28df
-                                VF610_PAD_PTD17__NF_IO1         0x28df
-                                VF610_PAD_PTD16__NF_IO0         0x28df
-                                VF610_PAD_PTB24__NF_WE_B        0x28c2
-                                VF610_PAD_PTB25__NF_CE0_B       0x28c2
-                                VF610_PAD_PTB27__NF_RE_B        0x28c2
-                                VF610_PAD_PTC26__NF_RB_B        0x283d
-                                VF610_PAD_PTC27__NF_ALE         0x28c2
-                                VF610_PAD_PTC28__NF_CLE         0x28c2
+				VF610_PAD_PTD31__NF_IO15		0x28df
+				VF610_PAD_PTD30__NF_IO14		0x28df
+				VF610_PAD_PTD29__NF_IO13		0x28df
+				VF610_PAD_PTD28__NF_IO12		0x28df
+				VF610_PAD_PTD27__NF_IO11		0x28df
+				VF610_PAD_PTD26__NF_IO10		0x28df
+				VF610_PAD_PTD25__NF_IO9			0x28df
+				VF610_PAD_PTD24__NF_IO8			0x28df
+				VF610_PAD_PTD23__NF_IO7			0x28df
+				VF610_PAD_PTD22__NF_IO6			0x28df
+				VF610_PAD_PTD21__NF_IO5			0x28df
+				VF610_PAD_PTD20__NF_IO4			0x28df
+				VF610_PAD_PTD19__NF_IO3			0x28df
+				VF610_PAD_PTD18__NF_IO2			0x28df
+				VF610_PAD_PTD17__NF_IO1			0x28df
+				VF610_PAD_PTD16__NF_IO0			0x28df
+				VF610_PAD_PTB24__NF_WE_B		0x28c2
+				VF610_PAD_PTB25__NF_CE0_B		0x28c2
+				VF610_PAD_PTB27__NF_RE_B		0x28c2
+				VF610_PAD_PTC26__NF_RB_B		0x283d
+				VF610_PAD_PTC27__NF_ALE			0x28c2
+				VF610_PAD_PTC28__NF_CLE			0x28c2
 			>;
 		};
 	};
@@ -176,13 +178,13 @@
 /* UARTs */
 
 &iomuxc {
-        vf610-twr {
-                pinctrl_uart1: uart1grp {
-                        fsl,pins = <
-                                VF610_PAD_PTB4__UART1_TX                0x21a2
-                                VF610_PAD_PTB5__UART1_RX                0x21a1
-                        >;
-                };
+	vf610-phycore {
+		pinctrl_uart1: uart1grp {
+			fsl,pins = <
+				VF610_PAD_PTB4__UART1_TX		0x21a2
+				VF610_PAD_PTB5__UART1_RX		0x21a1
+			>;
+		};
 		pinctrl_uart2: uart2grp {
 			fsl,pins = <
 				VF610_PAD_PTB6__UART2_TX		0x21a2
@@ -201,10 +203,5 @@
 &uart2 {
         pinctrl-names = "default";
         pinctrl-0 = <&pinctrl_uart2>;
-        status = "disabled";
-};
-	
-/* TODO SPI Busses */
-&qspi0 {
         status = "disabled";
 };
