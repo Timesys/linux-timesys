@@ -162,9 +162,22 @@ static int ksz8021_config_init(struct phy_device *phydev)
 	return rc < 0 ? rc : 0;
 }
 
+static void ks8051_load_values_from_of(struct phy_device *phydev)
+{
+	struct device *dev = &phydev->dev;
+	struct device_node *of_node = dev->of_node;
+
+	if (!of_node && dev->parent->of_node)
+		of_node = dev->parent->of_node;
+	if (of_node && of_property_read_bool(of_node, "micrel-phy-50mhz-clk"))
+		phydev->dev_flags |= MICREL_PHY_50MHZ_CLK;
+}
+
 static int ks8051_config_init(struct phy_device *phydev)
 {
 	int rc;
+
+	ks8051_load_values_from_of(phydev);
 
 	rc = ksz_config_flags(phydev);
 	return rc < 0 ? rc : 0;
@@ -297,7 +310,7 @@ static struct phy_driver ksphy_driver[] = {
 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause |
 			   SUPPORTED_Asym_Pause),
 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
-	.config_init	= ksz8021_config_init,
+	.config_init	= ks8051_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
 	.ack_interrupt	= kszphy_ack_interrupt,
@@ -385,7 +398,7 @@ static struct phy_driver ksphy_driver[] = {
 	.phy_id_mask	= 0x00fffff0,
 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause),
 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
-	.config_init	= kszphy_config_init,
+	.config_init	= ks8051_config_init,
 	.config_aneg	= genphy_config_aneg,
 	.read_status	= genphy_read_status,
 	.ack_interrupt	= kszphy_ack_interrupt,
