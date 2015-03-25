@@ -51,6 +51,19 @@
                                 VF610_PAD_PTC7__ENET_RMII0_TXD0         0x30d2
                                 VF610_PAD_PTC8__ENET_RMII0_TXEN         0x30d2
                         >;
+		};
+                pinctrl_fec1: fec1grp {
+                        fsl,pins = <
+                                VF610_PAD_PTC9__ENET_RMII1_MDC          0x30d2
+                                VF610_PAD_PTC10__ENET_RMII1_MDIO        0x30d3
+                                VF610_PAD_PTC11__ENET_RMII1_CRS         0x30d1
+                                VF610_PAD_PTC12__ENET_RMII_RXD1         0x30d1
+                                VF610_PAD_PTC13__ENET_RMII1_RXD0        0x30d1
+                                VF610_PAD_PTC14__ENET_RMII1_RXER        0x30d1
+                                VF610_PAD_PTC15__ENET_RMII1_TXD1        0x30d2
+                                VF610_PAD_PTC16__ENET_RMII1_TXD0        0x30d2
+                                VF610_PAD_PTC17__ENET_RMII1_TXEN        0x30d2
+                        >;
                 };
 	};
 };
@@ -62,8 +75,11 @@
         status = "disabled";
 };
 
-/* TODO fec1 */
 &fec1 {
+        phy-mode = "rmii";
+	pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_fec1>;
+	micrel-phy-50mhz-clk;
         status = "disabled";
 };
 

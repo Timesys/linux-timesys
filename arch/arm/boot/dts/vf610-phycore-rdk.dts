@@ -29,7 +29,11 @@
 };
 
 &fec1 {
-        status = "disabled";
+        status = "okay";
+};
+
+&switch{
+        status = "okay";
 };
 
 &uart1 {
