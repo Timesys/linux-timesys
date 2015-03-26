@@ -105,6 +105,10 @@
 	status = "okay";
 };
 
+&gpio_keys {
+	status = "okay";
+};
+
 &dspi0 {
 	status = "disabled";
 };

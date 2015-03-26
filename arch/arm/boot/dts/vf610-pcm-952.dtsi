@@ -21,6 +21,24 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_usb0_host>;
 	};
+
+	gpio_keys: gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_userbuttons>;
+		status = "disabled";
+
+		userbtn_1 {
+			label = "User Button 1";
+			gpios = <&gpio1 30 0>;
+			linux,code = <0x100>; /* BTN_MISC */
+		};
+		userbtn_2 {
+			label = "User Button 2";
+			gpios = <&gpio1 31 0>;
+			linux,code = <0x100>; /* BTN_MISC */
+		};
+	};
 };
 
 /* MMC */
@@ -135,8 +153,6 @@
 /* User Buttons */
 
 &iomuxc {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_userbuttons>;
 	vf610-phycore {
 		pinctrl_userbuttons: userbuttonsgrp {
 			fsl,pins = <
