@@ -162,3 +162,8 @@
 		};
 	};
 };
+
+&clks {
+	/* UART2 clock is not enabled unless below property is present */
+	vf610-uart2;
+};
