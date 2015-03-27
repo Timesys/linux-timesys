@@ -212,6 +212,9 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
 	clk[VF610_CLK_UART1] = imx_clk_gate2_cgr("uart1", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(8), 0x2);
 	// Tony Felice: Removed UART2 clk assignment for compatibility with MQX, as
 	//              MQX initializes UART2 and uses this as its debug console.
+	if (of_property_read_bool(np, "vf610-uart2"))
+		clk[VF610_CLK_UART2] = imx_clk_gate2_cgr("uart2", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(9), 0x2);
+
 	clk[VF610_CLK_UART3] = imx_clk_gate2_cgr("uart3", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(10), 0x2);
 
 	clk[VF610_CLK_I2C0] = imx_clk_gate("i2c0", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(6));
