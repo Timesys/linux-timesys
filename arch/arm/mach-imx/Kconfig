@@ -75,6 +75,10 @@ config HAVE_IMX_SRC
 	def_bool y if SMP
 	select ARCH_HAS_RESET_CONTROLLER
 
+config HAVE_IMX_MCC
+	select IMX_SEMA4
+	bool
+
 config HAVE_IMX_AMP
 	bool
 
@@ -838,6 +842,7 @@ config SOC_VF610
 	select PINCTRL_VF610
 	select HAVE_IMX_GPC
 	select HAVE_IMX_SRC
+	select HAVE_IMX_MCC
 	select HAVE_IMX_AMP
 	select PL310_ERRATA_588369 if CACHE_PL310
 	select PL310_ERRATA_727915 if CACHE_PL310
