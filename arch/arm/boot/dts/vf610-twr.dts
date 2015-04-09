@@ -595,3 +595,11 @@
 	/* DSPI0 clock is not enabled unless below property is present */
 	vf610-dspi0;
 };
+
+&mcctest{
+	status = "okay";
+};
+
+&mcctty{
+	status = "okay";
+};
