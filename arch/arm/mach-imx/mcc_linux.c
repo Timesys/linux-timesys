@@ -17,10 +17,16 @@
 #include <linux/wait.h>
 #include <linux/imx_sema4.h>
 #include "mcc_config.h"
+
+#ifdef CONFIG_SOC_VF610
+#include <linux/mcc_vf610.h>
+#else
 #include <linux/mcc_imx6sx.h>
+#endif
 
 /* Global variables */
 static unsigned long mcc_shm_offset;
+struct imx_sema4_mutex *mcc_shm_ptr;
 
 MCC_BOOKEEPING_STRUCT *bookeeping_data;
 
@@ -114,9 +120,31 @@ int mcc_release_semaphore(void)
 int mcc_register_cpu_to_cpu_isr(void)
 {
 	/*
-	 * CPU to CPU ISR had been registered in MU driver.
+	 * For imx6sx, CPU to CPU ISR had been registered in MU driver.
 	 * return success directly.
 	 */
+#ifdef CONFIG_SOC_VF610
+	int count;
+	mscm_base = ioremap(VF610_MSCM_BASE_ADDR, 0x824);
+
+	for(count=0; count < VF610_MAX_CPU_TO_CPU_INTERRUPTS; count++)
+        {
+                if (request_irq(VF610_INT_CPU_INT0 + count, cpu_to_cpu_irq_handler, 0, "mcc", mscm_base) != 0)
+                {
+                        printk(KERN_ERR "Failed to register MVF CPU TO CPU interrupt:%d\n",count);
+
+                        // @todofree the shared mem
+
+//                        mcc_deinitialize_shared_mem();
+
+                        return -EIO;
+                }
+        }
+
+#endif
+
+
+
 	return MCC_SUCCESS;
 }
 
