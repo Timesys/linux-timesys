@@ -53,7 +53,10 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/platform_data/i2c-imx.h>
+
+#ifdef CONFIG_HAVE_IMX_MCC
 #include <linux/mvf_sema4.h>
+#endif
 
 /** Defines ********************************************************************
 *******************************************************************************/
@@ -160,7 +163,7 @@ static struct imx_i2c_clk_pair vf610_i2c_clk_div[] = {
 	{ 3840, 0x3F }, { 4096, 0x7B }, { 5120, 0x7D }, { 6144, 0x7E },
 };
 
-#ifdef CONFIG_SOC_VF610
+#ifdef CONFIG_HAVE_IMX_MCC
 static MVF_SEMA4* sema4;
 static int i2c_sema4_assigned = 0;
 #endif
@@ -533,7 +536,7 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
 
 	dev_dbg(&i2c_imx->adapter.dev, "<%s>\n", __func__);
 
-#ifdef CONFIG_SOC_VF610
+#ifdef CONFIG_HAVE_IMX_MCC
 	result = mvf_sema4_lock(sema4, 10000000, true);
 	if(result)
 		return result;
@@ -587,7 +590,7 @@ fail0:
 	/* Stop I2C transfer */
 	i2c_imx_stop(i2c_imx);
 
-#ifdef CONFIG_SOC_VF610
+#ifdef CONFIG_HAVE_IMX_MCC
 	mvf_sema4_unlock(sema4);
 #endif
 
@@ -703,7 +706,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, i2c_imx);
 	clk_disable_unprepare(i2c_imx->clk);
 
-#ifdef CONFIG_SOC_VF610
+#ifdef CONFIG_HAVE_IMX_MCC
 	/* Make sure sema4 is not in use by MQX concurrently */
 	if(!i2c_sema4_assigned)
 	{
@@ -711,7 +714,6 @@ static int i2c_imx_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "could not assign MQX semaphore %d\n", MVF_I2C_SEMAPHORE_NUMBER);
 			return ret;
 		}
-		/* Mark the semaphore as assigned */
 		i2c_sema4_assigned = 1;
 	}
 #endif
