@@ -115,6 +115,13 @@
 					<&clks VF610_CLK_DMAMUX1>;
 			};
 
+			sema4: sema4@4001D000 { /* sema4 */
+				compatible = "fsl,imx6sx-sema4";
+				reg = <0x4001D000 0x1000>;
+				interrupts = <0 36 IRQ_TYPE_LEVEL_HIGH>;
+				status = "okay";
+			};
+
 			can0: flexcan@40020000 {
 				compatible = "fsl,vf610-flexcan";
 				reg = <0x40020000 0x4000>;
