@@ -16,6 +16,9 @@
  */
 #define MCC_VECTOR_NUMBER_INVALID     (0)
 
+/* base address of shared memory */
+#define MCC_BASE_ADDRESS               (0xBFF00000)
+
 enum {
 	INT_CPU_TO_CPU_MU_A2M = 122,
 	INT_CPU_TO_CPU_MU_M2A = 90,

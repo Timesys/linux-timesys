@@ -23,7 +23,12 @@
 #include <linux/mcc_common.h>
 #include <linux/mcc_api.h>
 #include <linux/mcc_linux.h>
+
+#ifdef CONFIG_SOC_VF610
+#include <linux/mcc_vf610.h>
+#else
 #include <linux/mcc_imx6sx.h>
+#endif /* CONFIG_SOC_VF610 */
 
 enum {
 	MCC_NODE_A9 = 0,

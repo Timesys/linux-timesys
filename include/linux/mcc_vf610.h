@@ -20,6 +20,9 @@
 
 #include <linux/interrupt.h>
 
+/* base address of shared memory */
+#define MCC_BASE_ADDRESS               (0x3F040000)
+
 #define MCC_VECTOR_NUMBER_INVALID     (0)
 #define VF610_A5_CORE_NUMBER (0)
 #define VF610_M4_CORE_NUMBER (1)
