@@ -29,12 +29,21 @@ enum {
 	SEMA4_CP1NTF	= 0x88,
 };
 
+#ifdef CONFIG_SOC_VF610
+static const unsigned int idx_sema4[16] = {
+	1 << 3, 1 << 2, 1 << 1, 1 << 0,
+	1 << 7, 1 << 6, 1 << 5, 1 << 4,
+	1 << 11, 1 << 10, 1 << 9, 1 << 8,
+	1 << 15, 1 << 14, 1 << 13, 1 << 12,
+};
+#else
 static const unsigned int idx_sema4[16] = {
 	1 << 7, 1 << 6, 1 << 5, 1 << 4,
 	1 << 3, 1 << 2, 1 << 1, 1 << 0,
 	1 << 15, 1 << 14, 1 << 13, 1 << 12,
 	1 << 11, 1 << 10, 1 << 9, 1 << 8,
 };
+#endif /* CONFIG_SOC_VF610 */
 
 struct imx_sema4_mutex {
 	unsigned int		valid;
