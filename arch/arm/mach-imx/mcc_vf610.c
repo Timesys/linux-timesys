@@ -149,8 +149,7 @@ int mcc_wait_for_buffer_queued(MCC_ENDPOINT *endpoint, unsigned int timeout)
  */
 int mcc_triger_cpu_to_cpu_interrupt(void)
 {
-	writel_relaxed(VF610_M4_CORE_NUMBER << VF610_MSCM_IRCPGIR_CPUTL_SHIFT,
-		mscm_base + VF610_MSCM_IRCPGIR);
+	VF610_MSCM_WRITE(MCC_INTERRUPT(VF610_M4_CORE_NUMBER), VF610_MSCM_IRCPGIR);
 
 	return MCC_SUCCESS;
 }
