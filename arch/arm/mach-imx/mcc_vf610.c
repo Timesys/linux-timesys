@@ -208,7 +208,7 @@ irqreturn_t cpu_to_cpu_irq_handler(int irq, void *dev_id)
 	mcc_get_semaphore_isr();
 	ret = mcc_dequeue_signal(MCC_CORE_NUMBER, &signal);
 
-	while(ret)
+	while(ret == MCC_SUCCESS)
 	{
 		if(signal.type == BUFFER_FREED)
 		{
