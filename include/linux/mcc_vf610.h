@@ -40,7 +40,7 @@
 #define MCC_INTERRUPT(n) ((n == 0 ? 1 : 2) << VF610_MSCM_IRCPGIR_CPUTL_SHIFT)
 
 
-static __iomem void *mscm_base;
+extern __iomem void *mscm_base;
 
 /* Return core num. A5 0, M4 1 */
 unsigned int _psp_core_num(void);

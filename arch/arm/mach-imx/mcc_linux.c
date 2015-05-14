@@ -27,6 +27,7 @@
 /* Global variables */
 static unsigned long mcc_shm_offset;
 struct imx_sema4_mutex *mcc_shm_ptr;
+__iomem void *mscm_base;
 
 MCC_BOOKEEPING_STRUCT *bookeeping_data;
 
@@ -120,31 +121,34 @@ int mcc_release_semaphore(void)
 int mcc_register_cpu_to_cpu_isr(void)
 {
 	/*
-	 * For imx6sx, CPU to CPU ISR had been registered in MU driver.
-	 * return success directly.
+	 * For Vybrid platform, intialize ISR - there is no MU device available.
 	 */
 #ifdef CONFIG_SOC_VF610
 	int count;
 	mscm_base = ioremap(VF610_MSCM_BASE_ADDR, 0x824);
 
+	if(! mscm_base)
+	{
+		pr_err("MSCM memory space not mapped successfully. Aborting.\n");
+		return -ENOMEM;
+	}
+
 	for(count=0; count < VF610_MAX_CPU_TO_CPU_INTERRUPTS; count++)
         {
                 if (request_irq(VF610_INT_CPU_INT0 + count, cpu_to_cpu_irq_handler, 0, "mcc", mscm_base) != 0)
                 {
-                        printk(KERN_ERR "Failed to register MVF CPU TO CPU interrupt:%d\n",count);
+                        pr_err("Failed to register VF610 CPU TO CPU interrupt:%d\n",count);
 
-                        // @todofree the shared mem
-
-//                        mcc_deinitialize_shared_mem();
-
+                        iounmap(mscm_base);
                         return -EIO;
                 }
         }
-
 #endif
 
-
-
+	/*
+	 * For imx6sx, CPU to CPU ISR had been registered in MU driver.
+	 * return success directly.
+	 */
 	return MCC_SUCCESS;
 }
 
