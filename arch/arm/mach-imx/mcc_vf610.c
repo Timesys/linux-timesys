@@ -205,7 +205,7 @@ irqreturn_t cpu_to_cpu_irq_handler(int irq, void *dev_id)
 		printk("==============\n");
 	}
 
-	mcc_get_semaphore();
+	mcc_get_semaphore_isr();
 	ret = mcc_dequeue_signal(MCC_CORE_NUMBER, &signal);
 
 	while(ret)
@@ -243,7 +243,7 @@ irqreturn_t cpu_to_cpu_irq_handler(int irq, void *dev_id)
 	//Clear the interrupt status
 	VF610_MSCM_WRITE((VF610_MSCM_IRCPnIR_INT0_MASK<<interrupt_id), VF610_MSCM_IRCPnIR);
 
-	mcc_release_semaphore();
+	mcc_release_semaphore_isr();
 
 	return IRQ_HANDLED;
 }
