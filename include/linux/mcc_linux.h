@@ -40,7 +40,9 @@ void * mcc_phys_to_virt(void *);
 int mcc_init_semaphore(unsigned int);
 int mcc_deinit_semaphore(unsigned int);
 int mcc_get_semaphore(void);
+int mcc_get_semaphore_isr(void);
 int mcc_release_semaphore(void);
+int mcc_release_semaphore_isr(void);
 
 /* CPU-to-CPU interrupt-related functions */
 int mcc_register_cpu_to_cpu_isr(void);

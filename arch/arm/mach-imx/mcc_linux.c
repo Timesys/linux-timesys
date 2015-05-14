@@ -90,6 +90,21 @@ int mcc_get_semaphore(void)
 }
 
 /*!
+ * \brief This function locks the specified core mutex for an ISR.
+ *
+ * Calls core-mutex driver to lock the core mutex.
+ * Does not disable/enable interrupts, so it can be used from an ISR.
+ *
+ */
+int mcc_get_semaphore_isr(void)
+{
+	if (0 == imx_sema4_mutex_lock(mcc_shm_ptr))
+                return MCC_SUCCESS;
+
+	return MCC_ERR_SEMAPHORE;
+}
+
+/*!
  * \brief This function unlocks the specified core mutex.
  *
  * Calls core-mutex driver to unlock the core mutex.
@@ -107,6 +122,21 @@ int mcc_release_semaphore(void)
 			imx_mcc_bsp_int_enable();
 			return MCC_SUCCESS;
 	}
+
+	return MCC_ERR_SEMAPHORE;
+}
+
+/*!
+ * \brief This function unlocks the specified core mutex for an ISR.
+ *
+ * Calls core-mutex driver to unlock the core mutex.
+ * Does not enable interrupts.
+ *
+ */
+int mcc_release_semaphore_isr(void)
+{
+	if (0 == imx_sema4_mutex_unlock(mcc_shm_ptr))
+		return MCC_SUCCESS;
 
 	return MCC_ERR_SEMAPHORE;
 }
