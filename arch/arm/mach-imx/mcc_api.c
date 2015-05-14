@@ -22,7 +22,13 @@
 #include "mcc_mqx.h"
 #elif (MCC_OS_USED == MCC_LINUX)
 #include <linux/mcc_api.h>
+
+#ifdef CONFIG_SOC_VF610
+#include <linux/mcc_vf610.h>
+#else
 #include <linux/mcc_imx6sx.h>
+#endif /* CONFIG_SOC_VF610 */
+
 #include <linux/mcc_linux.h>
 #include <linux/imx_sema4.h>
 #endif
