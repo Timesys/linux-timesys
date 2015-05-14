@@ -25,6 +25,13 @@
 #include <linux/mcc_config_linux.h>
 #include <linux/mcc_common.h>
 #include <linux/mcc_api.h>
+#include <linux/io.h>
+#include <linux/uaccess.h>
+
+#define MAX_LOAD_SIZE (256*1024)
+#define MCC_SET_MODE_LOAD_MQX_IMAGE                                     _IOW('M', 8, struct mqx_boot_info_struct)
+#define MCC_BOOT_MQX_IMAGE                                              _IO('M', 9)
+typedef unsigned int MCC_READ_MODE;
 
 /**
  * struct mcctty_port - Wrapper struct for imx mcc tty port.
@@ -46,11 +53,17 @@ enum {
 	MCC_M4_PORT = 2,
 };
 
+typedef enum write_mode_enum {MODE_IMAGE_LOAD, MODE_MCC} WRITE_MODE;
+char *virt_load_addr;
+struct file *myfile;
+WRITE_MODE write_mode;
+int offset = 0;
+
 /* mcc tty/pingpong demo */
 static MCC_ENDPOINT mcc_endpoint_a9_pingpong = {0, MCC_NODE_A9, MCC_A9_PORT};
 static MCC_ENDPOINT mcc_endpoint_m4_pingpong = {1, MCC_NODE_M4, MCC_M4_PORT};
 struct mcc_tty_msg {
-	char data[MCC_ATTR_BUFFER_SIZE_IN_BYTES - 24];
+	int data;
 };
 
 static struct tty_port_operations  mcctty_port_ops = { };
@@ -70,7 +83,21 @@ static void mcctty_close(struct tty_struct *tty, struct file *filp)
 	return tty_port_close(tty->port, tty, filp);
 }
 
-static int mcctty_write(struct tty_struct *tty, const unsigned char *buf,
+static int mcctty_put_char(struct tty_struct *tty, unsigned char ch)
+{
+	if(write_mode == MODE_IMAGE_LOAD)
+        {
+                if( !(offset % 1024) )
+			// Print progress report every 1024 bytes.
+			printk("Wrote 1024 bytes to %08x, offset=%d\n",virt_load_addr, offset);
+                writeb(ch, virt_load_addr + offset);
+                offset += 1;
+                return 1;
+        }
+	printk("mcctty_put_char (for MQX image load): should not be here!\n");
+	return -1;
+}
+static int mcctty_write(struct tty_struct *tty, const unsigned char __user *buf,
 			 int total)
 {
 	int i, count, ret = 0, space;
@@ -79,18 +106,21 @@ static int mcctty_write(struct tty_struct *tty, const unsigned char *buf,
 	struct mcc_tty_msg tty_msg;
 	struct mcctty_port *cport = &mcc_tty_port;
 
+	if(write_mode == MODE_IMAGE_LOAD)
+        {
+		// The MQX image is being written to the serial device. Write this to shmem.
+		return mcctty_put_char(tty, buf[0]);
+	}
+
 	if (NULL == buf) {
 		pr_err("buf shouldn't be null.\n");
 		return -ENOMEM;
 	}
-
+	printk("buf = %s\n, strlen(buf)=%d", buf, strlen(buf));
 	count = total;
 	tmp = (unsigned char *)buf;
-	for (i = 0; i <= count / 999; i++) {
-		strlcpy(tty_msg.data, tmp, count >= 1000 ? 1000 : count + 1);
-		if (count >= 1000)
-			count -= 999;
-
+	for (i = 0; i <= strlen(buf); i++) {
+		tty_msg.data = i;
 		/*
 		 * wait until the remote endpoint is created by
 		 * the other core
@@ -99,7 +129,6 @@ static int mcctty_write(struct tty_struct *tty, const unsigned char *buf,
 				&mcc_endpoint_m4_pingpong, &tty_msg,
 				sizeof(struct mcc_tty_msg),
 				0xffffffff);
-
 		while (MCC_ERR_ENDPOINT == ret) {
 			pr_err("\n send err ret %d, re-send\n", ret);
 			ret = mcc_send(&mcc_endpoint_a9_pingpong,
@@ -113,12 +142,11 @@ static int mcctty_write(struct tty_struct *tty, const unsigned char *buf,
 				&mcc_endpoint_a9_pingpong, &tty_msg,
 				sizeof(struct mcc_tty_msg),
 				&num_of_received_bytes, 0xffffffff);
-
 		if (MCC_SUCCESS != ret) {
 			pr_err("A9 Main task receive error: %d\n", ret);
 		} else {
 			/* flush the recv-ed data to tty node */
-			spin_lock_bh(&cport->rx_lock);
+/*			spin_lock_bh(&cport->rx_lock);
 			space = tty_prepare_flip_string(&cport->port, &cbuf,
 							strlen(tty_msg.data));
 			if (space <= 0)
@@ -127,6 +155,9 @@ static int mcctty_write(struct tty_struct *tty, const unsigned char *buf,
 			memcpy(cbuf, &tty_msg.data, strlen(tty_msg.data));
 			tty_flip_buffer_push(&cport->port);
 			spin_unlock_bh(&cport->rx_lock);
+*/
+		printk("mcc_tty: successfully received! data = %d\n", tty_msg.data);
+
 		}
 	}
 	return total;
@@ -138,12 +169,72 @@ static int mcctty_write_room(struct tty_struct *tty)
 	return MCC_ATTR_BUFFER_SIZE_IN_BYTES;
 }
 
+struct mqx_boot_info_struct {
+        unsigned int phys_load_addr;
+        unsigned int phys_start_addr;
+};
+
+static long mcc_ioctl(struct file *f, unsigned cmd, unsigned long arg)
+{
+	void __user *buf = (void __user *)arg;
+        void * src_gpr2, * ccm_ccowr;
+
+	switch(cmd)
+	{
+		case MCC_SET_MODE_LOAD_MQX_IMAGE:
+			if (request_mem_region(0x3f000000, MAX_LOAD_SIZE, "mqx_boot"))
+			{
+				virt_load_addr = ioremap_nocache(0x3f000000, MAX_LOAD_SIZE);
+				if (!virt_load_addr)
+				{
+					printk(KERN_ERR "unable to map region\n");
+					release_mem_region(0x3f000000, MAX_LOAD_SIZE);
+					return -ENOMEM;
+				}
+			}
+			else
+			{
+				printk(KERN_ERR "unable to reserve image load memory region\n");
+				return -ENOMEM;
+			}
+
+			write_mode = MODE_IMAGE_LOAD;
+			return MCC_SUCCESS;
+
+		case  MCC_BOOT_MQX_IMAGE:
+			write_mode = MODE_MCC;
+			src_gpr2 = ioremap(0x4006E028, 4);
+			ccm_ccowr = ioremap(0x4006B08C, 4);
+
+			printk("Booting mqx image, size of %d bytes\n", offset);
+
+			if( !src_gpr2 || !ccm_ccowr )
+			{
+				printk(KERN_ERR "unable to map src_gpr2 or ccm_ccowr to start m4 clock, aborting.\n");
+				return -ENOMEM;
+			}
+
+			//0x4006E028 - GPR2 Register write Image Entry Point as per the Memory Map File of the Binary
+			writel(0x3f000485, src_gpr2);
+
+			// 0x4006B08C - CCM_CCOWR Register - Set bit 16 - AUX_CORE_WKUP to enable M4 clock.
+			writel(0x15a5a, ccm_ccowr);
+
+			iounmap(src_gpr2);
+			iounmap(ccm_ccowr);
+
+			return MCC_SUCCESS;
+	}
+	return -1;
+}
+
 static const struct tty_operations imxmcctty_ops = {
 	.install		= mcctty_install,
 	.open			= mcctty_open,
 	.close			= mcctty_close,
 	.write			= mcctty_write,
 	.write_room		= mcctty_write_room,
+	.ioctl		= mcc_ioctl,
 };
 
 static struct tty_driver *mcctty_driver;
@@ -161,7 +252,7 @@ static int imx_mcc_tty_probe(struct platform_device *pdev)
 		return PTR_ERR(mcctty_driver);
 
 	mcctty_driver->driver_name = "mcc_tty";
-	mcctty_driver->name = "ttyMCC";
+	mcctty_driver->name = "mcc";
 	mcctty_driver->major = TTYAUX_MAJOR;
 	mcctty_driver->minor_start = 3;
 	mcctty_driver->type = TTY_DRIVER_TYPE_CONSOLE;
@@ -224,12 +315,12 @@ static int imx_mcc_tty_remove(struct platform_device *pdev)
 	int ret = 0;
 	struct mcctty_port *cport = &mcc_tty_port;
 
-	/* destory the mcc tty endpoint here */
+	/* destroy the mcc tty endpoint here */
 	ret = mcc_destroy_endpoint(&mcc_endpoint_a9_pingpong);
 	if (ret)
-		pr_err("failed to destory a9 mcc ep.\n");
+		pr_err("failed to destroy a9 mcc ep.\n");
 	else
-		pr_info("destory a9 mcc ep.\n");
+		pr_info("destroy a9 mcc ep.\n");
 
 	tty_unregister_driver(mcctty_driver);
 	tty_port_destroy(&cport->port);
