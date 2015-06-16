@@ -142,9 +142,9 @@ void mcc_queue_buffer(MCC_RECEIVE_LIST *list, MCC_RECEIVE_BUFFER * r_buffer)
     MCC_DCACHE_INVALIDATE_MLINES((void*)list, sizeof(MCC_RECEIVE_LIST));
 
     last_buf = (MCC_RECEIVE_BUFFER *)MCC_MEM_PHYS_TO_VIRT(list->tail);
-    MCC_DCACHE_INVALIDATE_MLINES((void*)&last_buf->next, sizeof(MCC_RECEIVE_BUFFER*));
     r_buffer_phys = (MCC_RECEIVE_BUFFER *)MCC_MEM_VIRT_TO_PHYS(r_buffer);
     if(last_buf) {
+        MCC_DCACHE_INVALIDATE_MLINES((void*)&last_buf->next, sizeof(MCC_RECEIVE_BUFFER*));
         last_buf->next = r_buffer_phys;
     }
     else {
@@ -155,7 +155,9 @@ void mcc_queue_buffer(MCC_RECEIVE_LIST *list, MCC_RECEIVE_BUFFER * r_buffer)
 
     MCC_DCACHE_FLUSH_MLINES((void*)&r_buffer->next, sizeof(MCC_RECEIVE_BUFFER*));
     MCC_DCACHE_FLUSH_MLINES(list, sizeof(MCC_RECEIVE_LIST));
-    MCC_DCACHE_FLUSH_MLINES((void*)&last_buf->next, sizeof(MCC_RECEIVE_BUFFER*));
+    if(last_buf) {
+        MCC_DCACHE_FLUSH_MLINES((void*)&last_buf->next, sizeof(MCC_RECEIVE_BUFFER*));
+    }
 }
 
 /*!
