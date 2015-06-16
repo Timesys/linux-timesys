@@ -17,7 +17,7 @@
 #define __MCC_COMMON__
 
 #define MCC_INIT_STRING    "mccisrd"
-#define MCC_VERSION_STRING "002.000"
+#define MCC_VERSION_STRING "002.001"
 #define null ((void*)0)
 
 /*!

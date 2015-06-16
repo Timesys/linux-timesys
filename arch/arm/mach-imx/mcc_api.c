@@ -714,9 +714,9 @@ int mcc_recv_nocopy(MCC_ENDPOINT *src_endpoint, MCC_ENDPOINT *dest_endpoint, voi
     }
 
     /* Get the message pointer from the head of the receive buffer list */
+    MCC_DCACHE_INVALIDATE_MLINES((void*)&list->head->source, sizeof(MCC_ENDPOINT) + sizeof(MCC_MEM_SIZE));
     MCC_DCACHE_INVALIDATE_MLINES((void*)&list->head->data, list->head->data_len);
     *buffer_p = (void*)&list->head->data;
-    MCC_DCACHE_INVALIDATE_MLINES((void*)&list->head->source, sizeof(MCC_ENDPOINT) + sizeof(MCC_MEM_SIZE));
     mcc_memcpy((void*)&list->head->source, (void*)src_endpoint, sizeof(MCC_ENDPOINT));
     *recv_size = (MCC_MEM_SIZE)(list->head->data_len);
 
@@ -755,7 +755,7 @@ int mcc_recv_nocopy(MCC_ENDPOINT *src_endpoint, MCC_ENDPOINT *dest_endpoint, voi
  */
 static int mcc_recv_common_part(MCC_ENDPOINT *endpoint, unsigned int timeout_ms, MCC_RECEIVE_LIST **list)
 {
-    MCC_RECEIVE_LIST *tmp_list;
+    volatile MCC_RECEIVE_LIST *tmp_list;
     int return_value;
 
     /* Semaphore-protected section start */
@@ -765,6 +765,9 @@ static int mcc_recv_common_part(MCC_ENDPOINT *endpoint, unsigned int timeout_ms,
 
     /* Get list of buffers kept by the particular endpoint */
     tmp_list = mcc_get_endpoint_list(*endpoint);
+
+    /* Clear event bit specified for the particular endpoint */
+    mcc_clear_os_sync_for_ep(endpoint);
 
     /* Semaphore-protected section end */
     return_value = mcc_release_semaphore();
@@ -793,8 +796,6 @@ static int mcc_recv_common_part(MCC_ENDPOINT *endpoint, unsigned int timeout_ms,
     else {
         tmp_list->head = (MCC_RECEIVE_BUFFER*)MCC_MEM_PHYS_TO_VIRT(tmp_list->head);
     }
-    /* Clear event bit specified for the particular endpoint */
-    mcc_clear_os_sync_for_ep(endpoint);
 
     *list = (MCC_RECEIVE_LIST*)tmp_list;
     return MCC_SUCCESS;

@@ -138,21 +138,24 @@ void mcc_queue_buffer(MCC_RECEIVE_LIST *list, MCC_RECEIVE_BUFFER * r_buffer)
     MCC_RECEIVE_BUFFER * last_buf;
     MCC_RECEIVE_BUFFER * r_buffer_phys;
 
+    MCC_DCACHE_INVALIDATE_MLINES((void*)&r_buffer->next, sizeof(MCC_RECEIVE_BUFFER*));
     MCC_DCACHE_INVALIDATE_MLINES((void*)list, sizeof(MCC_RECEIVE_LIST));
 
     last_buf = (MCC_RECEIVE_BUFFER *)MCC_MEM_PHYS_TO_VIRT(list->tail);
+    MCC_DCACHE_INVALIDATE_MLINES((void*)&last_buf->next, sizeof(MCC_RECEIVE_BUFFER*));
     r_buffer_phys = (MCC_RECEIVE_BUFFER *)MCC_MEM_VIRT_TO_PHYS(r_buffer);
     if(last_buf) {
         last_buf->next = r_buffer_phys;
-        MCC_DCACHE_FLUSH_MLINES((void*)&last_buf->next, sizeof(MCC_RECEIVE_BUFFER*));
     }
     else {
         list->head = r_buffer_phys;
     }
     r_buffer->next = null;
     list->tail = r_buffer_phys;
-    MCC_DCACHE_FLUSH_MLINES(list, sizeof(MCC_RECEIVE_LIST));
+
     MCC_DCACHE_FLUSH_MLINES((void*)&r_buffer->next, sizeof(MCC_RECEIVE_BUFFER*));
+    MCC_DCACHE_FLUSH_MLINES(list, sizeof(MCC_RECEIVE_LIST));
+    MCC_DCACHE_FLUSH_MLINES((void*)&last_buf->next, sizeof(MCC_RECEIVE_BUFFER*));
 }
 
 /*!
@@ -205,8 +208,9 @@ int mcc_queue_signal(MCC_CORE core, MCC_SIGNAL signal)
 {
     int tail, new_tail;
 
-    MCC_DCACHE_INVALIDATE_MLINES((void*)&bookeeping_data->signal_queue_head[core], sizeof(unsigned int));
     MCC_DCACHE_INVALIDATE_MLINES((void*)&bookeeping_data->signal_queue_tail[core], sizeof(unsigned int));
+    /* this cache invalidation is here because of the MCC_SIGNAL_QUEUE_FULL macro */
+    MCC_DCACHE_INVALIDATE_MLINES((void*)&bookeeping_data->signal_queue_head[core], sizeof(unsigned int));
     tail = bookeeping_data->signal_queue_tail[core];
     new_tail = tail == (MCC_MAX_OUTSTANDING_SIGNALS-1) ? 0 : tail+1;
 
@@ -242,6 +246,7 @@ int mcc_dequeue_signal(MCC_CORE core, MCC_SIGNAL *signal)
     int head;
 
     MCC_DCACHE_INVALIDATE_MLINES((void*)&bookeeping_data->signal_queue_head[core], sizeof(unsigned int));
+    /* this cache invalidation is here because of the MCC_SIGNAL_QUEUE_EMPTY macro */
     MCC_DCACHE_INVALIDATE_MLINES((void*)&bookeeping_data->signal_queue_tail[core], sizeof(unsigned int));
     head = bookeeping_data->signal_queue_head[core];
 
