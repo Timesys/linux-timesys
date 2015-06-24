@@ -75,10 +75,6 @@ config HAVE_IMX_SRC
 	def_bool y if SMP
 	select ARCH_HAS_RESET_CONTROLLER
 
-config HAVE_IMX_MCC
-	select IMX_SEMA4
-	bool
-
 config HAVE_IMX_AMP
 	bool
 
@@ -842,8 +838,6 @@ config SOC_VF610
 	select PINCTRL_VF610
 	select HAVE_IMX_GPC
 	select HAVE_IMX_SRC
-	select HAVE_IMX_MCC
-	select HAVE_IMX_AMP
 	select PL310_ERRATA_588369 if CACHE_PL310
 	select PL310_ERRATA_727915 if CACHE_PL310
 	select PL310_ERRATA_769419 if CACHE_PL310
@@ -869,6 +863,24 @@ choice
 		help
 		  Use SoC Periodic Interrupt Timer (PIT) as clocksource
 
+endchoice
+
+choice
+	prompt "MCC Version Support"
+	depends on SOC_VF610
+	default HAVE_IMX_MCC_V2
+
+	config HAVE_IMX_MCC
+		bool "Use MCC V1.x"
+		help
+		  Build with MCC version 1.x support
+
+	config HAVE_IMX_MCC_V2
+		bool "Use MCC V2.x"
+		select IMX_SEMA4
+		select HAVE_IMX_AMP
+		help
+		  Build with MCC version 2.x support
 endchoice
 
 endif
