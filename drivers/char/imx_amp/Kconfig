@@ -11,7 +11,6 @@ config IMX_SEMA4
 config IMX_MCC_TEST
 	bool "IMX MCC test driver"
 	depends on (SOC_IMX6SX || SOC_VF610) && IMX_SEMA4
-	default y
 	help
 	  If you say Y here, you will get support for IMX MCC ping pong
 	  test and CAN test. Say N here, if the IMX_MCC_TTY interface is
