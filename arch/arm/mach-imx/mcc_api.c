@@ -839,11 +839,11 @@ int mcc_msgs_available(MCC_ENDPOINT *endpoint, unsigned int *num_msgs)
         return MCC_ERR_ENDPOINT;
     }
 
-    buf = list->head;
+    buf = MCC_MEM_PHYS_TO_VIRT(list->head);
     while(buf != (MCC_RECEIVE_BUFFER*)0) {
         count++;
         MCC_DCACHE_INVALIDATE_MLINES((void*)&buf->next, sizeof(MCC_RECEIVE_BUFFER*));
-        buf = (MCC_RECEIVE_BUFFER*)buf->next;
+        buf = (MCC_RECEIVE_BUFFER*)MCC_MEM_PHYS_TO_VIRT(buf->next);
     }
     *num_msgs = count;
 
