@@ -39,7 +39,7 @@
 /* MQX code size maximum size (in bytes) */
 #define MAX_LOAD_SIZE (256*1024)
 
-/* Linux MCC IOCTL definitions */
+/* Linux MCC IOCTL definitions */ 
 #define MCC_CREATE_ENDPOINT                                             _IOW('M', 1, MCC_ENDPOINT)
 #define MCC_DESTROY_ENDPOINT                                            _IOW('M', 2, MCC_ENDPOINT)
 #define MCC_SET_RECEIVE_ENDPOINT                                        _IOW('M', 3, MCC_ENDPOINT)

@@ -319,5 +319,47 @@ int mcc_dequeue_signal(MCC_CORE core, MCC_SIGNAL *signal);
 #error User-defined maximum number of endpoints can not exceed the value of MCC_MAX_RECEIVE_ENDPOINTS_COUNT
 #endif
 
+struct mcc_send_info_struct {
+        MCC_ENDPOINT *src_endpoint;
+        MCC_ENDPOINT *dest_endpoint;
+        void *msg;
+        MCC_MEM_SIZE msg_size;
+        unsigned int timeout_ms;
+};
+
+struct mcc_send_nocopy_info_struct {
+	MCC_ENDPOINT *src_endpoint;
+	MCC_ENDPOINT *dest_endpoint;
+	unsigned int offset;
+	MCC_MEM_SIZE msg_size;
+};
+
+struct mcc_recv_nocopy_info_struct {
+	MCC_ENDPOINT *src_endpoint;
+	MCC_ENDPOINT *dest_endpoint;
+	unsigned int offset;
+	MCC_MEM_SIZE *recv_size;
+	unsigned int timeout_ms;
+};
+
+struct mcc_recv_info_struct {
+	MCC_ENDPOINT *src_endpoint;
+	MCC_ENDPOINT *dest_endpoint;
+	void *buffer;
+	MCC_MEM_SIZE buffer_size;
+	MCC_MEM_SIZE *recv_size;
+	unsigned int timeout_ms;
+};
+
+struct mcc_get_buffer_struct {
+	unsigned int offset;
+	MCC_MEM_SIZE *buf_size;
+	unsigned int timeout_ms;
+};
+
+struct mcc_queue_info_struct {
+        MCC_ENDPOINT endpoint;
+        int current_queue_length;
+};
 #endif /* __MCC_COMMON__ */
 
