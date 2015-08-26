@@ -36,6 +36,30 @@
 /* node number */
 #define MCC_NODE_NUMBER                (_psp_node_num())
 
+/* MQX code size maximum size (in bytes) */
+#define MAX_LOAD_SIZE (256*1024)
+
+/* Linux MCC IOCTL definitions */
+#define MCC_CREATE_ENDPOINT                                             _IOW('M', 1, MCC_ENDPOINT)
+#define MCC_DESTROY_ENDPOINT                                            _IOW('M', 2, MCC_ENDPOINT)
+#define MCC_SET_RECEIVE_ENDPOINT                                        _IOW('M', 3, MCC_ENDPOINT)
+#define MCC_SET_SEND_ENDPOINT                                           _IOW('M', 4, MCC_ENDPOINT)
+#define MCC_SET_TIMEOUT                                                 _IOW('M', 5, unsigned int)
+#define MCC_GET_INFO                                                    _IOR('M', 6, MCC_INFO_STRUCT)
+#define MCC_SET_READ_MODE                                               _IOW('M', 7, MCC_READ_MODE)
+#define MCC_SET_MODE_LOAD_MQX_IMAGE                                     _IOW('M', 8, struct mqx_boot_info_struct)
+#define MCC_BOOT_MQX_IMAGE                                              _IO('M', 9)
+#define MCC_FREE_RECEIVE_BUFFER                                         _IOW('M', 10, unsigned int)
+#define MCC_GET_QUEUE_INFO                                              _IOR('M', 11, struct mcc_queue_info_struct)
+#define MCC_GET_NODE                                                    _IOR('M', 12, MCC_NODE)
+#define MCC_SET_NODE                                                    _IOW('M', 13, MCC_NODE)
+#define MCC_CHECK_ENDPOINT_EXISTS                                       _IOR('M', 14, MCC_ENDPOINT)
+#define MCC_SEND							_IOW('M', 15, struct mcc_send_info_struct)
+#define MCC_SEND_NOCOPY							_IOW('M', 16, struct mcc_send_nocopy_info_struct)
+#define MCC_RECV							_IOW('M', 17, struct mcc_recv_info_struct)
+#define MCC_RECV_NOCOPY							_IOW('M', 18, struct mcc_recv_nocopy_info_struct)
+#define MCC_GET_RECEIVE_BUFFER						_IOW('M', 19, struct mcc_get_buffer_struct)
+#define MCC_DESTROY							_IOW('M', 20, MCC_NODE)
 /* semaphore number */
 #define MCC_SHMEM_SEMAPHORE_NUMBER      (1)
 #define MCC_PRINTF_SEMAPHORE_NUMBER     (2)
