@@ -31,7 +31,7 @@
 #define MCC_NUM_CORES                  (2)
 
 /* core number */
-#define MCC_CORE_NUMBER                (_psp_core_num())
+#define MCC_CORE_NUMBER                (0)
 
 /* node number */
 #define MCC_NODE_NUMBER                (_psp_node_num())

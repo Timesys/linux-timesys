@@ -361,5 +361,11 @@ struct mcc_queue_info_struct {
         MCC_ENDPOINT endpoint;
         int current_queue_length;
 };
+
+struct mqx_boot_info_struct {
+        unsigned int phys_load_addr;
+        unsigned int phys_start_addr;
+};
+
 #endif /* __MCC_COMMON__ */
 
