@@ -16,8 +16,11 @@
 #ifndef __MCC_COMMON__
 #define __MCC_COMMON__
 
+#include <linux/mcc_config_linux.h>
+
 #define MCC_INIT_STRING    "mccisrd"
 #define MCC_VERSION_STRING "002.001"
+#define MCC_MAJOR_VERSION  (2)
 #define null ((void*)0)
 
 /*!
