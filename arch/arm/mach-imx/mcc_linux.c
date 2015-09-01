@@ -28,6 +28,7 @@
 static unsigned long mcc_shm_offset;
 struct imx_sema4_mutex *mcc_shm_ptr;
 __iomem void *mscm_base;
+static int first_setup = 1;
 
 MCC_BOOKEEPING_STRUCT *bookeeping_data;
 
@@ -155,24 +156,30 @@ int mcc_register_cpu_to_cpu_isr(void)
 	 */
 #ifdef CONFIG_SOC_VF610
 	int count;
-	mscm_base = ioremap(VF610_MSCM_BASE_ADDR, 0x824);
 
-	if(! mscm_base)
+	if (first_setup)
 	{
-		pr_err("MSCM memory space not mapped successfully. Aborting.\n");
-		return -ENOMEM;
+		mscm_base = ioremap(VF610_MSCM_BASE_ADDR, 0x824);
+
+		if(! mscm_base)
+		{
+			pr_err("MSCM memory space not mapped successfully. Aborting.\n");
+			return -ENOMEM;
+		}
+
+		for(count=0; count < VF610_MAX_CPU_TO_CPU_INTERRUPTS; count++)
+		{
+			if (request_irq(VF610_INT_CPU_INT0 + count, cpu_to_cpu_irq_handler, 0, "mcc", mscm_base) != 0)
+			{
+				pr_err("Failed to register VF610 CPU TO CPU interrupt:%d\n",count);
+				iounmap(mscm_base);
+				return -EIO;
+			}
+		}
+
+		first_setup=0;
+		//Keep mscm_base mapped - necessary for future MCC interactions.
 	}
-
-	for(count=0; count < VF610_MAX_CPU_TO_CPU_INTERRUPTS; count++)
-        {
-                if (request_irq(VF610_INT_CPU_INT0 + count, cpu_to_cpu_irq_handler, 0, "mcc", mscm_base) != 0)
-                {
-                        pr_err("Failed to register VF610 CPU TO CPU interrupt:%d\n",count);
-
-                        iounmap(mscm_base);
-                        return -EIO;
-                }
-        }
 #endif
 
 	/*
