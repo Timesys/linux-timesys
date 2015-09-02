@@ -27,4 +27,14 @@ config IMX_MCC_TTY
 	  between kernel space and user space. Say N here, if the
 	  interface is not required.
 
+config IMX_MCC_LIBMCC
+	bool "IMX MCC libmcc driver"
+	depends on (SOC_IMX6SX || SOC_VF610) && IMX_SEMA4
+	default y
+	help
+	  If you say Y here, you will get support for the IMX MCC libmcc
+	  userspace interface.
+
+	  If unsure, it is safe to say Y.
+
 #end imx mcc
