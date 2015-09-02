@@ -212,8 +212,6 @@ int imx_sema4_mutex_lock(struct imx_sema4_mutex *mutex_ptr)
 	while (-EBUSY == ret) {
 		if (MCC_SHMEM_SEMAPHORE_NUMBER == mutex_ptr->gate_num) {
 			timeout_j = msecs_to_jiffies(1000);
-			wait_event_timeout(mutex_ptr->wait_q,
-					mutex_ptr->gate_val == 0, timeout_j);
 			pr_debug("wake up val %d.\n", mutex_ptr->gate_val);
 		}
 		spin_lock_irqsave(&imx6_sema4->lock, flags);
