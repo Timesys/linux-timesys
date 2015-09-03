@@ -602,3 +602,7 @@
 &mcctty{
 	status = "okay";
 };
+
+&libmcc{
+	status = "okay";
+};
