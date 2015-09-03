@@ -116,3 +116,15 @@
 &spidev {
 	status = "disabled";
 };
+
+&mcctest{
+       status = "okay";
+};
+
+&mcctty{
+       status = "okay";
+};
+
+&libmcc{
+       status = "okay";
+};
