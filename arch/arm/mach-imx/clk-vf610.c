@@ -10,6 +10,7 @@
 
 #include <linux/of_address.h>
 #include <linux/clk.h>
+#include <linux/io.h>
 #include <dt-bindings/clock/vf610-clock.h>
 
 #include "clk.h"
@@ -107,6 +108,41 @@ static unsigned int const clks_init_on[] __initconst = {
 	VF610_CLK_DDRMC,
 };
 
+#define out_arch(type,endian,a,v)       __raw_write##type(cpu_to_##endian(v),a)
+#define in_arch(type,endian,a)          endian##_to_cpu(__raw_read##type(a))
+
+#define out_le32(a,v)   out_arch(l,le32,a,v)
+
+#define in_le32(a)      in_arch(l,le32,a)
+
+#define clrbits(type, addr, clear) \
+        out_##type((addr), in_##type(addr) & ~(clear))
+
+#define setbits(type, addr, set) \
+        out_##type((addr), in_##type(addr) | (set))
+
+#define clrsetbits(type, addr, clear, set) \
+        out_##type((addr), (in_##type(addr) & ~(clear)) | (set))
+
+#define clrbits_le32(addr, clear) clrbits(le32, addr, clear)
+#define setbits_le32(addr, set) setbits(le32, addr, set)
+#define clrsetbits_le32(addr, clear, set) clrsetbits(le32, addr, clear, set)
+
+static void __init vf610_enable_CCGRx(void)
+{
+	clrsetbits_le32(CCM_CCGR0, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR1, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR2, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR3, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR4, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR5, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR6, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR7, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR8, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR9, 0xffffffff, 0xffffffff);
+	clrsetbits_le32(CCM_CCGR10, 0xffffffff, 0xffffffff);
+}
+
 static void __init vf610_clocks_init(struct device_node *ccm_node)
 {
 	struct device_node *np;
@@ -131,6 +167,7 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
 	np = ccm_node;
 	ccm_base = of_iomap(np, 0);
 	BUG_ON(!ccm_base);
+	vf610_enable_CCGRx();
 
 	vf610_pm_set_ccm_base(ccm_base);
 
