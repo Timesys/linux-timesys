@@ -881,6 +881,13 @@ choice
 		select HAVE_IMX_AMP
 		help
 		  Build with MCC version 2.x support
+	config HAVE_IMX_EXTERNAL_MCC
+		bool "Use External MCC V2.x"
+		select IMX_SEMA4
+		select HAVE_IMX_AMP
+		help
+		  Do not build MCC. User will build external MCC kernel module
+		  instead.
 endchoice
 
 endif
